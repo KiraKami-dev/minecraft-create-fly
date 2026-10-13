@@ -134,7 +134,7 @@
     "entity.entities_stick_sublevels.effects.LivingEntityMixin",
     "entity.entities_stick_sublevels.packet_mixin.ClientboundMoveEntityPacketPosMixin",
     "entity.entities_stick_sublevels.packet_mixin.ClientboundMoveEntityPacketPosRotMixin",
-    "entity.entities_stick_sublevels.packet_mixin.ClientboundTeleportEntityPacketMixin",
+    "entity.entities_stick_sublevels.packet_mixin.ClientboundEntityPositionSyncPacketMixin",
     "entity.entities_stick_sublevels.player.ServerboundMovePlayerPacketMixin",
     "entity.entities_stick_sublevels.player.ServerGamePacketListenerImplMixin",
     "entity.entities_stick_sublevels.player.ServerPlayerMixin",

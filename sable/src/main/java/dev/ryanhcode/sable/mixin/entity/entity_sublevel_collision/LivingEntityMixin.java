@@ -142,7 +142,7 @@ public abstract class LivingEntityMixin extends Entity implements LivingEntityMo
 
                 if (damageAmount > 0.0) {
                     this.playSound(damageAmount > 4 ? this.getFallSounds().big() : this.getFallSounds().small(), 1.0F, 1.0F);
-                    this.hurt(this.damageSources().flyIntoWall(), damageAmount);
+                    this.hurtOrSimulate(this.damageSources().flyIntoWall(), damageAmount);
                 }
             }
         }
