@@ -24,7 +24,7 @@ public class SectionCompilerMixin {
         final ClientLevel level = Minecraft.getInstance().level;
         final SubLevelContainer container = SubLevelContainer.getContainer(level);
 
-        final LevelPlot plot = container.getPlot(sectionPos.chunk());
+        final LevelPlot plot = container != null ? container.getPlot(sectionPos.chunk()) : null;
 
         ((ModelBlockRendererCacheExtension) ModelBlockRenderer.CACHE.get()).sable$setOnSubLevel(plot != null);
     }
