@@ -3,10 +3,8 @@ package dev.ryanhcode.sable.sublevel.render;
 import dev.ryanhcode.sable.api.sublevel.ClientSubLevelContainer;
 import dev.ryanhcode.sable.mixinterface.plot.SubLevelContainerHolder;
 import dev.ryanhcode.sable.sublevel.ClientSubLevel;
-import dev.ryanhcode.sable.sublevel.render.dispatcher.ReachAroundSubLevelRenderDispatcher;
 import dev.ryanhcode.sable.sublevel.render.dispatcher.SubLevelRenderDispatcher;
 import dev.ryanhcode.sable.sublevel.render.dispatcher.VanillaSubLevelRenderDispatcher;
-import dev.ryanhcode.sable.veillite.api.compat.SodiumCompat;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 
@@ -75,26 +73,17 @@ public final class SubLevelRenderer {
     }
 
     public enum SelectedRenderer {
+        // PORT-TODO(1.21.11): the Sodium "reach-around" renderer (SODIUM_REACHAROUND) was removed. Sodium 0.8 for
+        //  1.21.11 replaces the vanilla section renderer, so sub-levels are not drawn while Sodium is installed.
         VANILLA {
             @Override
             public boolean isSupported() {
-                return !SodiumCompat.isLoaded();
+                return true;
             }
 
             @Override
             public SubLevelRenderDispatcher create() {
                 return new VanillaSubLevelRenderDispatcher();
-            }
-        },
-        SODIUM_REACHAROUND {
-            @Override
-            public boolean isSupported() {
-                return SodiumCompat.isLoaded();
-            }
-
-            @Override
-            public SubLevelRenderDispatcher create() {
-                return new ReachAroundSubLevelRenderDispatcher();
             }
         };
 
