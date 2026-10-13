@@ -13,10 +13,13 @@ import net.minecraft.client.PrioritizeChunkUpdates;
 import net.minecraft.client.renderer.chunk.CompiledSectionMesh;
 import net.minecraft.client.renderer.chunk.RenderRegionCache;
 import net.minecraft.client.renderer.chunk.SectionRenderDispatcher;
+import net.minecraft.client.renderer.chunk.TranslucencyPointOfView;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.SectionPos;
 import net.minecraft.util.profiling.Profiler;
 import net.minecraft.util.profiling.ProfilerFiller;
+import net.minecraft.world.phys.Vec3;
+import org.jetbrains.annotations.Nullable;
 import org.joml.Vector3d;
 import org.joml.Vector3i;
 
@@ -58,6 +61,14 @@ public class VanillaChunkedSubLevelRenderData implements SubLevelRenderData {
      * The section render dispatcher to build sections through
      */
     private final SectionRenderDispatcher sectionRenderDispatcher;
+    /**
+     * The camera position in plot space used for sorting translucent geometry
+     */
+    private @Nullable Vec3 sortCamera;
+    /**
+     * The block position of {@link #sortCamera} when sections were last resorted
+     */
+    private @Nullable BlockPos lastSortBlockPos;
 
     /**
      * Creates a new renderer for the given sub-level
@@ -149,6 +160,7 @@ public class VanillaChunkedSubLevelRenderData implements SubLevelRenderData {
                         } else {
                             newSection = this.sectionRenderDispatcher.new RenderSection(-1, SectionPos.asLong(x, y, z));
                             ((RenderSectionExtension) newSection).sable$addDirtyListener(this.dirtyRenderSections::add);
+                            ((RenderSectionExtension) newSection).sable$setSortCameraPosition(this.sortCamera);
                         }
 
                         if (newSection.isDirty()) {
@@ -268,6 +280,50 @@ public class VanillaChunkedSubLevelRenderData implements SubLevelRenderData {
         if (index >= 0 && index < this.renderSections.length) {
             this.renderSections[index].setDirty(playerChanged);
         }
+    }
+
+    /**
+     * Updates the camera position used to sort translucent geometry of all sections, in plot space.
+     *
+     * @param worldCamera The camera position in the world
+     */
+    public void updateSortCamera(final Vec3 worldCamera) {
+        final Vec3 plotCamera = this.subLevel.renderPose().transformPositionInverse(worldCamera);
+        this.sortCamera = plotCamera;
+
+        for (final SectionRenderDispatcher.RenderSection renderSection : this.allRenderSections) {
+            ((RenderSectionExtension) renderSection).sable$setSortCameraPosition(plotCamera);
+        }
+    }
+
+    /**
+     * Schedules resorting of the translucent geometry of sections whose point of view changed, like
+     * {@code LevelRenderer#scheduleTranslucentSectionResort} does for world sections.
+     *
+     * @param sectionRenderDispatcher The section render dispatcher to schedule the resort tasks on
+     */
+    public void scheduleTranslucencyResort(final SectionRenderDispatcher sectionRenderDispatcher) {
+        final Vec3 plotCamera = this.sortCamera;
+        if (plotCamera == null) {
+            return;
+        }
+
+        final BlockPos cameraBlockPos = BlockPos.containing(plotCamera);
+        final boolean cameraMoved = !cameraBlockPos.equals(this.lastSortBlockPos);
+        final TranslucencyPointOfView pointOfView = new TranslucencyPointOfView();
+
+        for (final SectionRenderDispatcher.RenderSection renderSection : this.allRenderSections) {
+            if (!renderSection.hasTranslucentGeometry() || renderSection.transparencyResortingScheduled()) {
+                continue;
+            }
+
+            pointOfView.set(plotCamera, renderSection.getSectionNode());
+            if (cameraMoved || renderSection.getSectionMesh().isDifferentPointOfView(pointOfView)) {
+                renderSection.resortTransparency(sectionRenderDispatcher);
+            }
+        }
+
+        this.lastSortBlockPos = cameraBlockPos;
     }
 
     /**
