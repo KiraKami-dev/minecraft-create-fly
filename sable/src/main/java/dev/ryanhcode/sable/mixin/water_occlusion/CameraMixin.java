@@ -4,7 +4,6 @@ import com.llamalad7.mixinextras.injector.ModifyReturnValue;
 import dev.ryanhcode.sable.mixinterface.water_occlusion.CameraWaterOcclusionExtension;
 import dev.ryanhcode.sable.sublevel.water_occlusion.WaterOcclusionContainer;
 import net.minecraft.client.Camera;
-import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.material.FogType;
 import net.minecraft.world.phys.Vec3;
@@ -20,7 +19,7 @@ public class CameraMixin implements CameraWaterOcclusionExtension {
     private Vec3 position;
 
     @Shadow
-    private BlockGetter level;
+    private Level level;
 
     @Unique
     private boolean sable$ignoreOcclusion = false;
@@ -54,7 +53,7 @@ public class CameraMixin implements CameraWaterOcclusionExtension {
 
     @Override
     public boolean sable$isOccluded() {
-        final WaterOcclusionContainer<?> container = WaterOcclusionContainer.getContainer((Level) this.level);
+        final WaterOcclusionContainer<?> container = WaterOcclusionContainer.getContainer(this.level);
 
         if (container == null)
             return false;

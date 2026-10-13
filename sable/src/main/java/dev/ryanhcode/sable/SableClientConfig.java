@@ -37,13 +37,13 @@ public final class SableClientConfig {
 
         SUB_LEVEL_DYNAMIC_SHADING = builder
                 .comment("Whether sub-levels should apply block shading dynamically")
-                .define("sub_level_dynamic_shading", true);
+                .define("sub_level_dynamic_shading", false); // PORT-TODO(1.21.11): see SableDynamicDirectionalShading
         SUB_LEVEL_WATER_OCCLUSION = builder
                 .comment("Whether sub-levels can occlude the water surface")
                 .define("sub_level_water_occlusion", true);
         SUB_LEVEL_SKYLIGHT_SHADOWS = builder
                 .comment("Whether sub-levels should cast a shadow on the world")
-                .define("sub_level_skylight_shadows", false);
+                .define("sub_level_skylight_shadows", false); // PORT-TODO(1.21.11): see SableSkyLightShadows
         DEBUG_DRAW_LOADED_CHUNKS = builder
                 .comment("Whether to draw loaded chunks on the client in the chunk debug renderer")
                 .define("debug_draw_loaded_chunks", Veil.platform().isDevelopmentEnvironment());

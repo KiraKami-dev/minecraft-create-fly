@@ -1,41 +1,83 @@
 package dev.ryanhcode.sable.render.water_occlusion;
 
+import com.mojang.blaze3d.pipeline.RenderPipeline;
 import com.mojang.blaze3d.pipeline.RenderTarget;
-import com.mojang.blaze3d.platform.Window;
-import com.mojang.blaze3d.shaders.Uniform;
+import com.mojang.blaze3d.pipeline.TextureTarget;
+import com.mojang.blaze3d.platform.DepthTestFunction;
+import com.mojang.blaze3d.systems.RenderPass;
 import com.mojang.blaze3d.systems.RenderSystem;
-import dev.ryanhcode.sable.render.region.SimpleCulledRenderRegion;
+import com.mojang.blaze3d.textures.FilterMode;
+import com.mojang.blaze3d.textures.GpuSampler;
+import com.mojang.blaze3d.vertex.DefaultVertexFormat;
+import com.mojang.blaze3d.vertex.VertexFormat;
+import dev.ryanhcode.sable.Sable;
 import dev.ryanhcode.sable.sublevel.water_occlusion.WaterOcclusionContainer;
-import dev.ryanhcode.sable.veillite.api.client.render.framebuffer.AdvancedFbo;
-import dev.ryanhcode.sable.veillite.api.client.render.shader.program.ShaderProgram;
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.GameRenderer;
-import net.minecraft.client.renderer.ShaderInstance;
+import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Matrix4f;
+import org.joml.Matrix4fc;
 
 import java.util.Collection;
+import java.util.OptionalDouble;
+import java.util.OptionalInt;
 import java.util.Set;
 
-import static org.lwjgl.opengl.GL11C.*;
-import static org.lwjgl.opengl.GL32C.GL_DEPTH_CLAMP;
-
 /**
- * Manages water occlusion rendering for sub-levels
+ * Manages water occlusion rendering for sub-levels.
+ * <p>
+ * Every frame, right before the translucent terrain layer, the occlusion volumes are rendered depth-only twice:
+ * the nearest front faces into the "close" buffer, and the nearest back faces into the "far" buffer.
+ * The translucent terrain pipeline is then swapped for {@link #TRANSLUCENT_TERRAIN_OCCLUDED}, which discards any
+ * fragment lying between the two depths.
+ * <p>
+ * PORT-TODO(1.21.11): GL_DEPTH_CLAMP is not exposed by the blaze3d {@link RenderPipeline}, so volumes that
+ * intersect the camera near plane are clipped instead of clamped. Inside a hull this is covered by clearing
+ * the close depth to 0.
  */
 @ApiStatus.Internal
 public class WaterOcclusionRenderer {
-    private final Set<SimpleCulledRenderRegion> regions = new ObjectOpenHashSet<>();
-    private AdvancedFbo closeBuffer;
-    private AdvancedFbo farBuffer;
-    private Level level;
+
+    public static final String CLOSE_SAMPLER_NAME = "SableCloseSampler";
+    public static final String FAR_SAMPLER_NAME = "SableFarSampler";
+
+    /**
+     * Depth-only pass for occlusion volumes
+     */
+    private static final RenderPipeline DEPTH_PIPELINE = RenderPipeline.builder(RenderPipelines.MATRICES_PROJECTION_SNIPPET)
+            .withLocation(Sable.sablePath("pipeline/water_occlusion_depth"))
+            .withVertexShader("core/rendertype_water_mask")
+            .withFragmentShader("core/rendertype_water_mask")
+            .withColorWrite(false)
+            .withDepthTestFunction(DepthTestFunction.LEQUAL_DEPTH_TEST)
+            .withVertexFormat(DefaultVertexFormat.POSITION, VertexFormat.Mode.QUADS)
+            .build();
+
+    /**
+     * Vanilla translucent terrain, with water inside occlusion volumes discarded
+     */
+    public static final RenderPipeline TRANSLUCENT_TERRAIN_OCCLUDED = RenderPipeline.builder(RenderPipelines.TERRAIN_SNIPPET)
+            .withLocation(Sable.sablePath("pipeline/translucent_terrain_occluded"))
+            .withFragmentShader(Sable.sablePath("core/terrain_occluded"))
+            .withSampler(CLOSE_SAMPLER_NAME)
+            .withSampler(FAR_SAMPLER_NAME)
+            .withBlend(com.mojang.blaze3d.pipeline.BlendFunction.TRANSLUCENT)
+            .withShaderDefine("ALPHA_CUTOUT", 0.01F)
+            .build();
 
     private static boolean isEnabled = false;
+
+    private final Set<WaterOcclusionRenderRegion> regions = new ObjectOpenHashSet<>();
+    private final Matrix4f levelModelView = new Matrix4f();
+    private RenderTarget closeTarget;
+    private RenderTarget farTarget;
+    private Level level;
+    private boolean active = false;
 
     public static boolean isEnabled() {
         return isEnabled;
@@ -47,118 +89,118 @@ public class WaterOcclusionRenderer {
 
     @Nullable
     @ApiStatus.Internal
-    public SimpleCulledRenderRegion addRegion(final Collection<BlockPos> blocks) {
+    public WaterOcclusionRenderRegion addRegion(final Collection<BlockPos> blocks) {
         if (blocks.isEmpty()) {
             return null;
         }
 
-        final SimpleCulledRenderRegion region = new WaterOcclusionRenderRegion(blocks);
+        final WaterOcclusionRenderRegion region = new WaterOcclusionRenderRegion(blocks);
         this.regions.add(region);
         return region;
     }
 
-    public void removeRegion(final SimpleCulledRenderRegion region) {
+    public void removeRegion(@Nullable final WaterOcclusionRenderRegion region) {
+        if (region == null) {
+            return;
+        }
+
         region.free();
         this.regions.remove(region);
     }
 
-    private void updateFramebuffers(final boolean needed) {
-        final Minecraft minecraft = Minecraft.getInstance();
-        final RenderTarget renderTarget = minecraft.getMainRenderTarget();
+    private void updateTargets(final boolean needed) {
+        final RenderTarget mainTarget = Minecraft.getInstance().getMainRenderTarget();
 
-        if (!needed && this.closeBuffer != null) {
-            this.closeBuffer.free();
-            this.farBuffer.free();
-            this.closeBuffer = null;
-            this.farBuffer = null;
+        if (!needed) {
+            this.freeTargets();
+            return;
         }
 
-        if (needed && (this.closeBuffer == null || renderTarget.width != this.closeBuffer.getWidth() || renderTarget.height != this.farBuffer.getHeight())) {
-            if (this.closeBuffer != null) {
-                this.closeBuffer.free();
-                this.farBuffer.free();
-            }
-
-            this.closeBuffer = AdvancedFbo.withSize(renderTarget.width, renderTarget.height).addColorTextureBuffer().setDepthTextureBuffer().build(true);
-            this.farBuffer = AdvancedFbo.withSize(renderTarget.width, renderTarget.height).addColorTextureBuffer().setDepthTextureBuffer().build(true);
+        if (this.closeTarget == null || mainTarget.width != this.closeTarget.width || mainTarget.height != this.closeTarget.height) {
+            this.freeTargets();
+            this.closeTarget = new TextureTarget("Sable water occlusion (close)", mainTarget.width, mainTarget.height, true);
+            this.farTarget = new TextureTarget("Sable water occlusion (far)", mainTarget.width, mainTarget.height, true);
         }
     }
 
-    public void preRenderTranslucent(final Matrix4f modelView, final Matrix4f projMat) {
-        if (!isEnabled()) {
+    private void freeTargets() {
+        if (this.closeTarget != null) {
+            this.closeTarget.destroyBuffers();
+            this.farTarget.destroyBuffers();
+            this.closeTarget = null;
+            this.farTarget = null;
+        }
+    }
+
+    /**
+     * Stores the model-view matrix of the level for this frame.
+     */
+    public void setLevelModelView(final Matrix4fc modelView) {
+        this.levelModelView.set(modelView);
+    }
+
+    /**
+     * Renders the occlusion buffers. Must be called outside of any open render pass, before the translucent terrain layer.
+     */
+    public void preRenderTranslucent() {
+        this.active = false;
+
+        if (!isEnabled() || this.level == null) {
+            this.updateTargets(false);
             return;
         }
 
         final WaterOcclusionContainer<?> container = WaterOcclusionContainer.getContainer(this.level);
-        final boolean needed = !this.regions.isEmpty() || container == null;
+        final boolean needed = !this.regions.isEmpty() && container != null;
 
-        this.updateFramebuffers(needed);
+        this.updateTargets(needed);
 
         if (!needed) {
             return;
         }
 
-        final Vec3 cameraPos = Minecraft.getInstance().gameRenderer.getMainCamera().getPosition();
-
-        this.closeBuffer.bind(true);
+        final Vec3 cameraPos = Minecraft.getInstance().gameRenderer.getMainCamera().position();
 
         // if we're inside any of the regions, we need to clear the depth to 0
         final boolean cameraOccluded = container.isOccluded(cameraPos);
 
-        RenderSystem.enableDepthTest();
-        RenderSystem.depthMask(true);
-        RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
-        RenderSystem.setShader(GameRenderer::getPositionShader);
+        this.renderDepth(this.closeTarget, "close", cameraOccluded ? 0.0 : 1.0, this.levelModelView);
 
-        glEnable(GL_DEPTH_CLAMP);
-        this.closeBuffer.clear(0.0F, 0.0F, 0.0F, 0.0F, cameraOccluded ? 0.0F : 1.0F, this.closeBuffer.getClearMask());
-        glCullFace(GL_BACK);
+        // Mirroring the view in x flips the winding order of every face, so the culled "back" faces become the
+        // front faces and the far buffer holds the nearest back faces. The shader samples it mirrored.
+        final Matrix4f mirrored = new Matrix4f().scale(-1.0f, 1.0f, 1.0f).mul(this.levelModelView);
+        this.renderDepth(this.farTarget, "far", 1.0, mirrored);
 
-        for (final SimpleCulledRenderRegion region : this.regions) {
-            region.render(modelView, projMat);
-        }
-        AdvancedFbo.unbind();
-
-        this.farBuffer.bind(true);
-        this.farBuffer.clear();
-        glCullFace(GL_FRONT);
-
-        for (final SimpleCulledRenderRegion region : this.regions) {
-            region.render(modelView, projMat);
-        }
-        AdvancedFbo.unbind();
-
-        // reset state
-        glCullFace(GL_BACK);
-        glDisable(GL_DEPTH_CLAMP);
-        ShaderProgram.unbind();
+        this.active = true;
     }
 
-    public void setupTranslucentShader(final ShaderInstance shader) {
-        if (!isEnabled()) {
-            return;
-        }
+    private void renderDepth(final RenderTarget target, final String label, final double clearDepth, final Matrix4fc modelView) {
+        try (final RenderPass renderPass = RenderSystem.getDevice()
+                .createCommandEncoder()
+                .createRenderPass(() -> "Sable water occlusion (" + label + ")", target.getColorTextureView(), OptionalInt.of(0), target.getDepthTextureView(), OptionalDouble.of(clearDepth))) {
+            renderPass.setPipeline(DEPTH_PIPELINE);
+            RenderSystem.bindDefaultUniforms(renderPass);
 
-        final Uniform uniform = shader.getUniform(SableWaterOcclusionPreProcessor.ENABLE_UNIFORM);
-
-        if (this.closeBuffer == null) {
-            if (uniform != null) {
-                uniform.set(0.0F);
+            for (final WaterOcclusionRenderRegion region : this.regions) {
+                region.render(renderPass, modelView);
             }
-            return;
         }
+    }
 
-        final Window window = Minecraft.getInstance().getWindow();
-        final Uniform screenSize = shader.getUniform("ScreenSize");
-        if (screenSize != null) {
-            screenSize.set((float) window.getWidth(), (float) window.getHeight());
-        }
-        if (uniform != null) {
-            uniform.set(1.0F);
-        }
+    /**
+     * @return if the occluded translucent terrain pipeline should replace the vanilla one this frame
+     */
+    public boolean isActive() {
+        return this.active;
+    }
 
-        shader.setSampler(SableWaterOcclusionPreProcessor.CLOSE_SAMPLER_NAME, this.closeBuffer.getDepthTextureAttachment());
-        shader.setSampler(SableWaterOcclusionPreProcessor.FAR_SAMPLER_NAME, this.farBuffer.getDepthTextureAttachment());
+    /**
+     * Binds the occlusion depth buffers to a pass using {@link #TRANSLUCENT_TERRAIN_OCCLUDED}
+     */
+    public void bindSamplers(final RenderPass renderPass) {
+        final GpuSampler sampler = RenderSystem.getSamplerCache().getClampToEdge(FilterMode.NEAREST);
+        renderPass.bindTexture(CLOSE_SAMPLER_NAME, this.closeTarget.getDepthTextureView(), sampler);
+        renderPass.bindTexture(FAR_SAMPLER_NAME, this.farTarget.getDepthTextureView(), sampler);
     }
 
     public void update() {
@@ -167,7 +209,7 @@ public class WaterOcclusionRenderer {
         if (minecraft.level != this.level) {
             this.level = minecraft.level;
 
-            this.regions.forEach(SimpleCulledRenderRegion::free);
+            this.regions.forEach(WaterOcclusionRenderRegion::free);
             this.regions.clear();
         }
     }
