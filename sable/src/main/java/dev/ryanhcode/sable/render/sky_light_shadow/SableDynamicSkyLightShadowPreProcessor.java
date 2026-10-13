@@ -11,7 +11,7 @@ import io.github.ocelot.glslprocessor.api.node.expression.GlslAssignmentNode;
 import io.github.ocelot.glslprocessor.api.node.expression.GlslOperationNode;
 import io.github.ocelot.glslprocessor.api.node.function.GlslInvokeFunctionNode;
 import io.github.ocelot.glslprocessor.api.node.variable.GlslVariableNode;
-import net.minecraft.client.renderer.RenderType;
+import net.minecraft.client.renderer.rendertype.RenderType;
 
 import java.util.List;
 

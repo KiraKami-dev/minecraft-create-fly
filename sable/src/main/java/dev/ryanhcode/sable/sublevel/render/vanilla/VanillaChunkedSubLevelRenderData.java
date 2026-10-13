@@ -21,7 +21,7 @@ import it.unimi.dsi.fastutil.objects.ObjectList;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.PrioritizeChunkUpdates;
-import net.minecraft.client.renderer.RenderType;
+import net.minecraft.client.renderer.rendertype.RenderType;
 import net.minecraft.client.renderer.ShaderInstance;
 import net.minecraft.client.renderer.chunk.RenderRegionCache;
 import net.minecraft.client.renderer.chunk.SectionRenderDispatcher;

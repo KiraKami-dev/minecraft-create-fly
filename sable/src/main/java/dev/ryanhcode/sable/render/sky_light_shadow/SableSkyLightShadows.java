@@ -16,7 +16,7 @@ import net.minecraft.client.renderer.LevelRenderer;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.ShaderInstance;
 import net.minecraft.client.renderer.culling.Frustum;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.Nullable;
@@ -30,7 +30,7 @@ public class SableSkyLightShadows {
 
     public static final float SHADOW_VOLUME_SIZE = 256f / 2f;
 
-    private static final ResourceLocation FRAMEBUFFER_NAME = Sable.sablePath("sub_level_shadow");
+    private static final Identifier FRAMEBUFFER_NAME = Sable.sablePath("sub_level_shadow");
     private static final Matrix4f PROJECTION_MAT = new Matrix4f();
     private static final Vector3d SHADOW_CAMERA_POSITION = new Vector3d();
     private static final Quaternionf SHADOW_CAMERA_ORIENTATION = new Quaternionf();

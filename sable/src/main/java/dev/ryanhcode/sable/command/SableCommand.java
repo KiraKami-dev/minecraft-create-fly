@@ -24,7 +24,7 @@ import net.minecraft.commands.CommandBuildContext;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.network.chat.*;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.util.Unit;
 import org.joml.Quaterniondc;
@@ -220,7 +220,7 @@ public class SableCommand {
             source.sendSuccess(() -> {
                 final Vector3dc pos = pose.position();
                 final GlobalSavedSubLevelPointer pointer = subLevel.getLastSerializationPointer();
-                final ResourceLocation dimension = subLevel.getLevel().dimension().location();
+                final Identifier dimension = subLevel.getLevel().dimension().location();
                 final Component fileId = Component.translatable("commands.sable.info.name.tooltip", pointer != null ? pointer.toString() : "None yet");
                 final MutableComponent component = Component.translatable("commands.sable.info.position", pos.x(), pos.y(), pos.z());
                 component.setStyle(Style.EMPTY.withClickEvent(new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND, new Formatter().format(Locale.ROOT, "/execute in %s run tp @s %.2f %.2f %.2f", dimension, pos.x(), pos.y(), pos.z()).toString()))

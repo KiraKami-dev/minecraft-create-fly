@@ -21,7 +21,7 @@ import foundry.veil.api.client.render.profiler.RenderProfilerCounter;
 import foundry.veil.api.client.render.profiler.VeilRenderProfiler;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.PrioritizeChunkUpdates;
-import net.minecraft.client.renderer.RenderType;
+import net.minecraft.client.renderer.rendertype.RenderType;
 import net.minecraft.client.renderer.ShaderInstance;
 import net.minecraft.client.renderer.block.ModelBlockRenderer;
 import net.minecraft.client.renderer.chunk.RenderRegionCache;

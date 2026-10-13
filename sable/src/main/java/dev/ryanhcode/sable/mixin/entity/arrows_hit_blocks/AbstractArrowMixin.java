@@ -12,7 +12,7 @@ import dev.ryanhcode.sable.sublevel.SubLevel;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
-import net.minecraft.world.entity.projectile.AbstractArrow;
+import net.minecraft.world.entity.projectile.arrow.AbstractArrow;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.BlockHitResult;
@@ -37,7 +37,7 @@ public abstract class AbstractArrowMixin extends Entity {
         super(entityType, level);
     }
 
-    @Redirect(method = "onHitBlock", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/entity/projectile/AbstractArrow;setDeltaMovement(Lnet/minecraft/world/phys/Vec3;)V"))
+    @Redirect(method = "onHitBlock", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/entity/projectile/arrow/AbstractArrow;setDeltaMovement(Lnet/minecraft/world/phys/Vec3;)V"))
     private void sable$setDeltaMovement(final AbstractArrow arrow,
                                         final Vec3 difference,
                                         @Local(argsOnly = true) final BlockHitResult blockHitResult,
@@ -63,7 +63,7 @@ public abstract class AbstractArrowMixin extends Entity {
         subLevelRef.set(subLevel);
     }
 
-    @Redirect(method = "onHitBlock", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/entity/projectile/AbstractArrow;setPosRaw(DDD)V"))
+    @Redirect(method = "onHitBlock", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/entity/projectile/arrow/AbstractArrow;setPosRaw(DDD)V"))
     private void sable$setPosRaw(final AbstractArrow instance,
                                  final double x,
                                  final double y,

@@ -6,7 +6,7 @@ import dev.ryanhcode.sable.platform.SableSubLevelRenderPlatform;
 import dev.ryanhcode.sable.sublevel.render.vanilla.SingleBlockSubLevelWrapper;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.ItemBlockRenderTypes;
-import net.minecraft.client.renderer.RenderType;
+import net.minecraft.client.renderer.rendertype.RenderType;
 import net.minecraft.client.resources.model.BakedModel;
 import net.minecraft.core.BlockPos;
 import net.minecraft.util.RandomSource;

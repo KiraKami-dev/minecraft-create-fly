@@ -27,7 +27,7 @@ import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.*;
 import net.minecraft.resources.ResourceKey;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.FullChunkStatus;
 import net.minecraft.server.level.ServerChunkCache;
 import net.minecraft.server.level.ServerLevel;
@@ -434,7 +434,7 @@ public class ServerLevelPlot extends LevelPlot {
         final ServerLevel level = subLevel.getLevel();
 
         if (tag.contains("biome")) {
-            final ResourceLocation location = ResourceLocation.tryParse(tag.getString("biome"));
+            final Identifier location = Identifier.tryParse(tag.getString("biome"));
 
             if (location != null) {
                 this.biome = ResourceKey.create(Registries.BIOME, location);
@@ -497,10 +497,10 @@ public class ServerLevelPlot extends LevelPlot {
 
             if (dataVersion >= 0) {
                 final LevelChunkTicks<Block> blockTicks = LevelChunkTicks.load(
-                        chunkTag.getList("block_ticks", Tag.TAG_COMPOUND), id -> BuiltInRegistries.BLOCK.getOptional(ResourceLocation.tryParse(id)), global
+                        chunkTag.getList("block_ticks", Tag.TAG_COMPOUND), id -> BuiltInRegistries.BLOCK.getOptional(Identifier.tryParse(id)), global
                 );
                 final LevelChunkTicks<Fluid> fluidTicks = LevelChunkTicks.load(
-                        chunkTag.getList("fluid_ticks", Tag.TAG_COMPOUND), id -> BuiltInRegistries.FLUID.getOptional(ResourceLocation.tryParse(id)), global
+                        chunkTag.getList("fluid_ticks", Tag.TAG_COMPOUND), id -> BuiltInRegistries.FLUID.getOptional(Identifier.tryParse(id)), global
                 );
 
                 //noinspection unchecked

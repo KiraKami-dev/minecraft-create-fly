@@ -4,7 +4,7 @@ import dev.ryanhcode.sable.sublevel.ClientSubLevel;
 import dev.ryanhcode.sable.sublevel.render.SubLevelRenderData;
 import dev.ryanhcode.sable.sublevel.render.vanilla.VanillaChunkedSubLevelRenderData;
 import dev.ryanhcode.sable.sublevel.render.vanilla.VanillaSingleSubLevelRenderData;
-import net.minecraft.Util;
+import net.minecraft.util.Util;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;

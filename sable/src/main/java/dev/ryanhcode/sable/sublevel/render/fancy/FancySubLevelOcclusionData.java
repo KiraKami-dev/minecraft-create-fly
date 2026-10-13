@@ -3,7 +3,7 @@ package dev.ryanhcode.sable.sublevel.render.fancy;
 import foundry.veil.api.client.render.CullFrustum;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import it.unimi.dsi.fastutil.objects.Reference2ObjectArrayMap;
-import net.minecraft.client.renderer.RenderType;
+import net.minecraft.client.renderer.rendertype.RenderType;
 import net.minecraft.core.SectionPos;
 import org.joml.Matrix4d;
 import org.joml.Vector3d;

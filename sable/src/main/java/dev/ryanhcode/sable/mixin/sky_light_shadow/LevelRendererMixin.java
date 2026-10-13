@@ -13,7 +13,7 @@ public class LevelRendererMixin {
         SableSkyLightShadows.bindShadowMapTexture(shader);
     }
 
-    @WrapOperation(method = "renderSectionLayer", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/chunk/SectionRenderDispatcher$CompiledSection;isEmpty(Lnet/minecraft/client/renderer/RenderType;)Z"))
+    @WrapOperation(method = "renderSectionLayer", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/chunk/SectionRenderDispatcher$CompiledSection;isEmpty(Lnet/minecraft/client/renderer/rendertype/RenderType;)Z"))
     private boolean sable$wrapRenderSectionLayer(final SectionRenderDispatcher.CompiledSection instance, final RenderType renderType, final Operation<Boolean> original) {
         return SableSkyLightShadows.renderingShadowMap() || original.call(instance, renderType);
     }

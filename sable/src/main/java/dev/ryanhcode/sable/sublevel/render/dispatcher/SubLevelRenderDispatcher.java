@@ -6,7 +6,7 @@ import dev.ryanhcode.sable.sublevel.render.SubLevelRenderData;
 import dev.ryanhcode.sable.sublevel.render.SubLevelRenderer;
 import foundry.veil.api.client.render.CullFrustum;
 import net.minecraft.client.Camera;
-import net.minecraft.client.renderer.RenderType;
+import net.minecraft.client.renderer.rendertype.RenderType;
 import net.minecraft.client.renderer.ShaderInstance;
 import net.minecraft.client.renderer.blockentity.BlockEntityRenderDispatcher;
 import net.minecraft.server.packs.resources.ResourceManagerReloadListener;

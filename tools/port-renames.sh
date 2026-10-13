@@ -19,7 +19,7 @@ for m in "${MOVES[@]}"; do
   from=${m%%|*}; to=${m##*|}
   fromS=${from//./\/}; toS=${to//./\/}
   # \b after the class name so e.g. "Util" doesn't match "UtilFoo"
-  perl -pi -e "s/\Q$from\E\b/$to/g; s/\Q$fromS\E\b/$toS/g" $files
+  perl -pi -e "s{\\Q$from\\E\\b}{$to}g; s{\\Q$fromS\\E\\b}{$toS}g" $files
 done
 # simple-name renames
 perl -pi -e 's/\bResourceLocation\b/Identifier/g; s/\bresourceLocation\b/identifier/g' $files
