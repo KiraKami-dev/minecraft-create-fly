@@ -84,7 +84,7 @@ public class SubLevelHoldingChunkMap implements AutoCloseable {
         this.level = level;
         this.container = container;
 
-        final File worldFolder = level.getChunkSource().getDataStorage().dataFolder.getParentFile();
+        final File worldFolder = level.getChunkSource().getDataStorage().dataFolder.getParent().toFile();
         final File subLevelsFolder = new File(worldFolder, "sublevels");
 
         subLevelsFolder.mkdirs();
@@ -199,7 +199,7 @@ public class SubLevelHoldingChunkMap implements AutoCloseable {
      */
     public void saveAll() {
         if (SableConfig.SUB_LEVEL_SAVING_LOG_MESSAGE.get()) {
-            Sable.LOGGER.info("Saving sub-levels for level '{}'/{}", this.level, this.level.dimension().location());
+            Sable.LOGGER.info("Saving sub-levels for level '{}'/{}", this.level, this.level.dimension().identifier());
         }
 
         if (this.verboseLogging) {

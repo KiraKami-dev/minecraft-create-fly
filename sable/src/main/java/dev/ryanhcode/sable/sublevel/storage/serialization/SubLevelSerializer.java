@@ -17,7 +17,8 @@ import dev.ryanhcode.sable.util.SableNBTUtils;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
-import net.minecraft.nbt.NbtUtils;
+import net.minecraft.core.UUIDUtil;
+import net.minecraft.nbt.NbtOps;
 import net.minecraft.nbt.Tag;
 import net.minecraft.server.level.ServerLevel;
 import org.jetbrains.annotations.NotNull;
@@ -44,7 +45,7 @@ public class SubLevelSerializer {
         final ListTag dependencyTags = new ListTag();
 
         for (final UUID dependency : dependencies) {
-            dependencyTags.add(NbtUtils.createUUID(dependency));
+            dependencyTags.add(UUIDUtil.CODEC.encodeStart(NbtOps.INSTANCE, dependency).getOrThrow());
         }
 
         final Pose3d serializedPose = new Pose3d(subLevel.logicalPose());
@@ -52,7 +53,7 @@ public class SubLevelSerializer {
         serializedPose.position().set(subLevel.logicalPose().transformPosition(new Vector3d(selfCenterOfMass)));
         serializedPose.rotationPoint().set(selfCenterOfMass);
 
-        tag.putUUID("uuid", subLevel.getUniqueId());
+        tag.store("uuid", UUIDUtil.CODEC, subLevel.getUniqueId());
         tag.put("plot", plot.save());
         tag.put("pose", SableNBTUtils.writePose3d(serializedPose));
         tag.put("world_bounds", SableNBTUtils.writeBoundingBox(subLevel.boundingBox()));
@@ -95,7 +96,7 @@ public class SubLevelSerializer {
      */
     @Nullable
     public static SubLevelData fromData(final CompoundTag tag) {
-        final UUID uuid = tag.getUUID("uuid");
+        final UUID uuid = tag.read("uuid", UUIDUtil.CODEC).orElseThrow();
 
         List<UUID> dependencies = List.of();
         if (tag.contains("loading_dependencies")) {
@@ -104,7 +105,7 @@ public class SubLevelSerializer {
             dependencies = new ObjectArrayList<>();
 
             for (final Tag dependencyUUIDTag : dependencyUUIDS) {
-                final UUID dependencyUUID = NbtUtils.loadUUID(dependencyUUIDTag);
+                final UUID dependencyUUID = UUIDUtil.CODEC.parse(NbtOps.INSTANCE, dependencyUUIDTag).getOrThrow();
 
                 dependencies.add(dependencyUUID);
             }

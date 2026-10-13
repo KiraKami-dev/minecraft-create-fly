@@ -18,11 +18,14 @@ import it.unimi.dsi.fastutil.Pair;
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import net.minecraft.core.HolderLookup;
+import net.minecraft.core.UUIDUtil;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtOps;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.util.datafix.DataFixTypes;
 import net.minecraft.world.level.saveddata.SavedData;
+import net.minecraft.world.level.saveddata.SavedDataType;
 import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -42,13 +45,15 @@ public class SubLevelTrackingPointSavedData extends SavedData implements SubLeve
     }
 
     public static SubLevelTrackingPointSavedData getOrLoad(final ServerLevel level) {
-        return level.getDataStorage().computeIfAbsent(
-                new Factory<>(
-                        () -> new SubLevelTrackingPointSavedData(level),
-                        (tag, provider) -> SubLevelTrackingPointSavedData.load(level, tag),
-                        null
+        return level.getDataStorage().computeIfAbsent(new SavedDataType<>(
+                SubLevelTrackingPointSavedData.FILE_ID,
+                () -> new SubLevelTrackingPointSavedData(level),
+                CompoundTag.CODEC.xmap(
+                        tag -> SubLevelTrackingPointSavedData.load(level, tag),
+                        data -> data.save(new CompoundTag(), level.registryAccess())
                 ),
-                SubLevelTrackingPointSavedData.FILE_ID);
+                DataFixTypes.LEVEL
+        ));
     }
 
     private static SubLevelTrackingPointSavedData load(final ServerLevel level, final CompoundTag tag) {
@@ -62,7 +67,7 @@ public class SubLevelTrackingPointSavedData extends SavedData implements SubLeve
 
             final boolean inSubLevel = pointTag.getBooleanOr("InSubLevel", false);
             final GlobalSavedSubLevelPointer pointer = pointTag.contains("SubLevelPointer") ?
-                    GlobalSavedSubLevelPointer.CODEC.parse(NbtOps.INSTANCE, pointTag.getCompound("SubLevelPointer")).getOrThrow() :
+                    GlobalSavedSubLevelPointer.CODEC.parse(NbtOps.INSTANCE, pointTag.getCompoundOrEmpty("SubLevelPointer")).getOrThrow() :
                     null;
             final Vector3d point = SableNBTUtils.readVector3d(pointTag.getCompoundOrEmpty("Point"));
 
@@ -75,7 +80,7 @@ public class SubLevelTrackingPointSavedData extends SavedData implements SubLeve
             UUID subLevelID = null;
 
             if (pointTag.contains("SubLevelID")) {
-                subLevelID = pointTag.getUUID("SubLevelID");
+                subLevelID = pointTag.read("SubLevelID", UUIDUtil.CODEC).orElse(null);
             }
 
             final TrackingPoint trackingPoint = new TrackingPoint(inSubLevel, subLevelID, pointer, point, globalPlaceholder);
@@ -85,7 +90,6 @@ public class SubLevelTrackingPointSavedData extends SavedData implements SubLeve
         return data;
     }
 
-    @Override
     public @NotNull CompoundTag save(final @NotNull CompoundTag compoundTag, final HolderLookup.@NotNull Provider provider) {
         final SubLevelContainer container = SubLevelContainer.getContainer(this.level);
         assert container != null : "Sub-level container is null";
@@ -107,7 +111,7 @@ public class SubLevelTrackingPointSavedData extends SavedData implements SubLeve
             }
 
             if (trackingPoint.subLevelID() != null) {
-                pointTag.putUUID("SubLevelID", trackingPoint.subLevelID());
+                pointTag.store("SubLevelID", UUIDUtil.CODEC, trackingPoint.subLevelID());
             }
 
             loginPointsTag.put(entry.getKey().toString(), pointTag);

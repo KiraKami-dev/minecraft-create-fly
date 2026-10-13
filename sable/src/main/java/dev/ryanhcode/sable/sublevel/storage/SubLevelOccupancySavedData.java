@@ -6,6 +6,7 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.datafix.DataFixTypes;
 import net.minecraft.world.level.saveddata.SavedData;
+import net.minecraft.world.level.saveddata.SavedDataType;
 
 import java.util.BitSet;
 
@@ -21,13 +22,15 @@ public class SubLevelOccupancySavedData extends SavedData {
     }
 
     public static SubLevelOccupancySavedData getOrLoad(final ServerLevel level) {
-        return level.getChunkSource().getDataStorage().computeIfAbsent(
-                new Factory<>(
-                        () -> new SubLevelOccupancySavedData(level),
-                        (tag, provider) -> SubLevelOccupancySavedData.load(level, tag),
-                        DataFixTypes.LEVEL
+        return level.getChunkSource().getDataStorage().computeIfAbsent(new SavedDataType<>(
+                SubLevelOccupancySavedData.FILE_ID,
+                () -> new SubLevelOccupancySavedData(level),
+                CompoundTag.CODEC.xmap(
+                        tag -> SubLevelOccupancySavedData.load(level, tag),
+                        data -> data.save(new CompoundTag(), level.registryAccess())
                 ),
-                SubLevelOccupancySavedData.FILE_ID);
+                DataFixTypes.LEVEL
+        ));
     }
 
 
@@ -50,7 +53,6 @@ public class SubLevelOccupancySavedData extends SavedData {
         return data;
     }
 
-    @Override
     public CompoundTag save(final CompoundTag compoundTag, final HolderLookup.Provider provider) {
         final SubLevelContainer container = SubLevelContainer.getContainer(this.level);
         assert container != null : "Sub-level container is null";
