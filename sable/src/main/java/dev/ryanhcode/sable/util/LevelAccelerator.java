@@ -10,6 +10,7 @@ import net.minecraft.server.level.ChunkResult;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
@@ -35,9 +36,10 @@ public class LevelAccelerator implements BlockGetter {
 
     public LevelAccelerator(final Level level) {
         this.level = level;
-        this.minBuildHeight = level.getMinBuildHeight();
-        this.maxBuildHeight = level.getMaxBuildHeight();
-        this.minSection = level.getMinSection();
+        this.minBuildHeight = level.getMinY();
+        // exclusive upper bound (1.21.11 getMaxY() is inclusive)
+        this.maxBuildHeight = level.getMinY() + level.getHeight();
+        this.minSection = level.getMinSectionY();
     }
 
     public void clearCache() {
@@ -48,7 +50,7 @@ public class LevelAccelerator implements BlockGetter {
 
     public void setBlockFast(final BlockPos blockPos, final BlockState blockState) {
         final LevelChunk chunk = this.getChunk(blockPos);
-        final BlockState blockState2 = chunk.setBlockState(blockPos, blockState, false);
+        final BlockState blockState2 = chunk.setBlockState(blockPos, blockState, Block.UPDATE_ALL);
         if (blockState2 == null) {
             return;
         }
@@ -116,7 +118,7 @@ public class LevelAccelerator implements BlockGetter {
     }
 
     private @NotNull LevelChunk grabChunkFast(final int chunkX, final int chunkZ, final long pos) {
-        if (this.level.isClientSide) {
+        if (this.level.isClientSide()) {
             return this.level.getChunk(chunkX, chunkZ);
         }
 
@@ -142,7 +144,7 @@ public class LevelAccelerator implements BlockGetter {
     }
 
     @Override
-    public int getMinBuildHeight() {
+    public int getMinY() {
         return this.minBuildHeight;
     }
 }

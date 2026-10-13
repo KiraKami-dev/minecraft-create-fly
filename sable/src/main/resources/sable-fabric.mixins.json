@@ -7,7 +7,6 @@
   "client": [
     "block_outline_render.LevelRendererMixin",
     "camera_rotation.CameraMixin",
-    "compatibility.sodiumextras.EmbyToolsMixin",
     "dynamic_directional_shading.SectionCompilerMixin",
     "fix_bundle_packet.ClientPacketListenerMixin",
     "fix_bundle_packet.ClientPlayNetworkAddonMixin",

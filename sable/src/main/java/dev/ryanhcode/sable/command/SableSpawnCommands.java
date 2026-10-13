@@ -159,7 +159,7 @@ public class SableSpawnCommands {
                 position.set(pos.x, pos.y, pos.z);
 
                 if (index != 0) {
-                    position.add(JOMLConversion.atLowerCornerOf(Direction.get(index == 1 ? Direction.AxisDirection.POSITIVE : Direction.AxisDirection.NEGATIVE, axis).getNormal()));
+                    position.add(JOMLConversion.atLowerCornerOf(Direction.get(index == 1 ? Direction.AxisDirection.POSITIVE : Direction.AxisDirection.NEGATIVE, axis).getUnitVec3i()));
                 }
                 position.add(0.0, yOffset, 0.0);
                 final Vector3d positionBackup = new Vector3d(position);
@@ -360,8 +360,8 @@ public class SableSpawnCommands {
         final RotaryConstraintConfiguration config = new RotaryConstraintConfiguration(
                 JOMLConversion.atBottomCenterOf(plotA.getCenterBlock().above().above()),
                 JOMLConversion.atBottomCenterOf(plotB.getCenterBlock()),
-                JOMLConversion.atLowerCornerOf(Direction.UP.getNormal()),
-                JOMLConversion.atLowerCornerOf(Direction.UP.getNormal())
+                JOMLConversion.atLowerCornerOf(Direction.UP.getUnitVec3i()),
+                JOMLConversion.atLowerCornerOf(Direction.UP.getUnitVec3i())
         );
 //        final FreeConstraintConfiguration config = new FreeConstraintConfiguration();
 

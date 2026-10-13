@@ -28,6 +28,7 @@ import net.minecraft.core.SectionPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.FullChunkStatus;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.util.ProblemReporter;
 import net.minecraft.world.Clearable;
 import net.minecraft.world.RandomizableContainer;
 import net.minecraft.world.entity.Entity;
@@ -43,6 +44,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BellAttachType;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.chunk.LevelChunk;
+import net.minecraft.world.level.storage.TagValueInput;
 import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
@@ -245,7 +247,7 @@ public class SubLevelAssemblyHelper {
                             continue;
                         }
 
-                        final Direction direction = absTotal == 1 ? Direction.fromDelta(x, y, z) : null;
+                        final Direction direction = absTotal == 1 ? Direction.getNearest(x, y, z, null) : null;
                         final BlockState candidateState = accelerator.getBlockState(candidate);
 
                         if (candidateState.isAir()) {
@@ -401,25 +403,29 @@ public class SubLevelAssemblyHelper {
                     if (blockEntity instanceof final RandomizableContainer container) {
                         container.setLootTable(null);
                     }
-                    Clearable.tryClear(blockEntity);
+                    if (blockEntity instanceof final Clearable clearable) {
+                        clearable.clearContent();
+                    }
                 }
 
                 final LevelChunk chunk = resultingAccelerator.getChunk(SectionPos.blockToSectionCoord(newPos.getX()), SectionPos.blockToSectionCoord(newPos.getZ()));
 
-                chunk.setBlockState(newPos, subLevelState, true);
+                chunk.setBlockState(newPos, subLevelState, Block.UPDATE_MOVE_BY_PISTON);
                 states.add(subLevelState);
 
                 final BlockEntity newBlockEntity = resultingLevel.getBlockEntity(newPos);
 
                 if (newBlockEntity != null && tag != null) {
-                    newBlockEntity.loadWithComponents(tag, level.registryAccess());
+                    try (final ProblemReporter.ScopedCollector reporter = new ProblemReporter.ScopedCollector(newBlockEntity.problemPath(), Sable.LOGGER)) {
+                        newBlockEntity.loadWithComponents(TagValueInput.create(reporter, level.registryAccess(), tag));
+                    }
                 }
 
                 if (state.getBlock() instanceof final BlockSubLevelAssemblyListener listener) {
                     listener.afterMove(level, resultingLevel, state, block, newPos);
                 }
 
-                level.onBlockStateChange(newPos, airState, state);
+                level.updatePOIOnBlockStateChange(newPos, airState, state);
             } catch (final Exception e) {
                 Sable.LOGGER.error("Failed to move block {} at {} to {}", state, block, newPos, e);
             }
@@ -448,8 +454,8 @@ public class SubLevelAssemblyHelper {
                 final LevelChunk chunk = accelerator.getChunk(SectionPos.blockToSectionCoord(block.getX()),
                         SectionPos.blockToSectionCoord(block.getZ()));
 
-                level.onBlockStateChange(block, chunk.getBlockState(block), airState);
-                chunk.setBlockState(block, airState, true);
+                level.updatePOIOnBlockStateChange(block, chunk.getBlockState(block), airState);
+                chunk.setBlockState(block, airState, Block.UPDATE_MOVE_BY_PISTON);
             } catch (final Exception e) {
                 Sable.LOGGER.error("Failed to destroy old block during assembly {}", block, e);
             }
@@ -475,7 +481,7 @@ public class SubLevelAssemblyHelper {
             }
 
             if ((pFlags & 1) != 0) {
-                level.blockUpdated(pPos, oldState.getBlock());
+                level.updateNeighborsAt(pPos, oldState.getBlock());
                 if (newState.hasAnalogOutputSignal()) {
                     level.updateNeighbourForOutputSignal(pPos, block);
                 }
@@ -488,7 +494,7 @@ public class SubLevelAssemblyHelper {
                 newState.updateIndirectNeighbourShapes(level, pPos, i, pRecursionLeft - 1);
             }
 
-            level.onBlockStateChange(pPos, oldState, worldState);
+            level.updatePOIOnBlockStateChange(pPos, oldState, worldState);
         }
     }
 
