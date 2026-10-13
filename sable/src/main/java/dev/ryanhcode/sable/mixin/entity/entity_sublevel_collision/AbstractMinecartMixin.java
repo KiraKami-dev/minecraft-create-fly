@@ -5,7 +5,7 @@ import dev.ryanhcode.sable.index.SableTags;
 import dev.ryanhcode.sable.sublevel.SubLevel;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
-import net.minecraft.world.entity.vehicle.AbstractMinecart;
+import net.minecraft.world.entity.vehicle.minecart.AbstractMinecart;
 import net.minecraft.world.level.Level;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -29,8 +29,9 @@ public abstract class AbstractMinecartMixin extends Entity {
         final SubLevel containingSubLevel = Sable.HELPER.getContaining(this);
 
         // Destroy us if we're in #sable:destroy_when_leaving_plot and we've left the plot
-        if (containingSubLevel != null && !this.getBoundingBox().intersects(containingSubLevel.getPlot().getBoundingBox().toAABB().inflate(0.5))) {
-            this.kill();
+        if (containingSubLevel != null && !this.getBoundingBox().intersects(containingSubLevel.getPlot().getBoundingBox().toAABB().inflate(0.5))
+                && this.level() instanceof final net.minecraft.server.level.ServerLevel serverLevel) {
+            this.kill(serverLevel);
         }
     }
 }

@@ -49,15 +49,15 @@ public abstract class PlayerMixin extends LivingEntity {
         upDeltaMovement.set(dir.mul(dir.dot(deltaMovement.x, deltaMovement.y, deltaMovement.z)));
     }
 
-    @Redirect(method = "travel", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/entity/player/Player;setDeltaMovement(DDD)V"))
+    // PORT(1.21.11): the flying branch now calls setDeltaMovement(getDeltaMovement().with(Y, d * 0.6)) (ordinal 1;
+    // ordinal 0 is the swimming branch)
+    @Redirect(method = "travel", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/entity/player/Player;setDeltaMovement(Lnet/minecraft/world/phys/Vec3;)V", ordinal = 1))
     private void sable$modifyTravelSetDeltaMovement(final Player instance,
-                                                    final double x,
-                                                    final double y,
-                                                    final double z,
+                                                    final Vec3 newDeltaMovement,
                                                     @Share("upDir") final LocalRef<Vector3d> upDir,
                                                     @Share("upDeltaMovement") final LocalRef<Vector3d> upDeltaMovement) {
         if (upDeltaMovement.get() == null) {
-            instance.setDeltaMovement(x, y, z);
+            instance.setDeltaMovement(newDeltaMovement);
             return;
         }
 

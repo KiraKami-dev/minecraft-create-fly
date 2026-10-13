@@ -33,10 +33,7 @@ public abstract class EntityMixin implements EntityStickExtension {
     public abstract void setPos(Vec3 vec3);
 
     @Shadow
-    public abstract void moveTo(Vec3 vec3);
-
-    @Shadow
-    public abstract void moveTo(double d, double e, double f);
+    public abstract void snapTo(double d, double e, double f);
 
     @Unique
     private Vec3 sable$plotPosition = null;
@@ -55,7 +52,7 @@ public abstract class EntityMixin implements EntityStickExtension {
             } else {
                 this.sable$plotPosition = null;
             }
-        } else if (this.level.isClientSide && !(self instanceof final Player player && player.isLocalPlayer()) && !(self instanceof ItemEntity)) {
+        } else if (this.level.isClientSide() && !(self instanceof final Player player && player.isLocalPlayer()) && !(self instanceof ItemEntity)) {
             // if we're on the client and the plot position doesn't exist, this must mean the entity was recently
             // networked out of the plot, so let's get rid of the tracking sub-level
             ((EntityMovementExtension) this).sable$setTrackingSubLevel(null);
@@ -88,7 +85,7 @@ public abstract class EntityMixin implements EntityStickExtension {
         final SubLevel packetSubLevel = Sable.HELPER.getContaining(this.level, packetX, packetZ);
         if (packetSubLevel != null) {
             final Vector3d globalPacketPos = packetSubLevel.logicalPose().transformPosition(new Vector3d(packetX, packetY, packetZ));
-            this.moveTo(globalPacketPos.x, globalPacketPos.y, globalPacketPos.z);
+            this.snapTo(globalPacketPos.x, globalPacketPos.y, globalPacketPos.z);
         }
     }
 }
