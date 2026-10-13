@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 1,
+  "id": "mcf_e2e",
+  "version": "0.0.0",
+  "name": "Port E2E harness",
+  "environment": "*",
+  "entrypoints": {
+    "main": ["dev.mcf.e2e.E2E"],
+    "client": ["dev.mcf.e2e.E2EClient"]
+  },
+  "depends": { "fabric-api": "*" }
+}

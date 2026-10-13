@@ -6,3 +6,5 @@ out/
 .idea/
 /reference
 .DS_Store
+
+e2e/run/

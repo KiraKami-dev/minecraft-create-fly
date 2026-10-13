@@ -1,0 +1,27 @@
+// Dev-only end-to-end harness: boots a server/client with the ported mods, applies every mixin
+// (audit), spawns physics sub-levels, and takes screenshots. Never shipped.
+dependencies {
+    runtimeOnly project(path: ':sable', configuration: 'namedElements')
+    modRuntimeOnly "fuzs.forgeconfigapiport:forgeconfigapiport-fabric:${forgeconfigapiport_version}"
+}
+
+// Commands run once a player is present (client) or after start-up (server). ';'-separated.
+def e2eCommands = [
+        'time set noon', 'gamerule advance_time false', 'gamerule spawn_mobs false',
+        'tp @a 0 -60 0 0 15',
+        'execute positioned 0 -59 12 run sable spawn jenga 12',
+        'execute positioned 5 -40 14 run sable spawn sphere 3 minecraft:stone',
+        'execute positioned -5 -45 14 run sable spawn platform 4 minecraft:oak_planks',
+].join(';')
+
+loom {
+    runs {
+        configureEach {
+            vmArg '-De2e.enabled=true'
+            vmArg "-De2e.commands=${e2eCommands}"
+            vmArg '-Dmixin.debug.verify=true'
+        }
+        client { runDir 'run/client'; programArgs '--quickPlaySingleplayer', 'e2e' }
+        server { runDir 'run/server' }
+    }
+}
