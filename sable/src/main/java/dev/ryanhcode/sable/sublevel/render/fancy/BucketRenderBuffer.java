@@ -3,7 +3,7 @@ package dev.ryanhcode.sable.sublevel.render.fancy;
 import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.systems.RenderSystem;
 import dev.ryanhcode.sable.sublevel.render.staging.StagingBuffer;
-import foundry.veil.api.client.render.vertex.VertexArray;
+import dev.ryanhcode.sable.veillite.api.client.render.vertex.VertexArray;
 import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.system.NativeResource;
 

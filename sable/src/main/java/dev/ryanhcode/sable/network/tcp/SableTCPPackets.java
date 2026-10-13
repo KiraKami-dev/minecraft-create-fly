@@ -4,7 +4,7 @@ import dev.ryanhcode.sable.Sable;
 import dev.ryanhcode.sable.network.packets.ClientboundSableSnapshotDualPacket;
 import dev.ryanhcode.sable.network.packets.ClientboundSableSnapshotInfoDualPacket;
 import dev.ryanhcode.sable.network.packets.tcp.*;
-import foundry.veil.api.network.VeilPacketManager;
+import dev.ryanhcode.sable.veillite.api.network.VeilPacketManager;
 
 public class SableTCPPackets {
 

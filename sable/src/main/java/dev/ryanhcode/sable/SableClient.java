@@ -9,9 +9,9 @@ import dev.ryanhcode.sable.render.water_occlusion.SableWaterOcclusionPreProcesso
 import dev.ryanhcode.sable.render.water_occlusion.WaterOcclusionRenderer;
 import dev.ryanhcode.sable.sublevel.render.fancy.FancySubLevelShaderProcessor;
 import dev.ryanhcode.sable.sublevel.storage.debug.SubLevelContainerInspector;
-import foundry.veil.api.client.editor.EditorManager;
-import foundry.veil.api.client.render.VeilRenderSystem;
-import foundry.veil.platform.VeilEventPlatform;
+import dev.ryanhcode.sable.veillite.api.client.editor.EditorManager;
+import dev.ryanhcode.sable.veillite.api.client.render.VeilRenderSystem;
+import dev.ryanhcode.sable.veillite.platform.VeilEventPlatform;
 import net.minecraft.client.Minecraft;
 
 public class SableClient {

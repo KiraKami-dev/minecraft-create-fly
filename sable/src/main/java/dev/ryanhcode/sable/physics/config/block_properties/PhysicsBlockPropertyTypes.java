@@ -2,8 +2,8 @@ package dev.ryanhcode.sable.physics.config.block_properties;
 
 import com.mojang.serialization.Codec;
 import dev.ryanhcode.sable.Sable;
-import foundry.veil.platform.registry.RegistrationProvider;
-import foundry.veil.platform.registry.RegistryObject;
+import dev.ryanhcode.sable.veillite.platform.registry.RegistrationProvider;
+import dev.ryanhcode.sable.veillite.platform.registry.RegistryObject;
 import net.minecraft.core.Registry;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.Identifier;

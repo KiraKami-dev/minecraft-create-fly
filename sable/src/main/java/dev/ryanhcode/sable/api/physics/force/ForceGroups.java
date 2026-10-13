@@ -1,8 +1,8 @@
 package dev.ryanhcode.sable.api.physics.force;
 
 import dev.ryanhcode.sable.Sable;
-import foundry.veil.platform.registry.RegistrationProvider;
-import foundry.veil.platform.registry.RegistryObject;
+import dev.ryanhcode.sable.veillite.platform.registry.RegistrationProvider;
+import dev.ryanhcode.sable.veillite.platform.registry.RegistryObject;
 import net.minecraft.core.Registry;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceKey;

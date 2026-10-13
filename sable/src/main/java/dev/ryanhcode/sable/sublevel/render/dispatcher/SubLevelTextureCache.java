@@ -1,9 +1,9 @@
 package dev.ryanhcode.sable.sublevel.render.dispatcher;
 
 import dev.ryanhcode.sable.sublevel.render.fancy.FancySubLevelShaderProcessor;
-import foundry.veil.api.client.render.VeilRenderSystem;
-import foundry.veil.api.client.render.shader.block.DynamicShaderBlock;
-import foundry.veil.api.client.render.shader.block.ShaderBlock;
+import dev.ryanhcode.sable.veillite.api.client.render.VeilRenderSystem;
+import dev.ryanhcode.sable.veillite.api.client.render.shader.block.DynamicShaderBlock;
+import dev.ryanhcode.sable.veillite.api.client.render.shader.block.ShaderBlock;
 import it.unimi.dsi.fastutil.objects.Object2IntArrayMap;
 import it.unimi.dsi.fastutil.objects.Object2IntMap;
 import it.unimi.dsi.fastutil.objects.Object2IntMaps;

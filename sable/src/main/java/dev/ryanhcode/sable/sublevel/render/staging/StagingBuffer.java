@@ -1,6 +1,6 @@
 package dev.ryanhcode.sable.sublevel.render.staging;
 
-import foundry.veil.api.client.render.VeilRenderSystem;
+import dev.ryanhcode.sable.veillite.api.client.render.VeilRenderSystem;
 import org.lwjgl.opengl.GL;
 import org.lwjgl.opengl.GLCapabilities;
 import org.lwjgl.system.NativeResource;

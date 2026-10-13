@@ -2,7 +2,7 @@ package dev.ryanhcode.sable.mixin.sublevel_render;
 
 import dev.ryanhcode.sable.Sable;
 import dev.ryanhcode.sable.mixinterface.sublevel_render.vanilla.RenderSectionExtension;
-import foundry.veil.api.client.render.VeilRenderSystem;
+import dev.ryanhcode.sable.veillite.api.client.render.VeilRenderSystem;
 import it.unimi.dsi.fastutil.objects.ObjectArraySet;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;

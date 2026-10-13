@@ -6,7 +6,7 @@ import dev.ryanhcode.sable.api.sublevel.SubLevelContainer;
 import dev.ryanhcode.sable.network.tcp.SableTCPPacket;
 import dev.ryanhcode.sable.network.udp.SableUDPPacket;
 import dev.ryanhcode.sable.network.udp.SableUDPPacketType;
-import foundry.veil.api.network.handler.PacketContext;
+import dev.ryanhcode.sable.veillite.api.network.handler.PacketContext;
 import io.netty.buffer.ByteBuf;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.RegistryFriendlyByteBuf;

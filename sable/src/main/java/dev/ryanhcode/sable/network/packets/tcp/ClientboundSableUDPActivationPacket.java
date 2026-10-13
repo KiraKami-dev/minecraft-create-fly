@@ -6,7 +6,7 @@ import dev.ryanhcode.sable.mixinterface.udp.ConnectionExtension;
 import dev.ryanhcode.sable.network.packets.udp.SableUDPAuthenticationPacket;
 import dev.ryanhcode.sable.network.tcp.SableTCPPacket;
 import dev.ryanhcode.sable.network.udp.AddressedSableUDPPacket;
-import foundry.veil.api.network.handler.PacketContext;
+import dev.ryanhcode.sable.veillite.api.network.handler.PacketContext;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;

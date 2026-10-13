@@ -6,7 +6,7 @@ import dev.ryanhcode.sable.sublevel.render.dispatcher.SubLevelTextureCache;
 import dev.ryanhcode.sable.sublevel.render.fancy.task.FancySubLevelTaskScheduler;
 import dev.ryanhcode.sable.sublevel.render.fancy.task.SubLevelTask;
 import dev.ryanhcode.sable.sublevel.render.staging.StagingBuffer;
-import foundry.veil.api.client.render.VeilRenderSystem;
+import dev.ryanhcode.sable.veillite.api.client.render.VeilRenderSystem;
 import it.unimi.dsi.fastutil.ints.IntList;
 import it.unimi.dsi.fastutil.objects.Reference2ObjectArrayMap;
 import net.minecraft.client.Minecraft;

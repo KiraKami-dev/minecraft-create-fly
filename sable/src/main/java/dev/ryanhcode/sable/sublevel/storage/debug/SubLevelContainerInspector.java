@@ -3,7 +3,7 @@ package dev.ryanhcode.sable.sublevel.storage.debug;
 import dev.ryanhcode.sable.api.sublevel.SubLevelContainer;
 import dev.ryanhcode.sable.mixinterface.plot.SubLevelContainerHolder;
 import dev.ryanhcode.sable.sublevel.SubLevel;
-import foundry.veil.api.client.editor.SingleWindowInspector;
+import dev.ryanhcode.sable.veillite.api.client.editor.SingleWindowInspector;
 import imgui.ImDrawList;
 import imgui.ImGui;
 import imgui.ImVec2;

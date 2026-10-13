@@ -1,7 +1,7 @@
 package dev.ryanhcode.sable.sublevel.render.fancy;
 
 import dev.ryanhcode.sable.Sable;
-import foundry.veil.api.client.render.shader.processor.ShaderPreProcessor;
+import dev.ryanhcode.sable.veillite.api.client.render.shader.processor.ShaderPreProcessor;
 import io.github.ocelot.glslprocessor.api.GlslParser;
 import io.github.ocelot.glslprocessor.api.GlslSyntaxException;
 import io.github.ocelot.glslprocessor.api.grammar.GlslTypeQualifier;

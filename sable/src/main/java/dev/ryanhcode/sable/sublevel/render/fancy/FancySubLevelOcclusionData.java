@@ -1,6 +1,6 @@
 package dev.ryanhcode.sable.sublevel.render.fancy;
 
-import foundry.veil.api.client.render.CullFrustum;
+import dev.ryanhcode.sable.veillite.api.client.render.CullFrustum;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import it.unimi.dsi.fastutil.objects.Reference2ObjectArrayMap;
 import net.minecraft.client.renderer.rendertype.RenderType;

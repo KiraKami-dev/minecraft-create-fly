@@ -3,7 +3,7 @@ package dev.ryanhcode.sable.network.packets.tcp;
 import dev.ryanhcode.sable.Sable;
 import dev.ryanhcode.sable.SableClient;
 import dev.ryanhcode.sable.network.tcp.SableTCPPacket;
-import foundry.veil.api.network.handler.PacketContext;
+import dev.ryanhcode.sable.veillite.api.network.handler.PacketContext;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;

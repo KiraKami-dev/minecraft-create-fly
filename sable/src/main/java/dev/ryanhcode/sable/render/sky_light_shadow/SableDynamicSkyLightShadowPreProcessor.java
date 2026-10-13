@@ -1,6 +1,6 @@
 package dev.ryanhcode.sable.render.sky_light_shadow;
 
-import foundry.veil.api.client.render.shader.processor.ShaderPreProcessor;
+import dev.ryanhcode.sable.veillite.api.client.render.shader.processor.ShaderPreProcessor;
 import io.github.ocelot.glslprocessor.api.GlslInjectionPoint;
 import io.github.ocelot.glslprocessor.api.GlslParser;
 import io.github.ocelot.glslprocessor.api.GlslSyntaxException;
