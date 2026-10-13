@@ -27,7 +27,7 @@
     "dynamic_directional_shading.ModelBlockRendererCacheMixin",
     "dynamic_directional_shading.ModelBlockRendererMixin",
     "entity.entities_stick_sublevels.ClientPacketListenerMixin",
-    "entity.entities_stick_sublevels.EntityRenderDispatcherMixin",
+    "entity.entities_stick_sublevels.EntityHitboxDebugRendererMixin",
     "entity.entities_stick_sublevels.effects.LocalPlayerMixin",
     "entity.entities_stick_sublevels.player.LocalPlayerMixin",
     "entity.entities_stick_sublevels.player.RemotePlayerMixin",
