@@ -8,7 +8,6 @@ package dev.ryanhcode.sable.veillite.impl.event;
 import dev.ryanhcode.sable.veillite.api.client.render.MatrixStack;
 import dev.ryanhcode.sable.veillite.api.client.render.VeilRenderer;
 import dev.ryanhcode.sable.veillite.api.event.FreeNativeResourcesEvent;
-import dev.ryanhcode.sable.veillite.api.event.VeilAddShaderPreProcessorsEvent;
 import dev.ryanhcode.sable.veillite.api.event.VeilRenderLevelStageEvent;
 import dev.ryanhcode.sable.veillite.api.event.VeilRendererAvailableEvent;
 import net.fabricmc.fabric.api.event.Event;
@@ -18,7 +17,6 @@ import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.renderer.LevelRenderer;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.culling.Frustum;
-import net.minecraft.server.packs.resources.ResourceProvider;
 import org.joml.Matrix4fc;
 
 /**
@@ -40,12 +38,6 @@ public final class VeilLiteEvents {
         }
     });
 
-    public static final Event<VeilAddShaderPreProcessorsEvent> ADD_SHADER_PRE_PROCESSORS = EventFactory.createArrayBacked(VeilAddShaderPreProcessorsEvent.class, listeners -> (provider, registry) -> {
-        for (final VeilAddShaderPreProcessorsEvent listener : listeners) {
-            listener.onRegisterShaderPreProcessors(provider, registry);
-        }
-    });
-
     public static final Event<FreeNativeResourcesEvent> FREE_NATIVE_RESOURCES = EventFactory.createArrayBacked(FreeNativeResourcesEvent.class, listeners -> () -> {
         for (final FreeNativeResourcesEvent listener : listeners) {
             listener.onFree();
@@ -61,10 +53,6 @@ public final class VeilLiteEvents {
 
     public static void fireRendererAvailable(final VeilRenderer renderer) {
         RENDERER_AVAILABLE.invoker().onVeilRendererAvailable(renderer);
-    }
-
-    public static void fireAddShaderPreProcessors(final ResourceProvider resourceProvider, final VeilAddShaderPreProcessorsEvent.Registry registry) {
-        ADD_SHADER_PRE_PROCESSORS.invoker().onRegisterShaderPreProcessors(resourceProvider, registry);
     }
 
     public static void fireFreeNativeResources() {

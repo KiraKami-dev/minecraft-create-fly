@@ -6,7 +6,6 @@
 package dev.ryanhcode.sable.veillite.platform;
 
 import dev.ryanhcode.sable.veillite.api.event.FreeNativeResourcesEvent;
-import dev.ryanhcode.sable.veillite.api.event.VeilAddShaderPreProcessorsEvent;
 import dev.ryanhcode.sable.veillite.api.event.VeilRenderLevelStageEvent;
 import dev.ryanhcode.sable.veillite.api.event.VeilRendererAvailableEvent;
 import dev.ryanhcode.sable.veillite.impl.event.VeilLiteEvents;
@@ -21,10 +20,6 @@ public interface VeilEventPlatform {
 
     default void onFreeNativeResources(final FreeNativeResourcesEvent event) {
         VeilLiteEvents.FREE_NATIVE_RESOURCES.register(event);
-    }
-
-    default void onVeilAddShaderProcessors(final VeilAddShaderPreProcessorsEvent event) {
-        VeilLiteEvents.ADD_SHADER_PRE_PROCESSORS.register(event);
     }
 
     default void onVeilRendererAvailable(final VeilRendererAvailableEvent event) {
