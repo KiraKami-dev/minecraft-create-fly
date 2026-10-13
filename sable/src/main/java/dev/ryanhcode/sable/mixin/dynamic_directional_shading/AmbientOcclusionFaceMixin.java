@@ -13,7 +13,7 @@ import org.spongepowered.asm.mixin.injection.At;
 /**
  * Adds a hook to disable the directional shading on sub-level AO block faces.
  */
-@Mixin(ModelBlockRenderer.AmbientOcclusionFace.class)
+@Mixin(targets = "net.minecraft.client.renderer.block.ModelBlockRenderer$AmbientOcclusionRenderStorage")
 public class AmbientOcclusionFaceMixin {
 
     @WrapOperation(method = "calculate", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/level/BlockAndTintGetter;getShade(Lnet/minecraft/core/Direction;Z)F"))

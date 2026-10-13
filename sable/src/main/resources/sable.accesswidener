@@ -41,7 +41,7 @@ extendable method net/minecraft/server/level/GenerationChunkHolder rescheduleChu
 accessible method net/minecraft/server/level/ThreadedLevelLightEngine updateChunkStatus (Lnet/minecraft/world/level/ChunkPos;)V
 
 accessible field net/minecraft/client/renderer/block/BlockRenderDispatcher modelRenderer Lnet/minecraft/client/renderer/block/ModelBlockRenderer;
-accessible class net/minecraft/client/renderer/block/ModelBlockRenderer$AmbientOcclusionFace
+accessible class net/minecraft/client/renderer/block/ModelBlockRenderer$AmbientOcclusionRenderStorage
 accessible field net/minecraft/client/renderer/RenderStateShard name Ljava/lang/String;
 
 # Assembly

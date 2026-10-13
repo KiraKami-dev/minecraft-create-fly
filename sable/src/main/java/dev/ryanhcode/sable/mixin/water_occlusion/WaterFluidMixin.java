@@ -20,11 +20,7 @@ public class WaterFluidMixin {
     public void sable$addUnderwaterParticle(final Level level, final ParticleOptions particleOptions, final double x, final double y, final double z, final double g, final double h, final double i, final Operation<Void> original) {
         final WaterOcclusionContainer<?> container = WaterOcclusionContainer.getContainer(level);
 
-        if (container == null)
-            return;
-
-        final Vec3 pos = new Vec3(x, y, z);
-        if (container.isOccluded(pos)) {
+        if (container != null && container.isOccluded(new Vec3(x, y, z))) {
             return;
         }
 
