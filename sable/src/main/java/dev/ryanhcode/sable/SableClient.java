@@ -2,12 +2,9 @@ package dev.ryanhcode.sable;
 
 import dev.ryanhcode.sable.debug.SableClientGizmoHandler;
 import dev.ryanhcode.sable.network.client.SableClientNetworkEventLoop;
-import dev.ryanhcode.sable.render.dynamic_shade.SableDynamicDirectionalShadingPreProcessor;
-import dev.ryanhcode.sable.render.sky_light_shadow.SableDynamicSkyLightShadowPreProcessor;
+import dev.ryanhcode.sable.render.SableRenderBootstrap;
 import dev.ryanhcode.sable.render.sky_light_shadow.SableSkyLightShadows;
-import dev.ryanhcode.sable.render.water_occlusion.SableWaterOcclusionPreProcessor;
 import dev.ryanhcode.sable.render.water_occlusion.WaterOcclusionRenderer;
-import dev.ryanhcode.sable.sublevel.render.fancy.FancySubLevelShaderProcessor;
 import dev.ryanhcode.sable.sublevel.storage.debug.SubLevelContainerInspector;
 import dev.ryanhcode.sable.veillite.api.client.editor.EditorManager;
 import dev.ryanhcode.sable.veillite.api.client.render.VeilRenderSystem;
@@ -29,12 +26,7 @@ public class SableClient {
             }
         });
 
-        VeilEventPlatform.INSTANCE.onVeilAddShaderProcessors((provider, registry) -> {
-            registry.addPreprocessor(new SableDynamicDirectionalShadingPreProcessor(), false);
-            registry.addPreprocessor(new SableDynamicSkyLightShadowPreProcessor(), false);
-            registry.addPreprocessor(new SableWaterOcclusionPreProcessor(), false);
-            registry.addPreprocessor(new FancySubLevelShaderProcessor(), false);
-        });
+        SableRenderBootstrap.init();
 
         VeilEventPlatform.INSTANCE.onVeilRenderLevelStage(SableSkyLightShadows::renderShadowMap);
 
