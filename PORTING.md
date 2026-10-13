@@ -82,3 +82,26 @@ class in `mc-1.21.11` (or `diff` the two files) to see what replaced it.
 - `TicketType` / `Ticket` are no longer generic.
 - `level.getProfiler()` → `Profiler.get()`.
 - `registryOrThrow` → `lookupOrThrow`.
+
+## Phase 2: Simulated + Aeronautics on Create Fly (not in the Gradle build yet)
+
+`simulated/` and `aeronautics/` contain the 1.21.1 **common** sources, with the `src/generated/resources`
+datagen output merged into `src/main/resources`. Already applied: `tools/port-renames.sh`,
+`com.simibubi.create` → `com.zurrtum.create`, client-only Create classes → `com.zurrtum.create.client.*`
+(Create Fly splits client code), a few known class moves, and `foundry.veil` → `dev.ryanhcode.sable.veillite`.
+Offroad is out of scope for now.
+
+What's left, by area:
+- **Registration.** Create Fly has no Registrate (`CreateRegistrate`, `BlockStateGen`, `TagGen`,
+  `AssetLookup`, `SharedProperties`, `BlockEntry`... don't exist). Replace `SimulatedRegistrate`/builders
+  with plain static `register(...)` calls like `reference/create-fly-1.21.11/.../AllBlocks.java`.
+  Datagen is dropped: we ship the already-generated JSON instead.
+- **Resources → 1.21.11 formats.** Item model definitions (`assets/<ns>/items/*.json`, since 1.21.4),
+  recipe JSON changes (ingredients are plain strings/tags, `result` uses `id`), equipment assets, etc.
+- **Platform layer.** NeoForge impls in `reference/simulated-1.21.1/*/neoforge` (~80 files) need Fabric
+  equivalents: the `service/Sim*Service` interfaces (13), energy/inventory/fluid wrappers (Fabric
+  Transfer API), menus, creative tab, config (Forge Config API Port), events.
+- **Client split.** Renderers, visuals, ponder and screens go into a client entrypoint, the way Create Fly
+  registers them in `client/.../AllBlockEntityRenders.java`.
+- **Create API differences.** 37 Create classes have no direct Create Fly equivalent
+  (e.g. `AllTags` → `AllBlockTags`/`AllItemTags`, `CreateClient`, custom item renderers, `SafeBlockEntityRenderer`).
