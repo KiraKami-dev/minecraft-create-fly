@@ -461,11 +461,13 @@ public class VanillaSubLevelRenderDispatcher implements SubLevelRenderDispatcher
                     uniformUploader.upload(SubLevelRenderPipelines.SUB_LEVEL_UNIFORM, subLevelUniform);
                 };
 
+                // Sections without their own index buffer use the shared sequential quad index buffer and its index type
+                final GpuBuffer indexBuffer = buffers.getIndexBuffer();
                 this.draws.get(pending.layer()).add(new RenderPass.Draw<>(
                         0,
                         buffers.getVertexBuffer(),
-                        buffers.getIndexBuffer(),
-                        buffers.getIndexType(),
+                        indexBuffer,
+                        indexBuffer == null ? null : buffers.getIndexType(),
                         0,
                         buffers.getIndexCount(),
                         uploader
