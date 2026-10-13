@@ -78,16 +78,17 @@
     "sublevel_render.impl.sodium.SodiumWorldRendererMixin",
     "sublevel_render.impl.vanilla.LevelRendererMixin",
     "sublevel_render.impl.vanilla.ViewAreaMixin",
-    "sublevel_render.impl.vanilla.water_occlusion.LevelRendererMixin",
     "sublevel_sounds.AbstractSoundInstanceMixin",
     "sublevel_sounds.ChannelAccessor",
     "sublevel_sounds.ClientLevelMixin",
     "sublevel_sounds.SoundEngineMixin",
     "toast.IntegratedServerMixin",
     "water_occlusion.CameraMixin",
+    "water_occlusion.ChunkSectionsToRenderMixin",
     "water_occlusion.ClientLevelMixin",
     "water_occlusion.FogRendererMixin",
-    "water_occlusion.GameRendererMixin"
+    "water_occlusion.GameRendererMixin",
+    "water_occlusion.LevelRendererMixin"
   ],
   "mixins": [
     "assembly.AbstractFurnaceBlockEntityMixin",

@@ -1,23 +1,16 @@
 package dev.ryanhcode.sable.render.dynamic_biome;
 
-import com.mojang.blaze3d.vertex.VertexFormat;
-import net.minecraft.client.renderer.rendertype.RenderType;
-
-public class DynamicBiomeTintRenderTypes extends RenderType {
-    private static final String NAME = "dynamic_biome_tint";
-
-    public DynamicBiomeTintRenderTypes(final String string, final VertexFormat vertexFormat, final VertexFormat.Mode mode, final int i, final boolean bl, final boolean bl2, final Runnable runnable, final Runnable runnable2) {
-        super(string, vertexFormat, mode, i, bl, bl2, runnable, runnable2);
+/**
+ * Biome tinting of blocks moved by sub-levels.
+ * <p>
+ * This was never functional in the original mod: the render type was a commented-out sketch built on Veil's
+ * {@code VeilRenderBridge.shaderState}. Nothing referenced it.
+ * <p>
+ * PORT-TODO(1.21.11): If this is ever implemented, it needs a terrain {@code RenderPipeline} variant whose vertex
+ * shader takes the biome tint at the sub-level's current position, rather than a {@code RenderType} subclass
+ * ({@code RenderType} can no longer be extended or built from {@code CompositeState} in 1.21.11).
+ */
+public final class DynamicBiomeTintRenderTypes {
+    private DynamicBiomeTintRenderTypes() {
     }
-//
-//    public static void hello() {
-//        RenderType.CompositeState rendertype$state = RenderType.CompositeState.builder()
-//                .setShaderState(VeilRenderBridge.shaderState(Sable.path("hello_there")))
-//                .setTextureState(BLOCK_SHEET_MIPPED)
-//                .setLightmapState(LIGHTMAP)
-//                .createCompositeState(true);
-//
-//        RenderType.create(NAME,DefaultVertexFormat.BLOCK, VertexFormat.Mode.QUADS, RenderType.BIG_BUFFER_SIZE, true, false, rendertype$state);
-//
-//    }
 }
