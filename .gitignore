@@ -4,5 +4,5 @@ run/
 out/
 *.iml
 .idea/
-reference/
+/reference
 .DS_Store
