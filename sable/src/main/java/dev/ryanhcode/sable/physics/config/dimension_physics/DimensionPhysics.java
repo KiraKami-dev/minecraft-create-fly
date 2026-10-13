@@ -22,14 +22,18 @@ public record DimensionPhysics(Identifier dimension, int priority, Optional<Floa
     public static final double DEFAULT_PRESSURE = 1.0;
     private static final float DEFAULT_UNIVERSAL_DRAG = 0.09f;
 
+    // The vanilla vector codecs work with Vector3fc since 1.21.5
+    private static final Codec<Vector3f> VECTOR3F_CODEC = ExtraCodecs.VECTOR3F.xmap(Vector3f::new, v -> v);
+    private static final StreamCodec<ByteBuf, Vector3f> VECTOR3F_STREAM_CODEC = ByteBufCodecs.VECTOR3F.map(Vector3f::new, v -> v);
+
     public static final Codec<DimensionPhysics> CODEC = RecordCodecBuilder.create(instance -> instance.group(
             Identifier.CODEC.fieldOf("dimension").forGetter(DimensionPhysics::dimension),
             Codec.intRange(0, Integer.MAX_VALUE).optionalFieldOf("priority", 1000).forGetter(DimensionPhysics::priority),
             Codec.optionalField("universal_drag", Codec.FLOAT, false).forGetter(DimensionPhysics::universalDrag),
-            Codec.optionalField("base_gravity", ExtraCodecs.VECTOR3F, false).forGetter(DimensionPhysics::baseGravity),
+            Codec.optionalField("base_gravity", VECTOR3F_CODEC, false).forGetter(DimensionPhysics::baseGravity),
             Codec.optionalField("base_pressure", Codec.DOUBLE, false).forGetter(DimensionPhysics::basePressure),
             Codec.optionalField("pressure_function", BezierResourceFunction.CODEC, false).forGetter(DimensionPhysics::pressureFunction),
-            Codec.optionalField("magnetic_north", ExtraCodecs.VECTOR3F, false).forGetter(DimensionPhysics::magneticNorth),
+            Codec.optionalField("magnetic_north", VECTOR3F_CODEC, false).forGetter(DimensionPhysics::magneticNorth),
             Codec.BOOL.optionalFieldOf("ignore_chunks", false).forGetter(DimensionPhysics::ignoreChunks)
     ).apply(Applicative.unbox(instance), DimensionPhysics::new));
 
@@ -38,20 +42,20 @@ public record DimensionPhysics(Identifier dimension, int priority, Optional<Floa
                 Identifier.STREAM_CODEC.encode(buf, dim.dimension);
                 ByteBufCodecs.INT.encode(buf, dim.priority);
                 ByteBufCodecs.FLOAT.apply(ByteBufCodecs::optional).encode(buf, dim.universalDrag);
-                ByteBufCodecs.VECTOR3F.apply(ByteBufCodecs::optional).encode(buf, dim.baseGravity);
+                VECTOR3F_STREAM_CODEC.apply(ByteBufCodecs::optional).encode(buf, dim.baseGravity);
                 ByteBufCodecs.DOUBLE.apply(ByteBufCodecs::optional).encode(buf, dim.basePressure);
                 BezierResourceFunction.STREAM_CODEC.apply(ByteBufCodecs::optional).encode(buf, dim.pressureFunction);
-                ByteBufCodecs.VECTOR3F.apply(ByteBufCodecs::optional).encode(buf, dim.magneticNorth);
+                VECTOR3F_STREAM_CODEC.apply(ByteBufCodecs::optional).encode(buf, dim.magneticNorth);
                 ByteBufCodecs.BOOL.encode(buf, dim.ignoreChunks);
             },
             buf -> new DimensionPhysics(
                 Identifier.STREAM_CODEC.decode(buf),
                 ByteBufCodecs.INT.decode(buf),
                 ByteBufCodecs.FLOAT.apply(ByteBufCodecs::optional).decode(buf),
-                ByteBufCodecs.VECTOR3F.apply(ByteBufCodecs::optional).decode(buf),
+                VECTOR3F_STREAM_CODEC.apply(ByteBufCodecs::optional).decode(buf),
                 ByteBufCodecs.DOUBLE.apply(ByteBufCodecs::optional).decode(buf),
                 BezierResourceFunction.STREAM_CODEC.apply(ByteBufCodecs::optional).decode(buf),
-                ByteBufCodecs.VECTOR3F.apply(ByteBufCodecs::optional).decode(buf),
+                VECTOR3F_STREAM_CODEC.apply(ByteBufCodecs::optional).decode(buf),
                 ByteBufCodecs.BOOL.decode(buf)
             )
     );
@@ -95,9 +99,9 @@ public record DimensionPhysics(Identifier dimension, int priority, Optional<Floa
         final double finalSlope = -2 * smoothingPressure / (maxAltitude - smoothingAltitude);
         pressureFunction.addPoint(new BezierResourceFunction.BezierPoint(maxAltitude, 0, finalSlope));
 
-        final Vector3f north = level.dimensionType().natural() ? DEFAULT_MAGNETIC_NORTH : new Vector3f(0, 0, 0);
+        final Vector3f north = !level.dimensionType().hasFixedTime() ? DEFAULT_MAGNETIC_NORTH : new Vector3f(0, 0, 0);
 
-        return new DimensionPhysics(level.dimension().location(),
+        return new DimensionPhysics(level.dimension().identifier(),
                 0,
                 Optional.of(DEFAULT_UNIVERSAL_DRAG),
                 Optional.of(DEFAULT_GRAVITY),

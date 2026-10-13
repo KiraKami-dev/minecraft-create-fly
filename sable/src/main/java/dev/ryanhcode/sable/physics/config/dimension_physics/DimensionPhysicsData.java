@@ -10,6 +10,8 @@ import dev.ryanhcode.sable.network.packets.tcp.ClientboundDimensionPhysicsPacket
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.Identifier;
+import net.minecraft.resources.FileToIdConverter;
+import net.minecraft.util.ExtraCodecs;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.server.packs.resources.SimpleJsonResourceReloadListener;
@@ -110,7 +112,7 @@ public class DimensionPhysicsData {
         return new ClientboundDimensionPhysicsPacket(DIMENSION_PHYSICS_DATA.values().stream().toList());
     }
 
-    public static class ReloadListener extends SimpleJsonResourceReloadListener {
+    public static class ReloadListener extends SimpleJsonResourceReloadListener<JsonElement> {
 
         private static final Gson GSON = new Gson();
         public static final ReloadListener INSTANCE = new ReloadListener();
@@ -119,7 +121,7 @@ public class DimensionPhysicsData {
         public static final Identifier ID = Sable.sablePath(NAME);
 
         public ReloadListener() {
-            super(ReloadListener.GSON, NAME);
+            super(ExtraCodecs.JSON, FileToIdConverter.json(NAME));
         }
 
         @Override

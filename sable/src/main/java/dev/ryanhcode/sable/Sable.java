@@ -10,6 +10,7 @@ import dev.ryanhcode.sable.index.SableTags;
 import dev.ryanhcode.sable.network.tcp.SableTCPPackets;
 import dev.ryanhcode.sable.physics.config.block_properties.PhysicsBlockPropertiesDefinitionLoader;
 import dev.ryanhcode.sable.physics.config.block_properties.PhysicsBlockPropertyTypes;
+import dev.ryanhcode.sable.sublevel.system.ticket.PhysicsChunkTicketManager;
 import dev.ryanhcode.sable.sublevel.system.SubLevelPhysicsSystem;
 import dev.ryanhcode.sable.sublevel.system.SubLevelTrackingSystem;
 import dev.ryanhcode.sable.sublevel.tracking_points.SubLevelTrackingPointObserver;
@@ -39,6 +40,7 @@ public final class Sable {
         SableTCPPackets.init();
         SableTags.register();
         PhysicsBlockPropertyTypes.register();
+        PhysicsChunkTicketManager.register();
         ForceGroups.register();
 
         LOGGER.info("{} loaded!", MOD_NAME);

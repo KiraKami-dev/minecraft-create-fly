@@ -12,14 +12,14 @@ import java.util.UUID;
 @ApiStatus.Internal
 public final class InhabitedChunkTicket {
     private final UUID uuid;
-    private final Ticket<UUID> ticket;
+    private final Ticket ticket;
     private long lastInhabitedTick;
 
     /**
      * @param pos               the position of the chunk
      * @param lastInhabitedTick the last tick ({@link Level#getGameTime()}) the chunk was inhabited
      */
-    public InhabitedChunkTicket(final UUID uuid, final long lastInhabitedTick, final Ticket<UUID> ticket) {
+    public InhabitedChunkTicket(final UUID uuid, final long lastInhabitedTick, final Ticket ticket) {
         this.uuid = uuid;
         this.lastInhabitedTick = lastInhabitedTick;
         this.ticket = ticket;
@@ -33,7 +33,7 @@ public final class InhabitedChunkTicket {
         this.lastInhabitedTick = lastInhabitedTick;
     }
 
-    public Ticket<UUID> getTicket() {
+    public Ticket getTicket() {
         return this.ticket;
     }
 

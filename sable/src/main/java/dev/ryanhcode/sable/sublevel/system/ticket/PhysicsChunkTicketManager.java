@@ -18,11 +18,14 @@ import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import it.unimi.dsi.fastutil.objects.*;
+import net.minecraft.core.Registry;
 import net.minecraft.core.SectionPos;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.server.level.*;
 import net.minecraft.util.Mth;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.TicketStorage;
 import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.level.chunk.LevelChunkSection;
 import net.minecraft.world.level.chunk.status.ChunkStatus;
@@ -39,10 +42,21 @@ public class PhysicsChunkTicketManager {
 
     public static final double MAX_PREDICTION_DISTANCE = 20.0;
 
-    public static final TicketType<UUID> SUB_LEVEL_LOADED_TICKET_TYPE = TicketType.create(
+    /**
+     * Tickets are no longer keyed (by sub-level UUID) since 1.21.5, and identical tickets are merged by the
+     * {@link TicketStorage}. One ticket is held per chunk for as long as any sub-level inhabits it.
+     */
+    public static final TicketType SUB_LEVEL_LOADED_TICKET_TYPE = Registry.register(
+            BuiltInRegistries.TICKET_TYPE,
             "sable_sub_level_loaded",
-            UUID::compareTo
+            new TicketType(TicketType.NO_TIMEOUT, TicketType.FLAG_LOADING | TicketType.FLAG_SIMULATION)
     );
+
+    /**
+     * Forces the static ticket type registration to run during mod initialization, before registries freeze.
+     */
+    public static void register() {
+    }
 
     /**
      * The physics chunks that are currently loaded.
@@ -230,12 +244,15 @@ public class PhysicsChunkTicketManager {
             this.forcedInhabitedChunks.put(chunkLong, set = new ObjectArraySet<>(1));
         }
 
-        final Ticket<UUID> newChunkTicket = new Ticket<>(PhysicsChunkTicketManager.SUB_LEVEL_LOADED_TICKET_TYPE, ChunkLevel.byStatus(FullChunkStatus.ENTITY_TICKING), subLevelId);
+        final Ticket newChunkTicket = new Ticket(PhysicsChunkTicketManager.SUB_LEVEL_LOADED_TICKET_TYPE, ChunkLevel.byStatus(FullChunkStatus.ENTITY_TICKING));
         final InhabitedChunkTicket newSableTicket = new InhabitedChunkTicket(subLevelId, gameTime, newChunkTicket);
 
+        final boolean firstInhabitant = set.isEmpty();
         if (set.add(newSableTicket)) {
-            distanceManager.addTicket(chunkLong, newChunkTicket);
-            distanceManager.tickingTicketsTracker.addTicket(chunkLong, newChunkTicket);
+            // The loading flag replaces the regular ticket, the simulation flag replaces the old ticking tickets tracker
+            if (firstInhabitant) {
+                distanceManager.ticketStorage.addTicket(chunkLong, newChunkTicket);
+            }
 
             level.getChunk(x, z, ChunkStatus.FULL, true);
         } else {
@@ -295,11 +312,12 @@ public class PhysicsChunkTicketManager {
                 final boolean outdated = ticket.lastInhabitedTick() < gameTime - 20;
 
                 if (outdated) {
-                    final Ticket<UUID> chunkTicket = ticket.getTicket();
-
-                    distanceManager.removeTicket(chunkLong, chunkTicket);
-                    distanceManager.tickingTicketsTracker.removeTicket(chunkLong, chunkTicket);
                     setIter.remove();
+
+                    // Only drop the shared vanilla ticket once no sub-level inhabits the chunk anymore
+                    if (set.isEmpty()) {
+                        distanceManager.ticketStorage.removeTicket(chunkLong, ticket.getTicket());
+                    }
                 }
             }
 

@@ -55,7 +55,7 @@ accessible class net/minecraft/client/renderer/block/ModelBlockRenderer$Cache
 accessible field net/minecraft/network/Connection channel Lio/netty/channel/Channel;
 
 # Serialization
-accessible field net/minecraft/world/level/storage/DimensionDataStorage dataFolder Ljava/io/File;
+accessible field net/minecraft/world/level/storage/DimensionDataStorage dataFolder Ljava/nio/file/Path;
 accessible method net/minecraft/server/level/ChunkMap getChunks ()Ljava/lang/Iterable;
 accessible method net/minecraft/server/level/ChunkMap scheduleUnload (JLnet/minecraft/server/level/ChunkHolder;)V
 accessible field net/minecraft/server/level/ChunkMap toDrop Lit/unimi/dsi/fastutil/longs/LongSet;
