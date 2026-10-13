@@ -26,7 +26,7 @@ public class GameRendererMixin {
         final CameraType cameraType = this.minecraft.options.getCameraType();
 
         if (cameraType == SableCameraTypes.SUB_LEVEL_VIEW || cameraType == SableCameraTypes.SUB_LEVEL_VIEW_UNLOCKED) {
-            final Entity vehicle = this.minecraft.cameraEntity.getVehicle();
+            final Entity vehicle = this.minecraft.getCameraEntity().getVehicle();
 
             if (vehicle != null) {
                 final SubLevel subLevel = Sable.HELPER.getContaining(this.minecraft.level, vehicle.position());

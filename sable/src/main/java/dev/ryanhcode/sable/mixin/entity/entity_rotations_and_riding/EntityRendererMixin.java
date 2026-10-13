@@ -23,7 +23,7 @@ public class EntityRendererMixin {
             return instance.cameraOrientation();
         }
 
-        final float pt = Minecraft.getInstance().getTimer().getGameTimeDeltaPartialTick(true);
+        final float pt = Minecraft.getInstance().getDeltaTracker().getGameTimeDeltaPartialTick(true);
         final Quaterniond orientation = EntitySubLevelRotationHelper.getEntityOrientation(entity, x -> ((ClientSubLevel) x).renderPose(), pt, EntitySubLevelRotationHelper.Type.ENTITY);
         if (orientation == null) {
             return instance.cameraOrientation();
