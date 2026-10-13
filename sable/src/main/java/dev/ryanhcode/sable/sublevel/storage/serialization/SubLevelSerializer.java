@@ -99,7 +99,7 @@ public class SubLevelSerializer {
 
         List<UUID> dependencies = List.of();
         if (tag.contains("loading_dependencies")) {
-            final ListTag dependencyUUIDS = tag.getList("loading_dependencies", Tag.TAG_INT_ARRAY);
+            final ListTag dependencyUUIDS = tag.getListOrEmpty("loading_dependencies");
 
             dependencies = new ObjectArrayList<>();
 
@@ -110,8 +110,8 @@ public class SubLevelSerializer {
             }
         }
 
-        final Pose3d pose = SableNBTUtils.readPose3d(tag.getCompound("pose"));
-        final BoundingBox3d worldBounds = SableNBTUtils.readBoundingBox(tag.getCompound("world_bounds"));
+        final Pose3d pose = SableNBTUtils.readPose3d(tag.getCompoundOrEmpty("pose"));
+        final BoundingBox3d worldBounds = SableNBTUtils.readBoundingBox(tag.getCompoundOrEmpty("world_bounds"));
 
         return new SubLevelData(
                 uuid,
@@ -130,12 +130,12 @@ public class SubLevelSerializer {
      */
     public static ServerSubLevel fullyLoad(final ServerLevel level, final SubLevelData halfLoadedSubLevel) {
         final CompoundTag tag = halfLoadedSubLevel.fullTag();
-        final CompoundTag plotTag = tag.getCompound("plot");
+        final CompoundTag plotTag = tag.getCompoundOrEmpty("plot");
 
-        final int plotX = plotTag.getInt("plot_x");
-        final int plotZ = plotTag.getInt("plot_z");
+        final int plotX = plotTag.getIntOr("plot_x", 0);
+        final int plotZ = plotTag.getIntOr("plot_z", 0);
 
-        final Pose3d pose = SableNBTUtils.readPose3d(tag.getCompound("pose"));
+        final Pose3d pose = SableNBTUtils.readPose3d(tag.getCompoundOrEmpty("pose"));
 
         final Vector3d position = pose.position();
         final Vector3d cor = pose.rotationPoint();
@@ -178,23 +178,23 @@ public class SubLevelSerializer {
         Vector3dc angularVelocity = JOMLConversion.ZERO;
 
         if (tag.contains("linear_velocity")) {
-            linearVelocity = SableNBTUtils.readVector3d(tag.getCompound("linear_velocity"))
+            linearVelocity = SableNBTUtils.readVector3d(tag.getCompoundOrEmpty("linear_velocity"))
                     .mul(SableConfig.VELOCITY_RETAINED_ON_LOAD.getAsDouble());
         }
 
         if (tag.contains("angular_velocity")) {
-            angularVelocity = SableNBTUtils.readVector3d(tag.getCompound("angular_velocity"))
+            angularVelocity = SableNBTUtils.readVector3d(tag.getCompoundOrEmpty("angular_velocity"))
                     .mul(SableConfig.VELOCITY_RETAINED_ON_LOAD.getAsDouble());
         }
 
         physicsSystem.getPipeline().addLinearAndAngularVelocity(subLevel, linearVelocity, angularVelocity);
 
         if (tag.contains("display_name")) {
-            subLevel.setName(tag.getString("display_name"));
+            subLevel.setName(tag.getStringOr("display_name", ""));
         }
 
         if (tag.contains("user_data")) {
-            subLevel.setUserDataTag(tag.getCompound("user_data"));
+            subLevel.setUserDataTag(tag.getCompoundOrEmpty("user_data"));
         }
 
         subLevel.updateBoundingBox();

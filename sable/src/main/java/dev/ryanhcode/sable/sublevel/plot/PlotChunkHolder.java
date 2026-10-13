@@ -99,7 +99,7 @@ public class PlotChunkHolder extends ChunkHolder {
      * Handles a block change to update bounding box and collision data
      */
     public void handleBlockChange(final int x, final int y, final int z, final BlockState oldState, final BlockState newState) {
-        if (this.chunk.getLevel().isClientSide) return;
+        if (this.chunk.getLevel().isClientSide()) return;
         if (oldState.isAir() && !newState.isAir()) {
             // block placed, expand or create bounding box
             if (this.boundingBox == null) {
@@ -126,8 +126,8 @@ public class PlotChunkHolder extends ChunkHolder {
     }
 
     @Override
-    public void blockChanged(final BlockPos blockPos) {
-        super.blockChanged(blockPos);
+    public boolean blockChanged(final BlockPos blockPos) {
+        return super.blockChanged(blockPos);
     }
 
     /**
@@ -177,7 +177,7 @@ public class PlotChunkHolder extends ChunkHolder {
      * @return the heat section at that section Y
      */
     public @Nullable HeatDataChunkSection getHeatSection(final int y) {
-        final int index = y - this.chunk.getMinSection();
+        final int index = y - this.chunk.getMinSectionY();
 
         if (index < 0 || index >= this.heatSections.length) {
             return null;
@@ -191,7 +191,7 @@ public class PlotChunkHolder extends ChunkHolder {
      * @param section the heat section to set
      */
     public void setHeatSection(final int y, final HeatDataChunkSection section) {
-        final int index = y - this.chunk.getMinSection();
+        final int index = y - this.chunk.getMinSectionY();
 
         if (index < 0 || index >= this.heatSections.length) {
             return;

@@ -54,22 +54,22 @@ public class SubLevelTrackingPointSavedData extends SavedData implements SubLeve
     private static SubLevelTrackingPointSavedData load(final ServerLevel level, final CompoundTag tag) {
         final SubLevelTrackingPointSavedData data = new SubLevelTrackingPointSavedData(level);
 
-        final CompoundTag trackingPointsTag = tag.getCompound("tracking_points");
+        final CompoundTag trackingPointsTag = tag.getCompoundOrEmpty("tracking_points");
 
-        for (final String key : trackingPointsTag.getAllKeys()) {
+        for (final String key : trackingPointsTag.keySet()) {
             final UUID uuid = UUID.fromString(key);
-            final CompoundTag pointTag = trackingPointsTag.getCompound(key);
+            final CompoundTag pointTag = trackingPointsTag.getCompoundOrEmpty(key);
 
-            final boolean inSubLevel = pointTag.getBoolean("InSubLevel");
+            final boolean inSubLevel = pointTag.getBooleanOr("InSubLevel", false);
             final GlobalSavedSubLevelPointer pointer = pointTag.contains("SubLevelPointer") ?
                     GlobalSavedSubLevelPointer.CODEC.parse(NbtOps.INSTANCE, pointTag.getCompound("SubLevelPointer")).getOrThrow() :
                     null;
-            final Vector3d point = SableNBTUtils.readVector3d(pointTag.getCompound("Point"));
+            final Vector3d point = SableNBTUtils.readVector3d(pointTag.getCompoundOrEmpty("Point"));
 
             Vector3d globalPlaceholder = null;
 
             if (pointTag.contains("GlobalPlaceholder")) {
-                globalPlaceholder = SableNBTUtils.readVector3d(pointTag.getCompound("GlobalPlaceholder"));
+                globalPlaceholder = SableNBTUtils.readVector3d(pointTag.getCompoundOrEmpty("GlobalPlaceholder"));
             }
 
             UUID subLevelID = null;

@@ -34,7 +34,7 @@ public class SubLevelOccupancySavedData extends SavedData {
     private static SubLevelOccupancySavedData load(final ServerLevel level, final CompoundTag tag) {
         final SubLevelOccupancySavedData data = new SubLevelOccupancySavedData(level);
 
-        final long[] longArray = tag.getLongArray("sub_level_occupancy");
+        final long[] longArray = tag.getLongArray("sub_level_occupancy").orElse(new long[0]);
 
         if (longArray.length > 0) {
             final BitSet occupancyData = BitSet.valueOf(longArray);

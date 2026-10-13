@@ -55,17 +55,17 @@ public class SubLevelTicketsSavedData extends SavedData {
         if (container == null) return data;
 
         final Object2ObjectMap<UUID, SubLevelTicketInfo> newTickets = new Object2ObjectOpenHashMap<>();
-        final ListTag ticketInfos = tag.getList("tickets", Tag.TAG_COMPOUND);
+        final ListTag ticketInfos = tag.getListOrEmpty("tickets");
 
         for (int i = 0; i < ticketInfos.size(); i++) {
-            final CompoundTag infoTag = ticketInfos.getCompound(i);
+            final CompoundTag infoTag = ticketInfos.getCompoundOrEmpty(i);
             final UUID subLevelId = infoTag.getUUID("uuid");
 
-            final ListTag entriesTag = infoTag.getList("entries", Tag.TAG_COMPOUND);
+            final ListTag entriesTag = infoTag.getListOrEmpty("entries");
             final ObjectSet<SubLevelLoadingTicket<?>> tickets = new ObjectArraySet<>();
 
             for (int j = 0; j < entriesTag.size(); j++) {
-                final CompoundTag entryTag = entriesTag.getCompound(j);
+                final CompoundTag entryTag = entriesTag.getCompoundOrEmpty(j);
                 final SubLevelLoadingTicket<?> ticket = deserializeTicket(subLevelId, entryTag);
 
                 if (ticket != null) {
@@ -88,7 +88,7 @@ public class SubLevelTicketsSavedData extends SavedData {
     }
 
     private static <T> SubLevelLoadingTicket<T> deserializeTicket(final UUID subLevelId, final CompoundTag tag) {
-        final Identifier typeName = Identifier.parse(tag.getString("type"));
+        final Identifier typeName = Identifier.parse(tag.getStringOr("type", ""));
         @SuppressWarnings("unchecked") final SubLevelLoadingTicketType<T> type = (SubLevelLoadingTicketType<T>) SubLevelLoadingTicketType.byName(typeName);
 
         if (type == null) {
