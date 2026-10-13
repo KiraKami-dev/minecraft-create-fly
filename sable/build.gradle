@@ -1,0 +1,27 @@
+version = '2.0.6+mc1.21.11-port'
+group = 'dev.ryanhcode.sable'
+
+base { archivesName = 'sable-fabric-1.21.11' }
+
+loom {
+    accessWidenerPath = file('src/main/resources/sable.accesswidener')
+}
+
+dependencies {
+    include(implementation('org.apache.maven:maven-artifact:3.8.5'))
+    include(modApi("fuzs.forgeconfigapiport:forgeconfigapiport-fabric:${forgeconfigapiport_version}"))
+    modCompileOnly("maven.modrinth:imguimc:${imguimc_version}")
+}
+
+processResources {
+    def props = [
+            mod_id: 'sable', version: project.version, mod_name: 'Sable', mod_author: 'RyanHCode',
+            description: 'Interactive moving block structures with physics.',
+            license: 'PolyForm Shield License 1.0.0', issues: 'https://github.com/ryanhcode/sable/issues',
+            fabric_loader_version: loader_version, minecraft_version: minecraft_version,
+            java_version: java_version, fabric_version: fabric_version,
+            sodium_version: '0.8.0', sable_companion_version: '1.6.0'
+    ]
+    inputs.properties props
+    filesMatching(['fabric.mod.json', '*.mixins.json']) { expand props }
+}

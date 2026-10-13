@@ -1,0 +1,37 @@
+plugins {
+    id 'net.fabricmc.fabric-loom-remap' version "${loom_version}" apply false
+}
+
+subprojects {
+    apply plugin: 'net.fabricmc.fabric-loom-remap'
+
+    java {
+        toolchain.languageVersion = JavaLanguageVersion.of(21)
+        withSourcesJar()
+    }
+
+    repositories {
+        maven { url = 'https://maven.fabricmc.net/' }
+        exclusiveContent {
+            forRepository { maven { name = 'Modrinth'; url = 'https://api.modrinth.com/maven' } }
+            filter { includeGroup 'maven.modrinth' }
+        }
+        maven { url = 'https://raw.githubusercontent.com/Fuzss/modresources/main/maven/' }
+        maven { url = 'https://maven.ryanhcode.dev/releases' }
+        mavenCentral()
+    }
+
+    dependencies {
+        minecraft "com.mojang:minecraft:${minecraft_version}"
+        mappings loom.officialMojangMappings()
+        modImplementation "net.fabricmc:fabric-loader:${loader_version}"
+        modImplementation "net.fabricmc.fabric-api:fabric-api:${fabric_version}"
+    }
+
+    tasks.withType(JavaCompile).configureEach {
+        options.encoding = 'UTF-8'
+        options.release = 21
+        // report every error, not just the first 100, so porting work can be partitioned
+        options.compilerArgs += ['-Xmaxerrs', '100000']
+    }
+}
