@@ -1,0 +1,12 @@
+Repo KiraKami-dev/minecraft-create-fly (private). Porting Create Aeronautics to Minecraft 1.21.11 Fabric on top of Create Fly. Read PORTING.md first, then run tools/setup-reference.sh (needs JDK 21; install it if missing).
+
+Your task is the Phase 2 Java work, on a new branch p2-code created from origin/integration. For simulated/ and aeronautics/:
+- Replace Registrate (SimulatedRegistrate, BlockEntry, builders) with plain static registration in the style of reference/create-fly-1.21.11 AllBlocks/AllItems/AllBlockEntityTypes.
+- Set render layers in code for blocks whose models had render_type (removed from the JSON for 1.21.11).
+- Write Fabric implementations of the service/Sim*Service interfaces (NeoForge originals: reference/simulated-1.21.1/*/neoforge) using Fabric API and the Transfer API.
+- Port the META-INF/accesstransformer.cfg files to access wideners.
+- Add client entrypoints registering renderers the way Create Fly does in client/AllBlockEntityRenders.
+- Seven models used neoforge:obj (mecanum_wheel, plunger_wheel, steering_wheel); provide a Fabric OBJ loading path or render them in code. The steering wheel matters for gameplay.
+
+Do not modify sable/ or the JSON resources; other agents own those. sable/ may not compile yet: work against its sources, and add simulated + aeronautics to settings.gradle only once :sable compiles on origin/integration.
+Commit often and push p2-code after each chunk. Write a short P2-CODE-STATUS.md at the end. Never add Claude or Anthropic attribution to commits.
