@@ -119,10 +119,13 @@ accessible field net/minecraft/world/entity/projectile/AbstractHurtingProjectile
 
 # Physics Chunk Ticket Manager
 accessible method net/minecraft/server/level/Ticket <init> (Lnet/minecraft/server/level/TicketType;ILjava/lang/Object;)V
-accessible field net/minecraft/server/level/DistanceManager tickingTicketsTracker Lnet/minecraft/server/level/TickingTracker;
+accessible field net/minecraft/server/level/DistanceManager ticketStorage Lnet/minecraft/world/level/TicketStorage;
 accessible method net/minecraft/server/level/DistanceManager addTicket (JLnet/minecraft/server/level/Ticket;)V
 accessible method net/minecraft/server/level/DistanceManager removeTicket (JLnet/minecraft/server/level/Ticket;)V
 # Entity interpolation (entities stick to sub-levels)
 accessible field net/minecraft/world/entity/InterpolationHandler interpolationData Lnet/minecraft/world/entity/InterpolationHandler$InterpolationData;
 accessible class net/minecraft/world/entity/InterpolationHandler$InterpolationData
 accessible field net/minecraft/world/entity/InterpolationHandler$InterpolationData steps I
+
+# Entity culling
+accessible method net/minecraft/client/renderer/entity/EntityRenderer getBoundingBoxForCulling (Lnet/minecraft/world/entity/Entity;)Lnet/minecraft/world/phys/AABB;
