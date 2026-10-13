@@ -1,5 +1,6 @@
 package dev.ryanhcode.sable.render;
 
+import dev.ryanhcode.sable.debug.SableDebugScreenEntry;
 import dev.ryanhcode.sable.sublevel.render.SubLevelRenderPipelines;
 import dev.ryanhcode.sable.veillite.api.client.render.VeilRenderSystem;
 import net.minecraft.client.Minecraft;
@@ -24,6 +25,8 @@ public final class SableRenderBootstrap {
         // Make sure the sub-level pipelines are created up front, so a broken pipeline definition fails at startup
         // instead of in the middle of the first frame with a sub-level
         SubLevelRenderPipelines.get(ChunkSectionLayer.SOLID);
+
+        SableDebugScreenEntry.register();
     }
 
     /**
