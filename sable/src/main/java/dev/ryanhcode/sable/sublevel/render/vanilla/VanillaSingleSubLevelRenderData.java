@@ -1,7 +1,6 @@
 package dev.ryanhcode.sable.sublevel.render.vanilla;
 
 import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.blaze3d.vertex.VertexConsumer;
 import dev.ryanhcode.sable.companion.math.BoundingBox3ic;
 import dev.ryanhcode.sable.companion.math.Pose3dc;
 import dev.ryanhcode.sable.platform.SableSubLevelRenderPlatform;
@@ -10,37 +9,38 @@ import dev.ryanhcode.sable.sublevel.render.SubLevelRenderData;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.PrioritizeChunkUpdates;
-import net.minecraft.client.renderer.rendertype.RenderType;
+import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.client.renderer.blockentity.BlockEntityRenderer;
 import net.minecraft.client.renderer.chunk.RenderRegionCache;
-import net.minecraft.client.renderer.texture.OverlayTexture;
-import net.minecraft.client.resources.model.BakedModel;
 import net.minecraft.core.BlockPos;
-import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.block.RenderShape;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import org.jetbrains.annotations.Nullable;
-import org.joml.*;
+import org.joml.Matrix4f;
+import org.joml.Vector3dc;
 
-import java.util.List;
 import java.util.Objects;
-import java.util.Set;
 
 /**
- * A renderer and view area for a {@link dev.ryanhcode.sable.sublevel.SubLevel}.
+ * Renders a {@link dev.ryanhcode.sable.sublevel.SubLevel} that consists of a single block without compiling a section.
+ * <p>
+ * On 1.21.11 the block is submitted as a vanilla moving block (like a piston-moved block), using a pose that applies the
+ * sub-level transform.
  */
 public class VanillaSingleSubLevelRenderData implements SubLevelRenderData {
 
-    private static final RandomSource RANDOM = RandomSource.create();
-    private static final SingleBlockSubLevelWrapper LEVEL_WRAPPER = new SingleBlockSubLevelWrapper();
     private static final Matrix4f TRANSFORM = new Matrix4f();
-    private static final Vector3d CENTER_OF_ROT = new Vector3d();
 
     /**
      * The sub-level this renderer is for
      */
     private final ClientSubLevel subLevel;
+
+    /**
+     * The render state submitted to the feature renderer. One per sub-level, since submits are deferred.
+     */
+    private final SingleBlockSubLevelWrapper renderState = new SingleBlockSubLevelWrapper();
 
     /**
      * The cached block state for single block rendering
@@ -53,15 +53,9 @@ public class VanillaSingleSubLevelRenderData implements SubLevelRenderData {
     private BlockPos singleBlockPos = null;
 
     /**
-     * The cached block seed for single block rendering
-     */
-    private long singleBlockSeed = 42L;
-
-    /**
-     * The cached block entity position for single block rendering
+     * The block entity to extract for rendering, if it isn't rendered globally
      */
     private BlockEntity singleBlockEntity = null;
-    private boolean singleBlockEntityGlobal = false;
 
     /**
      * Creates a new renderer for the given sub-level
@@ -79,30 +73,20 @@ public class VanillaSingleSubLevelRenderData implements SubLevelRenderData {
         }
 
         if (blockEntity == null) {
-            this.removeBlockEntity();
+            this.singleBlockEntity = null;
             return;
         }
 
-        final BlockEntityRenderer<E> blockEntityRenderer = Minecraft.getInstance().getBlockEntityRenderDispatcher().getRenderer(blockEntity);
-        if (blockEntityRenderer == null) {
-            this.removeBlockEntity();
-            return;
-        }
+        final BlockEntityRenderer<E, ?> blockEntityRenderer = Minecraft.getInstance().getBlockEntityRenderDispatcher().getRenderer(blockEntity);
 
-        this.singleBlockEntity = blockEntity;
-        this.singleBlockEntityGlobal = blockEntityRenderer.shouldRenderOffScreen(blockEntity);
+        // Block entities that render off-screen are tracked by the level itself (ClientLevel#getGloballyRenderedBlockEntities)
+        this.singleBlockEntity = blockEntityRenderer == null || blockEntityRenderer.shouldRenderOffScreen() ? null : blockEntity;
     }
 
-    private void removeBlockEntity() {
-        if (this.singleBlockEntity != null && this.singleBlockEntityGlobal) {
-            Minecraft.getInstance().levelRenderer.updateGlobalBlockEntities(Set.of(this.singleBlockEntity), Set.of());
-        }
-        this.singleBlockEntity = null;
-        this.singleBlockEntityGlobal = false;
-    }
-
-    public void renderSingleBlock(final RenderType layer, final VertexConsumer consumer, final Matrix4f modelView, final double camX, final double camY, final double camZ) {
-        final Minecraft client = Minecraft.getInstance();
+    /**
+     * Submits the block to the feature renderer.
+     */
+    public void submitSingleBlock(final PoseStack poseStack, final SubmitNodeCollector collector, final double camX, final double camY, final double camZ) {
         if (this.singleBlockState.isAir()) {
             this.rebuild();
         }
@@ -111,42 +95,16 @@ public class VanillaSingleSubLevelRenderData implements SubLevelRenderData {
             return;
         }
 
-        final BakedModel bakedModel = client.getBlockRenderer().getBlockModel(this.singleBlockState);
         final Pose3dc renderPose = this.subLevel.renderPose();
         final Vector3dc renderPos = renderPose.position();
-        LEVEL_WRAPPER.setup(this.subLevel.getLevel(), renderPos.x(), renderPos.y(), renderPos.z(), this.singleBlockPos, this.singleBlockState);
+        final Vector3dc rotationPoint = renderPose.rotationPoint();
+        this.renderState.setup(this.subLevel.getLevel(), renderPos.x(), renderPos.y(), renderPos.z(), this.singleBlockPos, this.singleBlockState);
 
-        RANDOM.setSeed(this.singleBlockSeed);
-        final List<RenderType> renderLayers = SableSubLevelRenderPlatform.INSTANCE.getRenderLayers(LEVEL_WRAPPER, bakedModel, this.singleBlockState, this.singleBlockPos, RANDOM);
-        if (!renderLayers.contains(layer)) {
-            LEVEL_WRAPPER.clear();
-            return;
-        }
-
-        final PoseStack stack = new PoseStack();
-
-        // These NEED to be here because renderPos is mutated below
-        final double renderX = renderPos.x();
-        final double renderY = renderPos.y();
-        final double renderZ = renderPos.z();
-        {
-            final Quaterniondc renderRot = renderPose.orientation();
-            final Vector3d renderCOR = renderRot.transform(CENTER_OF_ROT.set(renderPose.rotationPoint()).sub(this.singleBlockPos.getX(), this.singleBlockPos.getY(), this.singleBlockPos.getZ()));
-
-            renderCOR.negate().add(renderX, renderY, renderZ);
-
-            final Matrix4f transform = TRANSFORM.identity();
-
-            // convert the camera pos to local to the origin / rotated
-            transform.translate((float) (renderCOR.x() - camX), (float) (renderCOR.y() - camY), (float) (renderCOR.z() - camZ));
-            transform.rotate(new Quaternionf(renderRot));
-
-            stack.last().pose().mul(modelView).mul(transform);
-            transform.normal(stack.last().normal());
-        }
-
-        SableSubLevelRenderPlatform.INSTANCE.tesselateBlock(LEVEL_WRAPPER, bakedModel, this.singleBlockState, this.singleBlockPos, stack, consumer, RANDOM, this.singleBlockSeed, OverlayTexture.NO_OVERLAY, layer);
-        LEVEL_WRAPPER.clear();
+        poseStack.pushPose();
+        poseStack.mulPose(this.getTransformation(camX, camY, camZ, TRANSFORM));
+        poseStack.translate(this.singleBlockPos.getX() - rotationPoint.x(), this.singleBlockPos.getY() - rotationPoint.y(), this.singleBlockPos.getZ() - rotationPoint.z());
+        collector.submitMovingBlock(poseStack, this.renderState);
+        poseStack.popPose();
     }
 
     public @Nullable BlockEntity getRenderBlockEntity() {
@@ -165,7 +123,6 @@ public class VanillaSingleSubLevelRenderData implements SubLevelRenderData {
 
         this.singleBlockState = blockState;
         this.singleBlockPos = pos;
-        this.singleBlockSeed = blockState.getSeed(pos);
 
         this.handleBlockEntity(blockState.hasBlockEntity() ? this.subLevel.getLevel().getBlockEntity(pos) : null);
 
@@ -200,6 +157,6 @@ public class VanillaSingleSubLevelRenderData implements SubLevelRenderData {
 
     @Override
     public void close() {
-        this.removeBlockEntity();
+        this.singleBlockEntity = null;
     }
 }
