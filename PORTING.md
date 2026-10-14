@@ -1,5 +1,9 @@
 # Create Aeronautics → Fabric 1.21.11 port
 
+> **Start with [ROADMAP.md](ROADMAP.md)** for setup, workflow, status and the task list.
+> Absolute paths below (`/Users/akshatkhair/Documents/Projects/minecraft-create-fly/...`) mean `<your clone>/...`;
+> run `tools/setup-reference.sh` to create `reference/`.
+
 Goal: run Create Aeronautics (Simulated Project) on **Minecraft 1.21.11 + Fabric**, on top of
 **Create Fly** (Fabric port of Create, `maven.modrinth:create-fly:1.21.11-6.0.9-5`).
 
