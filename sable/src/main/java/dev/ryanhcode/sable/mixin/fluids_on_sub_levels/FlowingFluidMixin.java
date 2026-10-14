@@ -9,7 +9,6 @@ import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.material.FlowingFluid;
-import net.minecraft.world.level.material.Fluid;
 import net.minecraft.world.level.material.FluidState;
 import net.minecraft.world.phys.Vec3;
 import org.spongepowered.asm.mixin.Mixin;
@@ -24,8 +23,9 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 public class FlowingFluidMixin {
 
 
-    @Inject(at = @At("HEAD"), method = "canSpreadTo(Lnet/minecraft/world/level/BlockGetter;Lnet/minecraft/core/BlockPos;Lnet/minecraft/world/level/block/state/BlockState;Lnet/minecraft/core/Direction;Lnet/minecraft/core/BlockPos;Lnet/minecraft/world/level/block/state/BlockState;Lnet/minecraft/world/level/material/FluidState;Lnet/minecraft/world/level/material/Fluid;)Z", cancellable = true)
-    private void sable$canSpreadTo(final BlockGetter pLevel, final BlockPos pFromPos, final BlockState pFromBlockState, final Direction pDirection, final BlockPos pToPos, final BlockState pToBlockState, final FluidState pToFluidState, final Fluid pFluid, final CallbackInfoReturnable<Boolean> cir) {
+    // PORT(1.21.11): FlowingFluid#canSpreadTo was removed; canMaybePassThrough is the shared gate for downward and sideways spreading.
+    @Inject(at = @At("HEAD"), method = "canMaybePassThrough(Lnet/minecraft/world/level/BlockGetter;Lnet/minecraft/core/BlockPos;Lnet/minecraft/world/level/block/state/BlockState;Lnet/minecraft/core/Direction;Lnet/minecraft/core/BlockPos;Lnet/minecraft/world/level/block/state/BlockState;Lnet/minecraft/world/level/material/FluidState;)Z", cancellable = true)
+    private void sable$canMaybePassThrough(final BlockGetter pLevel, final BlockPos pFromPos, final BlockState pFromBlockState, final Direction pDirection, final BlockPos pToPos, final BlockState pToBlockState, final FluidState pToFluidState, final CallbackInfoReturnable<Boolean> cir) {
         if (!(pLevel instanceof final Level level)) {
             return;
         }

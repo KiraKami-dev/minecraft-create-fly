@@ -16,11 +16,11 @@ import java.util.Set;
 public abstract class ServerPlayerMixin {
 
     @Shadow
-    public abstract ServerLevel serverLevel();
+    public abstract ServerLevel level();
 
     @WrapMethod(method = "teleportTo(DDD)V")
     public void sable$teleportTo(final double x, final double y, final double z, final Operation<Void> original) {
-        final Vector3d globalPos = Sable.HELPER.projectOutOfSubLevel(this.serverLevel(), new Vector3d(x, y, z));
+        final Vector3d globalPos = Sable.HELPER.projectOutOfSubLevel(this.level(), new Vector3d(x, y, z));
         original.call(globalPos.x, globalPos.y, globalPos.z);
     }
 
