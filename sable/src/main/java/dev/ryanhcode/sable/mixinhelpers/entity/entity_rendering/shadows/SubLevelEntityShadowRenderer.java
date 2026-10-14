@@ -1,7 +1,5 @@
 package dev.ryanhcode.sable.mixinhelpers.entity.entity_rendering.shadows;
 
-import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.blaze3d.vertex.VertexConsumer;
 import dev.ryanhcode.sable.Sable;
 import dev.ryanhcode.sable.api.entity.EntitySubLevelUtil;
 import dev.ryanhcode.sable.api.math.OrientedBoundingBox3d;
@@ -11,7 +9,6 @@ import dev.ryanhcode.sable.companion.math.Pose3dc;
 import dev.ryanhcode.sable.sublevel.ClientSubLevel;
 import dev.ryanhcode.sable.sublevel.SubLevel;
 import net.minecraft.client.renderer.LightTexture;
-import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.util.Mth;
@@ -62,8 +59,7 @@ public class SubLevelEntityShadowRenderer {
                                                      final float f,
                                                      final float partialTick,
                                                      final float shadowRadius,
-                                                     final VertexConsumer vertexConsumer,
-                                                     final PoseStack.Pose pose) {
+                                                     final SubLevelShadowList out) {
         final Quaterniondc customOrientation = EntitySubLevelUtil.getCustomEntityOrientation(entity, partialTick);
         final Vec3 entityOrigin = entity.getPosition(partialTick);
         Vec3 entityFeet = entityOrigin;
@@ -192,9 +188,8 @@ public class SubLevelEntityShadowRenderer {
 
                         LOCAL_POS.add(entityFeet.x - entityOrigin.x, entityFeet.y - entityOrigin.y, entityFeet.z - entityOrigin.z);
 
-                        shadowVertex(pose,
-                                vertexConsumer,
-                                alpha << 24 | 0xFFFFFF,
+                        out.addVertex(
+                                Mth.clamp(alpha, 0, 255),
                                 (float) LOCAL_POS.x,
                                 (float) LOCAL_POS.y,
                                 (float) LOCAL_POS.z,
@@ -204,10 +199,5 @@ public class SubLevelEntityShadowRenderer {
                 }
             }
         }
-    }
-
-    private static void shadowVertex(final PoseStack.Pose pose, final VertexConsumer vertexConsumer, final int i, final float f, final float g, final float h, final float j, final float k) {
-        final Vector3f vector3f = pose.pose().transformPosition(f, g, h, RENDER_POSITION);
-        vertexConsumer.addVertex(vector3f.x(), vector3f.y(), vector3f.z(), i, j, k, OverlayTexture.NO_OVERLAY, LightTexture.FULL_BRIGHT, 0.0F, 1.0F, 0.0F);
     }
 }
