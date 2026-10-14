@@ -9,6 +9,7 @@ import dev.ryanhcode.sable.veillite.api.network.VeilPacketManager;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.core.Direction;
 import net.minecraft.network.chat.Component;
@@ -31,26 +32,26 @@ public class GizmoScreen extends Screen {
     }
 
     @Override
-    public boolean mouseClicked(final double d, final double e, final int i) {
+    public boolean mouseClicked(final MouseButtonEvent event, final boolean doubleClick) {
         final SableClientGizmoHandler gizmoHandler = SableClient.GIZMO_HANDLER;
         if (gizmoHandler.getSelection() != null) {
             this.activeSelection = gizmoHandler.getSelection();
             this.dragging = true;
         }
 
-        return super.mouseClicked(d, e, i);
+        return super.mouseClicked(event, doubleClick);
     }
 
     @Override
-    public boolean mouseReleased(final double d, final double e, final int i) {
+    public boolean mouseReleased(final MouseButtonEvent event) {
         this.dragging = false;
         this.activeSelection = null;
 
-        return super.mouseReleased(d, e, i);
+        return super.mouseReleased(event);
     }
 
     @Override
-    public boolean mouseDragged(final double x, final double y, final int i, final double f, final double g) {
+    public boolean mouseDragged(final MouseButtonEvent event, final double dragX, final double dragY) {
         final SableClientGizmoHandler gizmoHandler = SableClient.GIZMO_HANDLER;
 
         if (this.dragging) {
@@ -63,18 +64,18 @@ public class GizmoScreen extends Screen {
             final SubLevel subLevel = container.getSubLevel(subLevelID);
             if (subLevel == null) {
                 this.cancel();
-                return super.mouseDragged(x, y, i, f, g);
+                return super.mouseDragged(event, dragX, dragY);
             }
 
             final int ordinal = (this.activeSelection.axis().ordinal() + 1) % 3;
             final Direction.Axis axis = Direction.Axis.VALUES[ordinal];
 
-            final Vector3d dragNormal = JOMLConversion.atLowerCornerOf(Direction.get(Direction.AxisDirection.POSITIVE, this.activeSelection.axis()).getNormal());
+            final Vector3d dragNormal = JOMLConversion.atLowerCornerOf(Direction.get(Direction.AxisDirection.POSITIVE, this.activeSelection.axis()).getUnitVec3i());
 
             final Vector3d pos = JOMLConversion.toJOML(minecraft.player.getEyePosition());
             final Vector3d relativePos = new Vector3d(pos).sub(subLevel.logicalPose().position());
 
-            final Vector3d planeNormal = JOMLConversion.atLowerCornerOf(Direction.get(Direction.AxisDirection.POSITIVE, axis).getNormal());
+            final Vector3d planeNormal = JOMLConversion.atLowerCornerOf(Direction.get(Direction.AxisDirection.POSITIVE, axis).getUnitVec3i());
             if (relativePos.dot(planeNormal) < 0.0) {
                 planeNormal.negate();
             }
@@ -99,7 +100,7 @@ public class GizmoScreen extends Screen {
             }
         }
 
-        return super.mouseDragged(x, y, i, f, g);
+        return super.mouseDragged(event, dragX, dragY);
     }
 
     @Override

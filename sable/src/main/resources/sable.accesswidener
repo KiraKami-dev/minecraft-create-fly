@@ -90,14 +90,7 @@ accessible field net/minecraft/world/entity/Entity levelCallback Lnet/minecraft/
 accessible class net/minecraft/server/level/ChunkMap$DistanceManager
 
 # Gizmo
-accessible method net/minecraft/client/renderer/GameRenderer getFov (Lnet/minecraft/client/Camera;FZ)D
-
-# Sub-Level rendering
-accessible method net/minecraft/client/renderer/chunk/SectionRenderDispatcher$RenderSection updateGlobalBlockEntities (Ljava/util/Collection;)V
-accessible method net/minecraft/client/renderer/chunk/SectionRenderDispatcher$RenderSection setCompiled (Lnet/minecraft/client/renderer/chunk/SectionRenderDispatcher$CompiledSection;)V
-accessible field net/minecraft/client/renderer/LevelRenderer cullingFrustum Lnet/minecraft/client/renderer/culling/Frustum;
-accessible field net/minecraft/client/renderer/chunk/SectionRenderDispatcher bufferPool Lnet/minecraft/client/renderer/SectionBufferBuilderPool;
-mutable field net/minecraft/client/renderer/chunk/SectionRenderDispatcher bufferPool Lnet/minecraft/client/renderer/SectionBufferBuilderPool;
+accessible method net/minecraft/client/renderer/GameRenderer getFov (Lnet/minecraft/client/Camera;FZ)F
 
 # Entity Getting
 accessible method net/minecraft/world/level/Level getEntities ()Lnet/minecraft/world/level/entity/LevelEntityGetter;

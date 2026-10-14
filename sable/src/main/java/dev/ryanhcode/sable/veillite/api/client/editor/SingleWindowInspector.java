@@ -6,8 +6,6 @@
 package dev.ryanhcode.sable.veillite.api.client.editor;
 
 import dev.ryanhcode.sable.veillite.api.client.render.VeilRenderSystem;
-import imgui.ImGui;
-import imgui.type.ImBoolean;
 import net.minecraft.network.chat.Component;
 
 /**
@@ -15,23 +13,21 @@ import net.minecraft.network.chat.Component;
  */
 public abstract class SingleWindowInspector implements Inspector {
 
-    protected final ImBoolean open = new ImBoolean();
+    protected boolean open;
 
     @Override
     public void render() {
-        if (ImGui.begin(this.getWindowTitle().getString(), this.open)) {
+        // There is no ImGui on 1.21.11 (see VeilRenderSystem#hasImGui), so this is only reached by a future editor backend
+        if (this.open) {
             this.renderComponents();
-        }
-        ImGui.end();
-
-        if (!this.open.get()) {
+        } else {
             VeilRenderSystem.renderer().getEditorManager().hide(this);
         }
     }
 
     @Override
     public void onShow() {
-        this.open.set(true);
+        this.open = true;
     }
 
     /**
