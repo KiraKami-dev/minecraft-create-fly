@@ -55,6 +55,7 @@
     "particle.ClientLevelMixin",
     "particle.FlameParticleMixin",
     "particle.ParticleEngineMixin",
+    "particle.ParticleGroupMixin",
     "particle.ParticleMixin",
     "particle.SuspendedParticleMixin",
     "particle.TerrainParticleMixin",

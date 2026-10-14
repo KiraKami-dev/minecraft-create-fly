@@ -38,13 +38,4 @@ public abstract class ParticleEngineMixin {
         ((ParticleExtension) particle).sable$initialKickOut();
     }
 
-    @WrapOperation(method = "*", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/particle/Particle;tick()V"))
-    private void sable$onParticleTick(final Particle instance, final Operation<Void> original) {
-        final ParticleExtension extension = ((ParticleExtension) instance);
-
-        extension.sable$initialKickOut();
-        original.call(instance);
-        extension.sable$moveWithInheritedVelocity();
-    }
-
 }
