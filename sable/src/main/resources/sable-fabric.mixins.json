@@ -9,7 +9,6 @@
     "camera_rotation.CameraMixin",
     "dynamic_directional_shading.SectionCompilerMixin",
     "fix_bundle_packet.ClientPacketListenerMixin",
-    "fix_bundle_packet.ClientPlayNetworkAddonMixin",
     "sound.MovingSoundInstanceDelegateMixin"
   ],
   "mixins": [
