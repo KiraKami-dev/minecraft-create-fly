@@ -4,6 +4,7 @@ import com.mojang.authlib.GameProfile;
 import dev.ryanhcode.sable.api.sublevel.SubLevelContainer;
 import dev.ryanhcode.sable.mixinterface.player_freezing.PlayerFreezeExtension;
 import dev.ryanhcode.sable.sublevel.ClientSubLevel;
+import net.minecraft.client.multiplayer.ClientPacketListener;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
@@ -20,8 +21,8 @@ public abstract class LocalPlayerMixin extends Player implements PlayerFreezeExt
         super(level, gameProfile);
     }
 
-    @Redirect(method = "tick", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/level/Level;hasChunkAt(II)Z"))
-    private boolean sable$freezeTicking(final Level instance, final int x, final int z) {
+    @Redirect(method = "tick", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/multiplayer/ClientPacketListener;hasClientLoaded()Z"))
+    private boolean sable$freezeTicking(final ClientPacketListener instance) {
         this.sable$tickStopFreezing();
 
         final UUID uuid = this.sable$getFrozenToSubLevel();
@@ -39,6 +40,6 @@ public abstract class LocalPlayerMixin extends Player implements PlayerFreezeExt
             this.sable$freezeTo(null, null);
         }
 
-        return instance.hasChunkAt(x, z);
+        return instance.hasClientLoaded();
     }
 }

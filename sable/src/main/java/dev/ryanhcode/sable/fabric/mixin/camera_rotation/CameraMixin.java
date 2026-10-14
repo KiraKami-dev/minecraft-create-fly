@@ -57,7 +57,7 @@ public abstract class CameraMixin {
 
     @Shadow @Deprecated protected abstract void setRotation(float f, float g);
 
-    @Redirect(method = "setup", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/Camera;setRotation(FF)V", ordinal = 1))
+    @Redirect(method = "setup", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/Camera;setRotation(FF)V", ordinal = 2))
     private void sable$redirectSetRotation(final Camera camera, final float f, final float g) {
         this.setRotation(this.entity.getViewYRot(f) + 180.0f, -this.entity.getViewXRot(f));
     }
