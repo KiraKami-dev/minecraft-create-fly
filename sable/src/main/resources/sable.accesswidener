@@ -111,3 +111,6 @@ accessible field net/minecraft/world/entity/InterpolationHandler$InterpolationDa
 
 # Entity culling
 accessible method net/minecraft/client/renderer/entity/EntityRenderer getBoundingBoxForCulling (Lnet/minecraft/world/entity/Entity;)Lnet/minecraft/world/phys/AABB;
+
+accessible class net/minecraft/server/level/ServerPlayer$RespawnPosAngle
+accessible method net/minecraft/server/level/ServerPlayer$RespawnPosAngle <init> (Lnet/minecraft/world/phys/Vec3;FF)V
