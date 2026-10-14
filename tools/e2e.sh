@@ -28,11 +28,19 @@ if [ "$MODE" = server ] || [ "$MODE" = all ]; then
 fi
 
 if [ "$MODE" = client ] || [ "$MODE" = all ]; then
-  mkdir -p "$CLI/saves"
-  if [ ! -d "$CLI/saves/e2e" ]; then
-    [ -d "$SRV/world" ] || { echo "run 'tools/e2e.sh server' first (it generates the flat world)"; exit 1; }
-    cp -r "$SRV/world" "$CLI/saves/e2e"
+  # Every run starts from a copy of a clean template world. The server run saves the sub-levels it
+  # spawned (in sublevels/, data/ and the plot chunks), so its world can't be reused.
+  TEMPLATE=e2e/run/template-world
+  if [ ! -d "$TEMPLATE" ]; then
+    echo "creating clean template world (one-off server boot without spawning)..."
+    rm -rf "$SRV/world"; mkdir -p "$SRV"
+    echo "eula=true" > "$SRV/eula.txt"
+    printf 'level-type=minecraft\\:flat\nonline-mode=false\nlevel-name=world\nspawn-protection=0\nmax-tick-time=-1\n' > "$SRV/server.properties"
+    ./gradlew :e2e:runServer -Pe2ePrepare --console=plain > "$SRV/gradle-template.log" 2>&1 \
+      || { echo "template world creation failed, see $SRV/gradle-template.log"; exit 1; }
+    cp -r "$SRV/world" "$TEMPLATE"
   fi
+  mkdir -p "$CLI/saves" && rm -rf "$CLI/saves/e2e" && cp -r "$TEMPLATE" "$CLI/saves/e2e"
   # keep simulating while the window is unfocused; skip onboarding screens
   printf 'pauseOnLostFocus:false\nonboardAccessibility:false\ntutorialStep:none\nskipMultiplayerWarning:true\njoinedFirstServer:true\n' > "$CLI/options.txt"
   rm -rf "$CLI/screenshots"

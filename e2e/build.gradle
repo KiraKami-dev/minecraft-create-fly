@@ -18,7 +18,8 @@ loom {
     runs {
         configureEach {
             vmArg '-De2e.enabled=true'
-            vmArg "-De2e.commands=${e2eCommands}"
+            // -Pe2ePrepare: boot without spawning anything (tools/e2e.sh uses it to make a clean template world)
+            vmArg "-De2e.commands=${project.hasProperty('e2ePrepare') ? '' : e2eCommands}"
             vmArg '-Dmixin.debug.verify=true'
         }
         client { runDir 'run/client'; programArgs '--quickPlaySingleplayer', 'e2e' }
