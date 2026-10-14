@@ -12,6 +12,7 @@ import net.minecraft.network.protocol.game.ClientboundAddEntityPacket;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.InterpolationHandler;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
@@ -31,13 +32,6 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public abstract class LivingEntityMixin extends Entity implements LivingEntityStickExtension {
 
 
-    @Shadow
-    protected int lerpSteps;
-    @Shadow
-    protected double lerpYRot;
-    @Shadow
-    protected double lerpXRot;
-
     @Shadow protected abstract void updateWalkAnimation(float f);
 
     @Unique
@@ -49,6 +43,12 @@ public abstract class LivingEntityMixin extends Entity implements LivingEntitySt
     @Unique
     private int sable$sableRotLerpSteps;
 
+    @Unique
+    private double sable$lerpYRot;
+
+    @Unique
+    private double sable$lerpXRot;
+
     public LivingEntityMixin(final EntityType<?> entityType,
                              final Level level) {
         super(entityType, level);
@@ -57,9 +57,13 @@ public abstract class LivingEntityMixin extends Entity implements LivingEntitySt
     @Override
     public void sable$setupLerp() {
         // Prevent vanilla lerp from happening
-        if (this.sable$getPlotPosition() != null && this.lerpSteps > 0) {
-            this.sable$sableRotLerpSteps = this.lerpSteps;
-            this.lerpSteps = 0;
+        // PORT(1.21.11): vanilla lerp state (lerpSteps/lerpYRot/lerpXRot) moved into InterpolationHandler
+        final InterpolationHandler interpolation = this.getInterpolation();
+        if (this.sable$getPlotPosition() != null && interpolation != null && interpolation.hasActiveInterpolation()) {
+            this.sable$sableRotLerpSteps = interpolation.interpolationData.steps;
+            this.sable$lerpYRot = interpolation.yRot();
+            this.sable$lerpXRot = interpolation.xRot();
+            interpolation.cancel();
         }
     }
 
@@ -77,9 +81,9 @@ public abstract class LivingEntityMixin extends Entity implements LivingEntitySt
             --this.sable$sableLerpSteps;
         }
         if (this.sable$sableRotLerpSteps > 0) {
-            final double difference = Mth.wrapDegrees(this.lerpYRot - (double) this.getYRot());
+            final double difference = Mth.wrapDegrees(this.sable$lerpYRot - (double) this.getYRot());
             this.setYRot(this.getYRot() + (float) difference / (float) this.sable$sableRotLerpSteps);
-            this.setXRot(this.getXRot() + (float) (this.lerpXRot - (double) this.getXRot()) / (float) this.sable$sableRotLerpSteps);
+            this.setXRot(this.getXRot() + (float) (this.sable$lerpXRot - (double) this.getXRot()) / (float) this.sable$sableRotLerpSteps);
             --this.sable$sableRotLerpSteps;
             this.setRot(this.getYRot(), this.getXRot());
         }

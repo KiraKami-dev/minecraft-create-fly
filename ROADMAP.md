@@ -1,6 +1,6 @@
 # Create Aeronautics on Fabric 1.21.11: roadmap and progress
 
-_Last updated: 2026-10-14. Keep this file current: update the status tables when you claim, finish or
+_Last updated: 2026-10-14 (server + client e2e passing). Keep this file current: update the status tables when you claim, finish or
 discover a task._
 
 ## Goal
@@ -81,13 +81,14 @@ Legend: ✅ done · 🔄 in progress · ⬜ todo · ⏸ deferred/gated
 | S5 | Entity/camera/particle mixins (71+) | ✅ | | |
 | S6 | Water occlusion (no water inside hulls) | ✅ (untested in game) | | depth-volume discard in custom translucent pipeline |
 | S7 | **`:sable:compileJava` = 0 errors**, access widener validates | ✅ | | 2026-10-14 |
-| S8 | **Runtime: dedicated server e2e passes** (all mixins apply, sub-levels simulate) | 🔄 | agent (branch `runtime-fixes`) | first failure: `ExplosionMixin` targets `Explosion` (now an interface), needs moving to `ServerExplosion` |
-| S9 | **Runtime: client e2e**: sub-levels visible, correct pose/lighting in screenshots | ⬜ | | after S8 |
+| S8 | **Runtime: dedicated server e2e passes** (all mixins apply, sub-levels simulate) | ✅ | | 2026-10-14: mixin audit passes; jenga/sphere/platform spawn, simulate 600 ticks and save; 13 mixins re-targeted (explosion → `ServerExplosion`, thunder → `tickThunder`, leash physics, …) |
+| S9 | **Runtime: client e2e**: sub-levels visible, correct pose/lighting in screenshots | ✅ | | 2026-10-14: all client mixins apply; tower, platform and sphere render textured and lit in their physics poses (`tools/e2e.sh client`, screenshots in `e2e/run/client/screenshots/`) |
+| S9a | **Bug:** `/sable spawn sphere` sub-level hangs in mid-air and never moves (the platform and tower fall and settle normally) | ⬜ | | spawn code is identical to upstream; check whether its rigid body/collider is created. Might also be upstream behaviour; compare on 1.21.1 |
 | S10 | Manual playtest: assemble, collide, stand on, ride a sub-level | ⬜ | | after S9 |
 | S11 | Sodium support (sub-levels currently not drawn under Sodium; Sable `breaks` Sodium) | ⬜ | | needs a Sodium 0.8 chunk-render integration |
 | S12 | Flywheel (inside Create Fly) block entities on sub-levels | ⬜ | | upstream support lived only in the NeoForge module; likely invisible today |
 | S13 | Sky-light shadows from sub-levels | ⏸ | | hard-off; needs a shadow-map pass + terrain pipeline variant (see `SableSkyLightShadows`) |
-| S14 | Dynamic directional shading of rotated sub-levels | ⏸ | | render-core supports it in its shader; render-fx's mesh half still gated (`SUPPORTED=false`); check the Indigo renderer path |
+| S14 | Dynamic directional shading of rotated sub-levels | ⬜ | | **visible in e2e:** a flipped sub-level keeps its original face shading (an upside-down platform shows a dark top). The render-core shader supports it; render-fx's mesh half is gated (`SUPPORTED=false`); check the Indigo renderer path. Priority for ships that tilt |
 | S15 | Water occlusion near-plane clipping (no `GL_DEPTH_CLAMP` in blaze3d) | ⏸ | | minor |
 | S16 | ImGui inspector windows | ⏸ | | Veil's ImGui overlay doesn't exist on 1.21.11 |
 | S17 | Review third-party compat mixins (sodium-extras, distant horizons, shoulder surfing, exposure, …) | ⬜ | | some were dropped or left uncompiled during the port; re-add those whose 1.21.11 versions exist |

@@ -17,7 +17,8 @@ import dev.ryanhcode.sable.util.SableNBTUtils;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
-import net.minecraft.nbt.NbtUtils;
+import net.minecraft.core.UUIDUtil;
+import net.minecraft.nbt.NbtOps;
 import net.minecraft.nbt.Tag;
 import net.minecraft.server.level.ServerLevel;
 import org.jetbrains.annotations.NotNull;
@@ -44,7 +45,7 @@ public class SubLevelSerializer {
         final ListTag dependencyTags = new ListTag();
 
         for (final UUID dependency : dependencies) {
-            dependencyTags.add(NbtUtils.createUUID(dependency));
+            dependencyTags.add(UUIDUtil.CODEC.encodeStart(NbtOps.INSTANCE, dependency).getOrThrow());
         }
 
         final Pose3d serializedPose = new Pose3d(subLevel.logicalPose());
@@ -52,7 +53,7 @@ public class SubLevelSerializer {
         serializedPose.position().set(subLevel.logicalPose().transformPosition(new Vector3d(selfCenterOfMass)));
         serializedPose.rotationPoint().set(selfCenterOfMass);
 
-        tag.putUUID("uuid", subLevel.getUniqueId());
+        tag.store("uuid", UUIDUtil.CODEC, subLevel.getUniqueId());
         tag.put("plot", plot.save());
         tag.put("pose", SableNBTUtils.writePose3d(serializedPose));
         tag.put("world_bounds", SableNBTUtils.writeBoundingBox(subLevel.boundingBox()));
@@ -95,23 +96,23 @@ public class SubLevelSerializer {
      */
     @Nullable
     public static SubLevelData fromData(final CompoundTag tag) {
-        final UUID uuid = tag.getUUID("uuid");
+        final UUID uuid = tag.read("uuid", UUIDUtil.CODEC).orElseThrow();
 
         List<UUID> dependencies = List.of();
         if (tag.contains("loading_dependencies")) {
-            final ListTag dependencyUUIDS = tag.getList("loading_dependencies", Tag.TAG_INT_ARRAY);
+            final ListTag dependencyUUIDS = tag.getListOrEmpty("loading_dependencies");
 
             dependencies = new ObjectArrayList<>();
 
             for (final Tag dependencyUUIDTag : dependencyUUIDS) {
-                final UUID dependencyUUID = NbtUtils.loadUUID(dependencyUUIDTag);
+                final UUID dependencyUUID = UUIDUtil.CODEC.parse(NbtOps.INSTANCE, dependencyUUIDTag).getOrThrow();
 
                 dependencies.add(dependencyUUID);
             }
         }
 
-        final Pose3d pose = SableNBTUtils.readPose3d(tag.getCompound("pose"));
-        final BoundingBox3d worldBounds = SableNBTUtils.readBoundingBox(tag.getCompound("world_bounds"));
+        final Pose3d pose = SableNBTUtils.readPose3d(tag.getCompoundOrEmpty("pose"));
+        final BoundingBox3d worldBounds = SableNBTUtils.readBoundingBox(tag.getCompoundOrEmpty("world_bounds"));
 
         return new SubLevelData(
                 uuid,
@@ -130,12 +131,12 @@ public class SubLevelSerializer {
      */
     public static ServerSubLevel fullyLoad(final ServerLevel level, final SubLevelData halfLoadedSubLevel) {
         final CompoundTag tag = halfLoadedSubLevel.fullTag();
-        final CompoundTag plotTag = tag.getCompound("plot");
+        final CompoundTag plotTag = tag.getCompoundOrEmpty("plot");
 
-        final int plotX = plotTag.getInt("plot_x");
-        final int plotZ = plotTag.getInt("plot_z");
+        final int plotX = plotTag.getIntOr("plot_x", 0);
+        final int plotZ = plotTag.getIntOr("plot_z", 0);
 
-        final Pose3d pose = SableNBTUtils.readPose3d(tag.getCompound("pose"));
+        final Pose3d pose = SableNBTUtils.readPose3d(tag.getCompoundOrEmpty("pose"));
 
         final Vector3d position = pose.position();
         final Vector3d cor = pose.rotationPoint();
@@ -178,23 +179,23 @@ public class SubLevelSerializer {
         Vector3dc angularVelocity = JOMLConversion.ZERO;
 
         if (tag.contains("linear_velocity")) {
-            linearVelocity = SableNBTUtils.readVector3d(tag.getCompound("linear_velocity"))
+            linearVelocity = SableNBTUtils.readVector3d(tag.getCompoundOrEmpty("linear_velocity"))
                     .mul(SableConfig.VELOCITY_RETAINED_ON_LOAD.getAsDouble());
         }
 
         if (tag.contains("angular_velocity")) {
-            angularVelocity = SableNBTUtils.readVector3d(tag.getCompound("angular_velocity"))
+            angularVelocity = SableNBTUtils.readVector3d(tag.getCompoundOrEmpty("angular_velocity"))
                     .mul(SableConfig.VELOCITY_RETAINED_ON_LOAD.getAsDouble());
         }
 
         physicsSystem.getPipeline().addLinearAndAngularVelocity(subLevel, linearVelocity, angularVelocity);
 
         if (tag.contains("display_name")) {
-            subLevel.setName(tag.getString("display_name"));
+            subLevel.setName(tag.getStringOr("display_name", ""));
         }
 
         if (tag.contains("user_data")) {
-            subLevel.setUserDataTag(tag.getCompound("user_data"));
+            subLevel.setUserDataTag(tag.getCompoundOrEmpty("user_data"));
         }
 
         subLevel.updateBoundingBox();

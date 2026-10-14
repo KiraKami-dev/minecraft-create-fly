@@ -32,7 +32,7 @@ public abstract class CameraMixin {
     private Vec3 position;
 
     @Shadow
-    private BlockGetter level;
+    private Level level;
 
     @Shadow public abstract Camera.NearPlane getNearPlane();
 
@@ -42,7 +42,7 @@ public abstract class CameraMixin {
             final BoundingBox3d bounds = new BoundingBox3d(this.position.x - 0.5, this.position.y - 0.5, this.position.z - 0.5,
                     this.position.x + 0.5, this.position.y + 0.5, this.position.z + 0.5);
 
-            final Iterable<SubLevel> intersecting = Sable.HELPER.getAllIntersecting((Level) this.level, bounds);
+            final Iterable<SubLevel> intersecting = Sable.HELPER.getAllIntersecting(this.level, bounds);
 
             for (final SubLevel subLevel : intersecting) {
                 final FogType fogType = this.sable$getFluidInCameraAt(((ClientSubLevel) subLevel).renderPose());

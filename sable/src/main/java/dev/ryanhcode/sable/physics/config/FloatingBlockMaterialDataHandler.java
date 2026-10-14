@@ -7,6 +7,8 @@ import com.mojang.serialization.JsonOps;
 import dev.ryanhcode.sable.Sable;
 import dev.ryanhcode.sable.physics.floating_block.FloatingBlockMaterial;
 import net.minecraft.resources.Identifier;
+import net.minecraft.resources.FileToIdConverter;
+import net.minecraft.util.ExtraCodecs;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.server.packs.resources.SimpleJsonResourceReloadListener;
 import net.minecraft.util.profiling.ProfilerFiller;
@@ -25,7 +27,7 @@ public class FloatingBlockMaterialDataHandler {
         allMaterials.clear();
     }
 
-    public static class ReloadListener extends SimpleJsonResourceReloadListener {
+    public static class ReloadListener extends SimpleJsonResourceReloadListener<JsonElement> {
         public static final String NAME = "floating_block_material";
         public static final Identifier ID = Sable.sablePath(NAME);
 
@@ -34,7 +36,7 @@ public class FloatingBlockMaterialDataHandler {
         public static final ReloadListener INSTANCE = new ReloadListener();
 
         protected ReloadListener() {
-            super(ReloadListener.GSON, "floating_materials");
+            super(ExtraCodecs.JSON, FileToIdConverter.json("floating_materials"));
         }
 
         @Override

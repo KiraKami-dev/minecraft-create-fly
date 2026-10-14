@@ -14,6 +14,8 @@ import net.minecraft.core.HolderSet;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.Identifier;
+import net.minecraft.resources.FileToIdConverter;
+import net.minecraft.util.ExtraCodecs;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.server.packs.resources.SimpleJsonResourceReloadListener;
 import net.minecraft.tags.TagKey;
@@ -28,7 +30,7 @@ import java.util.Comparator;
 import java.util.Map;
 import java.util.Optional;
 
-public class PhysicsBlockPropertiesDefinitionLoader extends SimpleJsonResourceReloadListener {
+public class PhysicsBlockPropertiesDefinitionLoader extends SimpleJsonResourceReloadListener<JsonElement> {
     public static final String NAME = "physics_block_properties";
     public static final Identifier ID = Sable.sablePath(NAME);
 
@@ -37,7 +39,7 @@ public class PhysicsBlockPropertiesDefinitionLoader extends SimpleJsonResourceRe
     private final ObjectList<PhysicsBlockPropertiesDefinition> definitions = new ObjectArrayList<>();
 
     private PhysicsBlockPropertiesDefinitionLoader() {
-        super(GSON, NAME);
+        super(ExtraCodecs.JSON, FileToIdConverter.json(NAME));
     }
 
     @Override
@@ -79,7 +81,7 @@ public class PhysicsBlockPropertiesDefinitionLoader extends SimpleJsonResourceRe
         if (selector.tag()) {
             // The selector is a tag, let's pick all blocks
             final TagKey<Block> tagKey = TagKey.create(Registries.BLOCK, selector.id());
-            final Optional<HolderSet.Named<Block>> tagBlocks = BuiltInRegistries.BLOCK.getTag(tagKey);
+            final Optional<HolderSet.Named<Block>> tagBlocks = BuiltInRegistries.BLOCK.get(tagKey);
 
             if (tagBlocks.isPresent()) {
                 final HolderSet.Named<Block> blockHolders = tagBlocks.get();
@@ -95,7 +97,7 @@ public class PhysicsBlockPropertiesDefinitionLoader extends SimpleJsonResourceRe
         } else {
             if (BuiltInRegistries.BLOCK.containsKey(selector.id())) {
                 // The selector is not a tag, let's just get the block
-                final Block block = BuiltInRegistries.BLOCK.get(selector.id());
+                final Block block = BuiltInRegistries.BLOCK.getValue(selector.id());
                 blocks.add(block);
             } else {
                 Sable.LOGGER.error("Failed to apply tag physics properties. Unknown block: {}", selector.id());

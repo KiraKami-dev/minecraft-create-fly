@@ -10,7 +10,18 @@ loom {
 dependencies {
     include(implementation('org.apache.maven:maven-artifact:3.8.5'))
     include(modApi("fuzs.forgeconfigapiport:forgeconfigapiport-fabric:${forgeconfigapiport_version}"))
-    modCompileOnly("maven.modrinth:imguimc:${imguimc_version}")
+    // Optional ImGui (debug inspectors only); Modrinth version id of imguimc 2.0.5+mc1.21.11 (fabric)
+    modCompileOnly("maven.modrinth:imguimc:5h3ujBwr")
+    // imguimc bundles the imgui-java binding as a nested jar, which is not on the compile classpath
+    compileOnly files('libs/imgui-java-binding-1.92.7.1.jar')
+
+    // Optional compat targets (compileOnly; mixins are gated by SableMixinPlugin on mod presence)
+    modCompileOnly("maven.modrinth:sodium:mc1.21.11-0.8.14-fabric")
+    modCompileOnly("maven.modrinth:iris:1.10.8+1.21.11-fabric")
+    modCompileOnly("maven.modrinth:shoulder-surfing-reloaded:1.21.11-5.2.0+fabric")
+    modCompileOnly("maven.modrinth:jade:21.1.6+fabric")
+    // CC: Tweaked 1.117.1 (fabric) by Modrinth version id
+    modCompileOnly("maven.modrinth:cc-tweaked:IikPYYtH")
 }
 
 processResources {

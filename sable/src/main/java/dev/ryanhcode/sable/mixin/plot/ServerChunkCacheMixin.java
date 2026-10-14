@@ -7,7 +7,6 @@ import dev.ryanhcode.sable.sublevel.plot.PlotChunkHolder;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.server.level.*;
-import net.minecraft.server.level.progress.ChunkProgressListener;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.biome.Biomes;
 import net.minecraft.world.level.chunk.*;
@@ -24,6 +23,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.function.Consumer;
@@ -39,14 +39,18 @@ public class ServerChunkCacheMixin {
     @Final
     ServerLevel level;
 
+    @Shadow
+    @Final
+    private Set<ChunkHolder> chunkHoldersToBroadcast;
+
     @Unique
     private EmptyLevelChunk sable$emptyChunk;
 
     @Inject(method = "<init>", at = @At("RETURN"))
     public void init(final ServerLevel serverLevel, final LevelStorageSource.LevelStorageAccess levelStorageAccess, final DataFixer dataFixer, final StructureTemplateManager structureTemplateManager,
-                     final Executor executor, final ChunkGenerator chunkGenerator, final int i, final int j, final boolean bl, final ChunkProgressListener chunkProgressListener,
+                     final Executor executor, final ChunkGenerator chunkGenerator, final int i, final int j, final boolean bl,
                      final ChunkStatusUpdateListener chunkStatusUpdateListener, final Supplier supplier, final CallbackInfo ci) {
-        this.sable$emptyChunk = new EmptyLevelChunk(serverLevel, new ChunkPos(0, 0), serverLevel.registryAccess().registryOrThrow(Registries.BIOME).getHolderOrThrow(Biomes.PLAINS));
+        this.sable$emptyChunk = new EmptyLevelChunk(serverLevel, new ChunkPos(0, 0), serverLevel.registryAccess().lookupOrThrow(Registries.BIOME).getOrThrow(Biomes.PLAINS));
     }
 
     @Unique
@@ -144,7 +148,10 @@ public class ServerChunkCacheMixin {
                 throw new UnsupportedOperationException("Cannot change blocks in nonexistent plot holder");
             }
 
-            holder.blockChanged(blockPos);
+            // Since 1.21.5 only holders queued here are broadcast, instead of every visible holder
+            if (holder.blockChanged(blockPos)) {
+                this.chunkHoldersToBroadcast.add(holder);
+            }
             ci.cancel();
         }
     }
@@ -163,8 +170,8 @@ public class ServerChunkCacheMixin {
         }
     }
 
-    @Inject(method = "addRegionTicket", at = @At("HEAD"), cancellable = true)
-    private <T> void addRegionTicket(final TicketType<T> type, final ChunkPos pos, final int distance, final T value, final CallbackInfo ci) {
+    @Inject(method = "addTicketWithRadius", at = @At("HEAD"), cancellable = true)
+    private void addRegionTicket(final TicketType type, final ChunkPos pos, final int distance, final CallbackInfo ci) {
         final SubLevelContainer container = this.sable$getPlotContainer();
         if (container.inBounds(pos)) {
             ci.cancel();

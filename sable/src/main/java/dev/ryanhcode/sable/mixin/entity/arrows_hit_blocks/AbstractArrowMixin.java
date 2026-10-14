@@ -1,8 +1,8 @@
 package dev.ryanhcode.sable.mixin.entity.arrows_hit_blocks;
 
 import com.llamalad7.mixinextras.sugar.Local;
-import com.llamalad7.mixinextras.sugar.Share;
-import com.llamalad7.mixinextras.sugar.ref.LocalRef;
+import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
+import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import dev.ryanhcode.sable.Sable;
 import dev.ryanhcode.sable.api.entity.EntitySubLevelUtil;
 import dev.ryanhcode.sable.api.physics.handle.RigidBodyHandle;
@@ -31,62 +31,43 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public abstract class AbstractArrowMixin extends Entity {
 
     @Shadow
-    protected boolean inGround;
+    protected abstract boolean isInGround();
 
     public AbstractArrowMixin(final EntityType<?> entityType, final Level level) {
         super(entityType, level);
     }
 
-    @Redirect(method = "onHitBlock", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/entity/projectile/arrow/AbstractArrow;setDeltaMovement(Lnet/minecraft/world/phys/Vec3;)V"))
-    private void sable$setDeltaMovement(final AbstractArrow arrow,
-                                        final Vec3 difference,
-                                        @Local(argsOnly = true) final BlockHitResult blockHitResult,
-                                        @Share("difference") final LocalRef<Vec3> differenceRef,
-                                        @Share("subLevel") final LocalRef<SubLevel> subLevelRef) {
+    /**
+     * PORT(1.21.11): AbstractArrow#onHitBlock no longer points the delta movement at the hit location and sets the
+     * position with setPosRaw; it nudges the arrow back by the sign of its velocity with setPos and zeroes the velocity.
+     * Both the impulse and the sub-level local re-positioning therefore happen here, while the velocity is still intact.
+     */
+    @WrapOperation(method = "onHitBlock", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/entity/projectile/arrow/AbstractArrow;setPos(Lnet/minecraft/world/phys/Vec3;)V"))
+    private void sable$setPos(final AbstractArrow instance,
+                              final Vec3 pos,
+                              final Operation<Void> original,
+                              @Local(argsOnly = true) final BlockHitResult blockHitResult) {
         final SubLevel subLevel = Sable.HELPER.getContaining(this.level(), blockHitResult.getLocation());
 
         if (subLevel == null) {
-            arrow.setDeltaMovement(difference);
+            original.call(instance, pos);
             return;
         }
 
         final Vec3 localPosition = subLevel.logicalPose().transformPositionInverse(this.position());
         final Vec3 diff = blockHitResult.getLocation().subtract(localPosition);
 
-        if (!this.level().isClientSide && !this.inGround) {
+        if (!this.level().isClientSide() && !this.isInGround()) {
             final Vec3 localImpulse = subLevel.logicalPose().transformNormalInverse(this.getDeltaMovement());
             RigidBodyHandle.of((ServerSubLevel) subLevel).applyImpulseAtPoint(localPosition, localImpulse);
         }
 
-        arrow.setDeltaMovement(diff.x, diff.y, diff.z);
-        differenceRef.set(diff);
-        subLevelRef.set(subLevel);
-    }
+        final Vec3 nudge = diff.normalize().scale(0.05F);
+        original.call(instance, localPosition.subtract(nudge));
 
-    @Redirect(method = "onHitBlock", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/entity/projectile/arrow/AbstractArrow;setPosRaw(DDD)V"))
-    private void sable$setPosRaw(final AbstractArrow instance,
-                                 final double x,
-                                 final double y,
-                                 final double z,
-                                 @Share("subLevel") final LocalRef<SubLevel> subLevelRef,
-                                 @Share("difference") final LocalRef<Vec3> differenceRef) {
-        final Vec3 difference = differenceRef.get();
-
-        if (difference == null) {
-            instance.setPosRaw(x, y, z);
-            return;
-        }
-
-        final Vec3 nudge = difference.normalize().scale(0.05F);
-        final SubLevel subLevel = subLevelRef.get();
-        final Vec3 localPosition = subLevel.logicalPose().transformPositionInverse(this.position());
-
-        instance.setPosRaw(localPosition.x - nudge.x, localPosition.y - nudge.y, localPosition.z - nudge.z);
-
-        final Vec3 vec3 = this.getDeltaMovement();
-        final double d = vec3.horizontalDistance();
-        this.setXRot((float) (Mth.atan2(vec3.y, d) * 57.2957763671875));
-        this.setYRot((float) (Mth.atan2(vec3.x, vec3.z) * 57.2957763671875));
+        final double d = diff.horizontalDistance();
+        this.setXRot((float) (Mth.atan2(diff.y, d) * 57.2957763671875));
+        this.setYRot((float) (Mth.atan2(diff.x, diff.z) * 57.2957763671875));
 
         this.yRotO = this.getYRot();
         this.xRotO = this.getXRot();

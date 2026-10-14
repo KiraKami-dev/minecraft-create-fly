@@ -1,13 +1,7 @@
 {
   "type": "create:deploying",
-  "ingredients": [
-    {
-      "item": "minecraft:magenta_wool"
-    },
-    {
-      "item": "minecraft:stick"
-    }
-  ],
+  "target": "minecraft:magenta_wool",
+  "ingredient": "minecraft:stick",
   "results": [
     {
       "count": 3,

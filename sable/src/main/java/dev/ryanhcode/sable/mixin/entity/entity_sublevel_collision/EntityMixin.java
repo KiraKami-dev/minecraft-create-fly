@@ -89,17 +89,31 @@ public abstract class EntityMixin implements EntityMovementExtension {
     @Shadow
     public abstract Level level();
 
-    @WrapOperation(method = "move(Lnet/minecraft/world/entity/MoverType;Lnet/minecraft/world/phys/Vec3;)V", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/entity/Entity;setOnGroundWithMovement(ZLnet/minecraft/world/phys/Vec3;)V"))
-    public void sable$moveInject(final Entity instance, final boolean bl, final Vec3 arg, final Operation<Void> original) {
+    // PORT(1.21.11): setOnGroundWithMovement now takes (onGround, horizontalCollision, movement) and is only called
+    // when |movement.y| > 0 or the instance is locally authoritative; minorHorizontalCollision is assigned after it.
+    @WrapOperation(method = "move(Lnet/minecraft/world/entity/MoverType;Lnet/minecraft/world/phys/Vec3;)V", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/entity/Entity;setOnGroundWithMovement(ZZLnet/minecraft/world/phys/Vec3;)V"))
+    public void sable$moveInject(final Entity instance, final boolean bl, final boolean bl2, final Vec3 arg, final Operation<Void> original) {
+        this.sable$applyCollisionFlags();
+        original.call(instance, this.verticalCollisionBelow, this.horizontalCollision, arg);
+    }
+
+    @Inject(method = "move(Lnet/minecraft/world/entity/MoverType;Lnet/minecraft/world/phys/Vec3;)V", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/entity/Entity;getOnPosLegacy()Lnet/minecraft/core/BlockPos;"))
+    public void sable$applyCollisionFlagsAfterVanilla(final MoverType moverType, final Vec3 vec3, final CallbackInfo ci) {
+        this.sable$applyCollisionFlags();
+    }
+
+    @Unique
+    private void sable$applyCollisionFlags() {
+        if (this.sable$collisionInfo == null) {
+            return;
+        }
         this.horizontalCollision = this.sable$collisionInfo.horizontalCollision;
         this.verticalCollision = this.sable$collisionInfo.verticalCollision;
         this.verticalCollisionBelow = this.sable$collisionInfo.verticalCollisionBelow;
         this.minorHorizontalCollision = this.sable$collisionInfo.minorHorizontalCollision;
-
-        original.call(instance, this.verticalCollisionBelow, arg);
     }
 
-    @WrapOperation(method = "move(Lnet/minecraft/world/entity/MoverType;Lnet/minecraft/world/phys/Vec3;)V", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/level/block/Block;updateEntityAfterFallOn(Lnet/minecraft/world/level/BlockGetter;Lnet/minecraft/world/entity/Entity;)V"))
+    @WrapOperation(method = "move(Lnet/minecraft/world/entity/MoverType;Lnet/minecraft/world/phys/Vec3;)V", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/level/block/Block;updateEntityMovementAfterFallOn(Lnet/minecraft/world/level/BlockGetter;Lnet/minecraft/world/entity/Entity;)V"))
     public void updateEntityAfterFallOn(final Block instance, final BlockGetter arg, final Entity arg2, final Operation<Void> original) {
         if (this.sable$collisionInfo.verticalCollisionBelow && this.getDeltaMovement().y > 0.0) {
             return;
@@ -222,7 +236,7 @@ public abstract class EntityMixin implements EntityMovementExtension {
     public abstract EntityType<?> getType();
 
     @Shadow
-    public abstract void kill();
+    public abstract void kill(net.minecraft.server.level.ServerLevel level);
 
     @Inject(method = "tick", at = @At("TAIL"))
     public void sable$tickInject(final CallbackInfo ci) {
@@ -250,8 +264,9 @@ public abstract class EntityMixin implements EntityMovementExtension {
 
         // Destroy us if we're in #sable:destroy_when_leaving_plot and we've left the plot
         if (containingSubLevel != null) {
-            if (!this.getBoundingBox().intersects(containingSubLevel.getPlot().getBoundingBox().toAABB().inflate(1.0)) && this.getType().is(SableTags.DESTROY_WHEN_LEAVING_PLOT)) {
-                this.kill();
+            if (!this.getBoundingBox().intersects(containingSubLevel.getPlot().getBoundingBox().toAABB().inflate(1.0)) && this.getType().is(SableTags.DESTROY_WHEN_LEAVING_PLOT)
+                    && this.level instanceof final net.minecraft.server.level.ServerLevel serverLevel) {
+                this.kill(serverLevel);
             }
         }
     }

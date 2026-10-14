@@ -36,8 +36,8 @@ import java.util.function.Supplier;
 @Mixin(ServerLevel.class)
 public abstract class ServerLevelMixin extends Level {
 
-    protected ServerLevelMixin(final WritableLevelData writableLevelData, final ResourceKey<Level> resourceKey, final RegistryAccess registryAccess, final Holder<DimensionType> holder, final Supplier<ProfilerFiller> supplier, final boolean bl, final boolean bl2, final long l, final int i) {
-        super(writableLevelData, resourceKey, registryAccess, holder, supplier, bl, bl2, l, i);
+    protected ServerLevelMixin(final WritableLevelData writableLevelData, final ResourceKey<Level> resourceKey, final RegistryAccess registryAccess, final Holder<DimensionType> holder, final boolean bl, final boolean bl2, final long l, final int i) {
+        super(writableLevelData, resourceKey, registryAccess, holder, bl, bl2, l, i);
     }
 
     @Shadow
@@ -63,7 +63,7 @@ public abstract class ServerLevelMixin extends Level {
     /**
      * high up injection so we're before normal chunk saving
      */
-    @Inject(method = "save", at = @At(value = "INVOKE", target = "Lnet/minecraft/server/level/ServerLevel;saveLevelData()V", shift = At.Shift.BEFORE))
+    @Inject(method = "save", at = @At(value = "INVOKE", target = "Lnet/minecraft/server/level/ServerLevel;saveLevelData(Z)V", shift = At.Shift.BEFORE))
     public void sable$saveSubLevels(final ProgressListener progressListener, final boolean bl, final boolean bl2, final CallbackInfo ci) {
         final ServerLevel self = (ServerLevel) (Object) this;
         if (progressListener != null) {
@@ -102,13 +102,16 @@ public abstract class ServerLevelMixin extends Level {
         return original;
     }
 
-    @ModifyReturnValue(method = "isNaturalSpawningAllowed(Lnet/minecraft/world/level/ChunkPos;)Z", at = @At("RETURN"))
+    /**
+     * Replaces the hook on {@code isNaturalSpawningAllowed(ChunkPos)}, which became this method (with the world border check merged in)
+     */
+    @ModifyReturnValue(method = "canSpawnEntitiesInChunk", at = @At("RETURN"))
     private boolean sable$isNaturalSpawningAllowed(boolean original, final ChunkPos chunkPos) {
         final SubLevelContainer plotContainer = SubLevelContainer.getContainer((ServerLevel) (Object) this);
         assert plotContainer != null;
 
         if (plotContainer.getPlot(chunkPos) != null) {
-            return true;
+            return this.getWorldBorder().isWithinBounds(chunkPos);
         }
 
         return original;

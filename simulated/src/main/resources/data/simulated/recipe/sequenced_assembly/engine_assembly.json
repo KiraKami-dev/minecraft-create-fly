@@ -1,14 +1,14 @@
 {
   "type": "create:sequenced_assembly",
-  "ingredient": {
-    "tag": "c:plates/iron"
+  "ingredient": "#c:plates/iron",
+  "transitional_item": {
+    "id": "simulated:incomplete_engine_assembly"
   },
-  "loops": 8,
-  "results": [
-    {
-      "chance": 50.0,
-      "id": "simulated:engine_assembly"
-    },
+  "result": {
+    "chance": 0.5,
+    "id": "simulated:engine_assembly"
+  },
+  "junks": [
     {
       "chance": 16.0,
       "id": "create:iron_sheet"
@@ -29,35 +29,21 @@
       "id": "minecraft:iron_helmet"
     }
   ],
+  "loops": 8,
   "sequence": [
     {
       "type": "create:cutting",
-      "ingredients": [
-        {
-          "item": "simulated:incomplete_engine_assembly"
-        }
-      ],
+      "ingredient": "$ingredient",
       "results": [
-        {
-          "id": "simulated:incomplete_engine_assembly"
-        }
+        "$result"
       ]
     },
     {
       "type": "create:pressing",
-      "ingredients": [
-        {
-          "item": "simulated:incomplete_engine_assembly"
-        }
-      ],
+      "ingredient": "$ingredient",
       "results": [
-        {
-          "id": "simulated:incomplete_engine_assembly"
-        }
+        "$result"
       ]
     }
-  ],
-  "transitional_item": {
-    "id": "simulated:incomplete_engine_assembly"
-  }
+  ]
 }

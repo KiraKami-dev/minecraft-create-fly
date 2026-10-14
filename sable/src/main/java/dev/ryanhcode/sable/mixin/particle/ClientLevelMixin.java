@@ -13,7 +13,6 @@ import net.minecraft.core.RegistryAccess;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
-import net.minecraft.util.profiling.ProfilerFiller;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.dimension.DimensionType;
@@ -24,9 +23,15 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.Redirect;
+import net.minecraft.world.phys.Vec3;
+import net.minecraft.client.particle.Particle;
+import net.minecraft.client.particle.TerrainParticle;
+import net.minecraft.world.level.block.state.BlockState;
+import dev.ryanhcode.sable.mixinterface.particle.ParticleExtension;
+import dev.ryanhcode.sable.sublevel.ClientSubLevel;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-import java.util.function.Supplier;
 
 /**
  * Adds animate ticks for blocks on sub-levels.
@@ -37,8 +42,8 @@ public abstract class ClientLevelMixin extends Level {
     @Shadow
     public abstract void doAnimateTick(int i, int j, int k, int l, RandomSource randomSource, @Nullable Block block, BlockPos.MutableBlockPos mutableBlockPos);
 
-    private ClientLevelMixin(final WritableLevelData writableLevelData, final ResourceKey<Level> resourceKey, final RegistryAccess registryAccess, final Holder<DimensionType> holder, final Supplier<ProfilerFiller> supplier, final boolean bl, final boolean bl2, final long l, final int i) {
-        super(writableLevelData, resourceKey, registryAccess, holder, supplier, bl, bl2, l, i);
+    private ClientLevelMixin(final WritableLevelData writableLevelData, final ResourceKey<Level> resourceKey, final RegistryAccess registryAccess, final Holder<DimensionType> holder, final boolean bl, final boolean bl2, final long l, final int i) {
+        super(writableLevelData, resourceKey, registryAccess, holder, bl, bl2, l, i);
     }
 
     @Inject(method = "animateTick", at = @At("TAIL"))
@@ -68,6 +73,41 @@ public abstract class ClientLevelMixin extends Level {
                 final int randomZ = Mth.randomBetweenInclusive(randomSource, tickingBounds.minZ, tickingBounds.maxZ);
                 this.doAnimateTick(randomX, randomY, randomZ, 1, randomSource, block, pos);
             }
+        }
+    }
+
+    // 1.21.11: particle distance culling moved from LevelRenderer.addParticleInternal to ClientLevel.doAddParticle
+    @Redirect(method = "doAddParticle", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/phys/Vec3;distanceToSqr(DDD)D"))
+    private double sable$addParticleInternal(final Vec3 vec, final double x, final double y, final double z) {
+        return Sable.HELPER.distanceSquaredWithSubLevels(this, vec, x, y, z);
+    }
+
+    // 1.21.11: ParticleEngine.crack moved to ClientLevel.addBreakingBlockEffect
+    @Redirect(method = "addBreakingBlockEffect", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/particle/TerrainParticle;setPower(F)Lnet/minecraft/client/particle/Particle;"))
+    private Particle sable$addCrackParticle(final TerrainParticle particle, final float v, @Local(argsOnly = true) final BlockPos pos, @Local final BlockState state) {
+        final Vec3 particlePosition = new Vec3(particle.x, particle.y, particle.z);
+
+        final SubLevel subLevel = Sable.HELPER.getContaining(this, particlePosition);
+        if (subLevel != null) {
+            final Vec3 velocity = new Vec3(particle.xd, particle.yd, particle.zd);
+            final Vec3 globalVelocity = subLevel.logicalPose().transformNormal(velocity);
+
+            particle.xd = globalVelocity.x;
+            particle.yd = globalVelocity.y;
+            particle.zd = globalVelocity.z;
+
+            particle.setPower(v);
+
+            final Vec3 localVelocity = subLevel.logicalPose().transformNormalInverse(new Vec3(particle.xd, particle.yd, particle.zd));
+
+            particle.xd = localVelocity.x;
+            particle.yd = localVelocity.y;
+            particle.zd = localVelocity.z;
+            ((ParticleExtension) particle).sable$setTrackingSubLevel((ClientSubLevel) subLevel, particlePosition);
+
+            return particle;
+        } else {
+            return particle.setPower(v);
         }
     }
 }
