@@ -5,6 +5,7 @@
   "minVersion": "0.8",
   "plugin": "dev.ryanhcode.sable.plugin.SableMixinPlugin",
   "client": [
+    "world_border.ClientLevelMixin",
     "block_decal_render.LevelRendererMixin",
     "camera.camera_rotation.CompassItemPropertyFunctionMixin",
     "camera.camera_rotation.EntityMixin",
