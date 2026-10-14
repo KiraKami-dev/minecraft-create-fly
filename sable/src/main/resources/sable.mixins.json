@@ -51,7 +51,6 @@
     "particle.BlockMarkerMixin",
     "particle.ClientLevelMixin",
     "particle.FlameParticleMixin",
-    "particle.LevelRendererMixin",
     "particle.ParticleEngineMixin",
     "particle.ParticleMixin",
     "particle.SuspendedParticleMixin",

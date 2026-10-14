@@ -23,6 +23,8 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.Redirect;
+import net.minecraft.world.phys.Vec3;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 
@@ -67,5 +69,11 @@ public abstract class ClientLevelMixin extends Level {
                 this.doAnimateTick(randomX, randomY, randomZ, 1, randomSource, block, pos);
             }
         }
+    }
+
+    // 1.21.11: particle distance culling moved from LevelRenderer.addParticleInternal to ClientLevel.doAddParticle
+    @Redirect(method = "doAddParticle", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/phys/Vec3;distanceToSqr(DDD)D"))
+    private double sable$addParticleInternal(final Vec3 vec, final double x, final double y, final double z) {
+        return Sable.HELPER.distanceSquaredWithSubLevels(this, vec, x, y, z);
     }
 }
