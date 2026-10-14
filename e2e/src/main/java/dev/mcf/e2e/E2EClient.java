@@ -17,7 +17,8 @@ public final class E2EClient implements ClientModInitializer {
 
     @Override
     public void onInitializeClient() {
-        if (!Boolean.getBoolean("e2e.enabled")) {
+        // e2e.play: same scene, but the game stays open for manual testing
+        if (!Boolean.getBoolean("e2e.enabled") || Boolean.getBoolean("e2e.play")) {
             return;
         }
         ClientTickEvents.END_CLIENT_TICK.register(this::tick);

@@ -21,6 +21,8 @@ loom {
             // -Pe2ePrepare: boot without spawning anything (tools/e2e.sh uses it to make a clean template world)
             vmArg "-De2e.commands=${project.hasProperty('e2ePrepare') ? '' : e2eCommands}"
             vmArg '-Dmixin.debug.verify=true'
+            // -Pe2ePlay: same scene, but no screenshots and the client stays open (tools/e2e.sh play)
+            if (project.hasProperty('e2ePlay')) vmArg '-De2e.play=true'
         }
         client { runDir 'run/client'; programArgs '--quickPlaySingleplayer', 'e2e' }
         server { runDir 'run/server' }

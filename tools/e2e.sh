@@ -1,7 +1,8 @@
 #!/bin/bash
-# End-to-end smoke test of the port (see e2e/). Usage: tools/e2e.sh [server|client|all]
+# End-to-end smoke test of the port (see e2e/). Usage: tools/e2e.sh [server|client|all|play]
 #   server: headless dedicated server — mixin audit + spawn sub-levels + stay alive 600 ticks
 #   client: real game window in a flat world — spawns sub-levels in view, screenshots, quits
+#   play:   same scene as client, but the game stays open for manual testing
 # Results: e2e/run/<side>/logs/latest.log, screenshots in e2e/run/client/screenshots/
 set -uo pipefail
 ROOT=$(cd "$(dirname "$0")/.." && pwd); cd "$ROOT"
@@ -27,7 +28,7 @@ if [ "$MODE" = server ] || [ "$MODE" = all ]; then
   report "$SRV/logs/latest.log" server
 fi
 
-if [ "$MODE" = client ] || [ "$MODE" = all ]; then
+if [ "$MODE" = client ] || [ "$MODE" = all ] || [ "$MODE" = play ]; then
   # Every run starts from a copy of a clean template world. The server run saves the sub-levels it
   # spawned (in sublevels/, data/ and the plot chunks), so its world can't be reused.
   TEMPLATE=e2e/run/template-world
@@ -43,6 +44,10 @@ if [ "$MODE" = client ] || [ "$MODE" = all ]; then
   mkdir -p "$CLI/saves" && rm -rf "$CLI/saves/e2e" && cp -r "$TEMPLATE" "$CLI/saves/e2e"
   # keep simulating while the window is unfocused; skip onboarding screens
   printf 'pauseOnLostFocus:false\nonboardAccessibility:false\ntutorialStep:none\nskipMultiplayerWarning:true\njoinedFirstServer:true\n' > "$CLI/options.txt"
+  if [ "$MODE" = play ]; then
+    ./gradlew :e2e:runClient -Pe2ePlay --console=plain > "$CLI/gradle.log" 2>&1
+    exit 0
+  fi
   rm -rf "$CLI/screenshots"
   ./gradlew :e2e:runClient --console=plain > "$CLI/gradle.log" 2>&1
   report "$CLI/logs/latest.log" client

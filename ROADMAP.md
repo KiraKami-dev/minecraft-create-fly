@@ -64,6 +64,8 @@ The fastest way to port a call: find it in `mc-1.21.1`, then diff against the sa
 - **client**: opens the game in a flat world, spawns sub-levels in front of the camera, and saves 5 screenshots to
   `e2e/run/client/screenshots/` over ~20 s, then quits. Look at them.
 
+- **play**: the same scene as `client`, but no screenshots and the game stays open, for manual testing.
+
 Compiling proves nothing about mixins; the e2e run is the real check.
 
 ## Progress
