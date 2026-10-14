@@ -8,7 +8,6 @@ import dev.ryanhcode.sable.mixinterface.camera.camera_zoom.CameraZoomExtension;
 import net.minecraft.client.CameraType;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.MouseHandler;
-import net.minecraft.world.entity.player.Inventory;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -19,16 +18,17 @@ public class MouseHandlerMixin {
 
     @Shadow @Final private Minecraft minecraft;
 
-    @WrapOperation(method = "onScroll", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/entity/player/Inventory;swapPaint(D)V"))
-    private void sable$onScroll(final Inventory instance, final double d, final Operation<Void> original) {
+    @WrapOperation(method = "onScroll", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/ScrollWheelHandler;getNextScrollWheelSelection(DII)I"))
+    private int sable$onScroll(final double d, final int selectedSlot, final int selectionSize, final Operation<Integer> original) {
         final CameraType cameraType = this.minecraft.options.getCameraType();
         if (cameraType == SableCameraTypes.SUB_LEVEL_VIEW || cameraType == SableCameraTypes.SUB_LEVEL_VIEW_UNLOCKED) {
             final CameraZoomExtension extension = ((CameraZoomExtension) this.minecraft.gameRenderer.getMainCamera());
 
             extension.sable$setZoomAmount((float) (extension.sable$getZoomAmount() - d * SableClientConfig.ZOOM_SENSITIVITY.get()));
-            return;
+            // keep the hotbar selection unchanged while zooming
+            return selectedSlot;
         }
 
-        original.call(instance, d);
+        return original.call(d, selectedSlot, selectionSize);
     }
 }

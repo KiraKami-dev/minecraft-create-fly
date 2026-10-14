@@ -23,5 +23,13 @@ public interface EntityRenderStateExtension {
     @Nullable
     Quaternionfc sable$getRotationOrientation();
 
+    /**
+     * @return the orientation of the sub-level the entity is rendered in, or null
+     */
+    @Nullable
+    Quaternionfc sable$getSubLevelOrientation();
+
+    void sable$setSubLevelOrientation(@Nullable Quaternionfc orientation);
+
     void sable$setRotation(@Nullable Matrix4fc transform, @Nullable Quaternionfc orientation);
 }

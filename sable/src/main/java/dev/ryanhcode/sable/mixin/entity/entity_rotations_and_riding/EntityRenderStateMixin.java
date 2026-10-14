@@ -19,6 +19,19 @@ public class EntityRenderStateMixin implements EntityRenderStateExtension {
     @Unique
     private Quaternionf sable$rotationOrientation;
 
+    @Unique
+    private Quaternionf sable$subLevelOrientation;
+
+    @Override
+    public @Nullable Quaternionfc sable$getSubLevelOrientation() {
+        return this.sable$subLevelOrientation;
+    }
+
+    @Override
+    public void sable$setSubLevelOrientation(final @Nullable Quaternionfc orientation) {
+        this.sable$subLevelOrientation = orientation == null ? null : new Quaternionf(orientation);
+    }
+
     @Override
     public @Nullable Matrix4fc sable$getRotationTransform() {
         return this.sable$rotationTransform;

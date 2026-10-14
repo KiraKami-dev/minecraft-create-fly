@@ -13,7 +13,6 @@ import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Entity;
-import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.HitResult;
@@ -36,7 +35,7 @@ import java.util.Collection;
 public abstract class CameraMixin implements CameraZoomExtension {
 
     @Shadow
-    private BlockGetter level;
+    private Level level;
     @Shadow
     private Vec3 position;
     @Shadow
@@ -62,7 +61,7 @@ public abstract class CameraMixin implements CameraZoomExtension {
     }
 
     @Inject(method = "setup", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/Camera;setPosition(DDD)V", shift = At.Shift.AFTER))
-    private void sable$setup(final BlockGetter blockGetter, final Entity entity, final boolean bl, final boolean bl2, final float f, final CallbackInfo ci) {
+    private void sable$setup(final Level level, final Entity entity, final boolean bl, final boolean bl2, final float f, final CallbackInfo ci) {
         final Minecraft minecraft = Minecraft.getInstance();
 
         if (minecraft.options.getCameraType() == SableCameraTypes.SUB_LEVEL_VIEW || minecraft.options.getCameraType() == SableCameraTypes.SUB_LEVEL_VIEW_UNLOCKED) {
@@ -154,7 +153,7 @@ public abstract class CameraMixin implements CameraZoomExtension {
 
     @Redirect(method = "getMaxZoom", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/phys/Vec3;distanceToSqr(Lnet/minecraft/world/phys/Vec3;)D"))
     private double sable$getMaxZoom(final Vec3 instance, final Vec3 vec3) {
-        return Sable.HELPER.distanceSquaredWithSubLevels((Level) this.level, instance, vec3);
+        return Sable.HELPER.distanceSquaredWithSubLevels(this.level, instance, vec3);
     }
 
     @Inject(method = "getMaxZoom", at = @At(value = "RETURN"))
