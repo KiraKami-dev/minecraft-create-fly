@@ -74,7 +74,8 @@ public class SableUDPServer {
         }
 
         if (player.connection.getRemoteAddress() instanceof LocalAddress) {
-            if (player.server.isSingleplayer() && player.server.isSingleplayerOwner(player.getGameProfile()))
+            final MinecraftServer playerServer = player.level().getServer();
+            if (playerServer.isSingleplayer() && playerServer.isSingleplayerOwner(player.nameAndId()))
                 return true;
         }
 

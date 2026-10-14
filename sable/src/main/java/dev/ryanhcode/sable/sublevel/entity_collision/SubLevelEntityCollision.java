@@ -340,7 +340,7 @@ public class SubLevelEntityCollision {
                         final BlockPos newPos = sink.offsetPos.setWithOffset(maxBlockPos, offsetX, offsetY, offsetZ);
                         final BlockState offsetState = accel.getBlockState(newPos);
                         final VoxelShape offsetShape = getSubLevelEntityCollisionShape(entity, entityBoundsCenter, subLevelPose, offsetState, accel, newPos, sink);
-                        final Direction direction = Direction.get(Direction.AxisDirection.POSITIVE, Direction.getNearest(offsetX, offsetY, offsetZ).getAxis());
+                        final Direction direction = Direction.get(Direction.AxisDirection.POSITIVE, getNearestDirection(offsetX, offsetY, offsetZ).getAxis());
 
                         final BoundingBox3d offsetAABB = sink.offsetAABB;
                         final BoundingBox3d compressedMinAABB = sink.compressedMinAABB;
@@ -686,4 +686,23 @@ public class SubLevelEntityCollision {
         public Map<SubLevel, FirstCollisionInfo> firstCollisions;
     }
 
+
+    /**
+     * The nearest direction to a vector, with ties resolved in {@link Direction#values()} order and zero resolving to north.
+     */
+    private static Direction getNearestDirection(final int x, final int y, final int z) {
+        float best = Float.MIN_VALUE;
+        Direction nearest = Direction.NORTH;
+
+        for (final Direction direction : Direction.values()) {
+            final float dot = x * direction.getStepX() + y * direction.getStepY() + z * direction.getStepZ();
+
+            if (dot > best) {
+                best = dot;
+                nearest = direction;
+            }
+        }
+
+        return nearest;
+    }
 }

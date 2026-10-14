@@ -5,16 +5,15 @@ import dev.ryanhcode.sable.SableConfig;
 import dev.ryanhcode.sable.mixinterface.udp.ServerConnectionListenerExtension;
 import dev.ryanhcode.sable.network.udp.SableUDPPacket;
 import dev.ryanhcode.sable.network.udp.SableUDPServer;
+import dev.ryanhcode.sable.network.udp.SableUDPTransport;
 import dev.ryanhcode.sable.network.udp.handler.SableUDPChannelHandlerServer;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.*;
-import io.netty.channel.epoll.Epoll;
-import io.netty.channel.epoll.EpollDatagramChannel;
 import io.netty.channel.local.LocalAddress;
 import io.netty.channel.local.LocalServerChannel;
-import io.netty.channel.socket.nio.NioDatagramChannel;
 import net.minecraft.network.protocol.PacketFlow;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.network.EventLoopGroupHolder;
 import net.minecraft.server.network.ServerConnectionListener;
 import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.Final;
@@ -51,16 +50,9 @@ public class ServerConnectionListenerMixin implements ServerConnectionListenerEx
         }
 
         synchronized (this.channels) {
-            final Class<? extends Channel> channelClass;
-            final EventLoopGroup eventLoopGroup;
-
-            if (Epoll.isAvailable() && this.server.isEpollEnabled()) {
-                channelClass = EpollDatagramChannel.class;
-                eventLoopGroup = ServerConnectionListener.SERVER_EPOLL_EVENT_GROUP.get();
-            } else {
-                channelClass = NioDatagramChannel.class;
-                eventLoopGroup = ServerConnectionListener.SERVER_EVENT_GROUP.get();
-            }
+            final EventLoopGroupHolder eventLoopGroupHolder = EventLoopGroupHolder.remote(this.server.useNativeTransport());
+            final Class<? extends Channel> channelClass = SableUDPTransport.datagramChannelClass(eventLoopGroupHolder);
+            final EventLoopGroup eventLoopGroup = eventLoopGroupHolder.eventLoopGroup();
 
             Sable.LOGGER.info("Adding UDP server channel future");
 
@@ -100,7 +92,7 @@ public class ServerConnectionListenerMixin implements ServerConnectionListenerEx
                             ServerConnectionListenerMixin.this.sable$setupChannel(channel);
                         }
                     })
-                    .group(ServerConnectionListener.SERVER_EVENT_GROUP.get())
+                    .group(EventLoopGroupHolder.local().eventLoopGroup())
                     .localAddress(LocalAddress.ANY)
                     .bind()
                     .syncUninterruptibly());

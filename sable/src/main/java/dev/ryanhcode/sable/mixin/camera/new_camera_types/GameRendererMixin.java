@@ -21,12 +21,12 @@ public class GameRendererMixin {
 
     @Shadow @Final private Minecraft minecraft;
 
-    @Inject(method = "renderLevel", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/Camera;setup(Lnet/minecraft/world/level/BlockGetter;Lnet/minecraft/world/entity/Entity;ZZF)V", shift = At.Shift.BEFORE))
+    @Inject(method = "updateCamera", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/Camera;setup(Lnet/minecraft/world/level/Level;Lnet/minecraft/world/entity/Entity;ZZF)V", shift = At.Shift.BEFORE))
     public void sable$setupCamera(final DeltaTracker deltaTracker, final CallbackInfo ci) {
         final CameraType cameraType = this.minecraft.options.getCameraType();
 
         if (cameraType == SableCameraTypes.SUB_LEVEL_VIEW || cameraType == SableCameraTypes.SUB_LEVEL_VIEW_UNLOCKED) {
-            final Entity vehicle = this.minecraft.cameraEntity.getVehicle();
+            final Entity vehicle = this.minecraft.getCameraEntity().getVehicle();
 
             if (vehicle != null) {
                 final SubLevel subLevel = Sable.HELPER.getContaining(this.minecraft.level, vehicle.position());

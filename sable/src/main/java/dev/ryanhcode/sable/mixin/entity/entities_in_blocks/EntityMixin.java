@@ -8,14 +8,18 @@ import net.minecraft.CrashReportCategory;
 import net.minecraft.ReportedException;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.InsideBlockEffectApplier;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
+import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+
+import java.util.List;
 
 @Mixin(Entity.class)
 public abstract class EntityMixin {
@@ -32,8 +36,12 @@ public abstract class EntityMixin {
     @Shadow
     protected abstract void onInsideBlock(BlockState blockState);
 
-    @Inject(method = "checkInsideBlocks", at = @At("TAIL"))
-    protected void checkInsideBlocks(final CallbackInfo ci) {
+    @Shadow
+    @Final
+    private InsideBlockEffectApplier.StepBasedCollector insideEffectCollector;
+
+    @Inject(method = "applyEffectsFromBlocks(Ljava/util/List;)V", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/entity/InsideBlockEffectApplier$StepBasedCollector;applyAndClear(Lnet/minecraft/world/entity/Entity;)V"))
+    protected void sable$checkInsideSubLevelBlocks(final List<?> movements, final CallbackInfo ci) {
         final AABB bounds = this.getBoundingBox();
 
         final BoundingBox3d localBounds = new BoundingBox3d(bounds);
@@ -57,7 +65,8 @@ public abstract class EntityMixin {
                             final BlockState blockState = this.level.getBlockState(mutableBlockPos);
 
                             try {
-                                blockState.entityInside(this.level, mutableBlockPos, (Entity) (Object) this);
+                                this.insideEffectCollector.advanceStep(0);
+                                blockState.entityInside(this.level, mutableBlockPos, (Entity) (Object) this, this.insideEffectCollector, true);
                                 this.onInsideBlock(blockState);
                             } catch (final Throwable var12) {
                                 final CrashReport crashReport = CrashReport.forThrowable(var12, "Colliding entity with block");
