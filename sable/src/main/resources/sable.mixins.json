@@ -67,6 +67,7 @@
     "plot.lighting.RenderSectionRegionMixin",
     "punching.MinecraftMixin",
     "punching.MultiPlayerGameModeMixin",
+    "respawn_point.sleeping.LivingEntityRenderStateMixin",
     "respawn_point.sleeping.LivingEntityRendererMixin",
     "sky_light_shadow.LevelRendererMixin",
     "stop_rain.LevelRenderMixin",
