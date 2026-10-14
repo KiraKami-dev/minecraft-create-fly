@@ -1,6 +1,6 @@
 # Create Aeronautics on Fabric 1.21.11: roadmap and progress
 
-_Last updated: 2026-10-14. Keep this file current: update the status tables when you claim, finish or
+_Last updated: 2026-10-14 (server e2e passing). Keep this file current: update the status tables when you claim, finish or
 discover a task._
 
 ## Goal
@@ -81,7 +81,7 @@ Legend: ✅ done · 🔄 in progress · ⬜ todo · ⏸ deferred/gated
 | S5 | Entity/camera/particle mixins (71+) | ✅ | | |
 | S6 | Water occlusion (no water inside hulls) | ✅ (untested in game) | | depth-volume discard in custom translucent pipeline |
 | S7 | **`:sable:compileJava` = 0 errors**, access widener validates | ✅ | | 2026-10-14 |
-| S8 | **Runtime: dedicated server e2e passes** (all mixins apply, sub-levels simulate) | 🔄 | agent (branch `runtime-fixes`) | first failure: `ExplosionMixin` targets `Explosion` (now an interface), needs moving to `ServerExplosion` |
+| S8 | **Runtime: dedicated server e2e passes** (all mixins apply, sub-levels simulate) | ✅ | | 2026-10-14: mixin audit passes; jenga/sphere/platform spawn, simulate 600 ticks and save; 13 mixins re-targeted (explosion → `ServerExplosion`, thunder → `tickThunder`, leash physics, …) |
 | S9 | **Runtime: client e2e**: sub-levels visible, correct pose/lighting in screenshots | ⬜ | | after S8 |
 | S10 | Manual playtest: assemble, collide, stand on, ride a sub-level | ⬜ | | after S9 |
 | S11 | Sodium support (sub-levels currently not drawn under Sodium; Sable `breaks` Sodium) | ⬜ | | needs a Sodium 0.8 chunk-render integration |
