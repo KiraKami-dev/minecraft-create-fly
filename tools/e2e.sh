@@ -24,7 +24,8 @@ if [ "$MODE" = server ] || [ "$MODE" = all ]; then
   rm -rf "$SRV/world"; mkdir -p "$SRV"
   echo "eula=true" > "$SRV/eula.txt"
   printf 'level-type=minecraft\\:flat\nonline-mode=false\nlevel-name=world\nspawn-protection=0\nmax-tick-time=-1\n' > "$SRV/server.properties"
-  ./gradlew :e2e:runServer --console=plain > "$SRV/gradle.log" 2>&1
+  ./gradlew :e2e:runServer --console=plain > "$SRV/gradle.log" 2>&1 \
+    || { echo "server run failed, see $SRV/gradle.log"; exit 1; }
   report "$SRV/logs/latest.log" server
 fi
 
@@ -49,7 +50,8 @@ if [ "$MODE" = client ] || [ "$MODE" = all ] || [ "$MODE" = play ]; then
     exit 0
   fi
   rm -rf "$CLI/screenshots"
-  ./gradlew :e2e:runClient --console=plain > "$CLI/gradle.log" 2>&1
+  ./gradlew :e2e:runClient --console=plain > "$CLI/gradle.log" 2>&1 \
+    || { echo "client run failed, see $CLI/gradle.log"; exit 1; }
   report "$CLI/logs/latest.log" client
   ls "$CLI/screenshots" 2>/dev/null | sed 's/^/  screenshot: /'
 fi

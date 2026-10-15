@@ -1,6 +1,6 @@
 # Create Aeronautics on Fabric 1.21.11: roadmap and progress
 
-_Last updated: 2026-10-14 (server + client e2e passing). Keep this file current: update the status tables when you claim, finish or
+_Last updated: 2026-10-15 (S9a closed, not a bug; S8a found). Keep this file current: update the status tables when you claim, finish or
 discover a task._
 
 ## Goal
@@ -85,7 +85,8 @@ Legend: ✅ done · 🔄 in progress · ⬜ todo · ⏸ deferred/gated
 | S7 | **`:sable:compileJava` = 0 errors**, access widener validates | ✅ | | 2026-10-14 |
 | S8 | **Runtime: dedicated server e2e passes** (all mixins apply, sub-levels simulate) | ✅ | | 2026-10-14: mixin audit passes; jenga/sphere/platform spawn, simulate 600 ticks and save; 13 mixins re-targeted (explosion → `ServerExplosion`, thunder → `tickThunder`, leash physics, …) |
 | S9 | **Runtime: client e2e**: sub-levels visible, correct pose/lighting in screenshots | ✅ | | 2026-10-14: all client mixins apply; tower, platform and sphere render textured and lit in their physics poses (`tools/e2e.sh client`, screenshots in `e2e/run/client/screenshots/`) |
-| S9a | **Bug:** `/sable spawn sphere` sub-level hangs in mid-air and never moves (the platform and tower fall and settle normally) | ⬜ | | spawn code is identical to upstream; check whether its rigid body/collider is created. Might also be upstream behaviour; compare on 1.21.1 |
+| S9a | ~~Bug: `/sable spawn sphere` hangs in mid-air~~ **Not a bug** | ✅ | | 2026-10-15: server and client poses both show the sphere falling from y −39.7 to rest at y −56.5 (bb min −60.0 = ground top) in under 2 s, before the first screenshot at tick 80. From eye height with no contact shadow it only looks like it floats. Side note: the sphere lands 3 blocks +x of the requested position, because the first block placed (−3,0,0) anchors the pose (same code upstream; jenga/platform reset their pose after placing blocks) |
+| S8a | Dedicated-server e2e has **0 loaded sub-levels** during the 600 ticks (no player, so nothing keeps their chunks loaded); it checks mixins and spawning, not physics | ⬜ | | found 2026-10-15 while debugging S9a. Physics is exercised by the client run. Fix: keep the spawn area loaded (e.g. `forceload`) or check against upstream behaviour |
 | S10 | Manual playtest: assemble, collide, stand on, ride a sub-level | ⬜ | | after S9 |
 | S11 | Sodium support (sub-levels currently not drawn under Sodium; Sable `breaks` Sodium) | ⬜ | | needs a Sodium 0.8 chunk-render integration |
 | S12 | Flywheel (inside Create Fly) block entities on sub-levels | ⬜ | | upstream support lived only in the NeoForge module; likely invisible today |
