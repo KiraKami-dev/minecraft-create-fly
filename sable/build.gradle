@@ -20,6 +20,8 @@ dependencies {
     modCompileOnly("maven.modrinth:iris:1.10.8+1.21.11-fabric")
     modCompileOnly("maven.modrinth:shoulder-surfing-reloaded:1.21.11-5.2.0+fabric")
     modCompileOnly("maven.modrinth:jade:21.1.6+fabric")
+    // Create Fly (Fabric port of Create; bundles Flywheel as com.zurrtum.create.client.flywheel)
+    modCompileOnly("maven.modrinth:create-fly:${create_fly_version}")
     // CC: Tweaked 1.117.1 (fabric) by Modrinth version id
     modCompileOnly("maven.modrinth:cc-tweaked:IikPYYtH")
 }

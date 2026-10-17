@@ -3,6 +3,8 @@
 dependencies {
     implementation project(path: ':sable', configuration: 'namedElements')
     modRuntimeOnly "fuzs.forgeconfigapiport:forgeconfigapiport-fabric:${forgeconfigapiport_version}"
+    // Sable bundles it as jar-in-jar; the mixin plugin needs it once a gated compat mod (Create Fly) is loaded
+    runtimeOnly 'org.apache.maven:maven-artifact:3.8.5'
 }
 
 // Commands run once a player is present (client) or after start-up (server). ';'-separated.
@@ -15,6 +17,29 @@ def e2eCommands = [
         'execute positioned 5 -40 14 run sable spawn sphere 3 minecraft:stone',
         'execute positioned -5 -45 14 run sable spawn platform 4 minecraft:oak_planks',
 ].join(';')
+
+// -Pe2eScenario=flywheel: put Create Fly in the runtime and assemble Create kinetic blocks into a sub-level
+// (checks Flywheel visuals follow the sub-level pose). Without it the scene stays Create-free.
+def flywheelScenario = project.findProperty('e2eScenario') == 'flywheel'
+if (flywheelScenario) {
+    dependencies { modRuntimeOnly "maven.modrinth:create-fly:${create_fly_version}" }
+    e2eCommands = [
+            'time set noon', 'gamerule advance_time false', 'gamerule spawn_mobs false',
+            'tp @a 0 -60 0 0 15',
+            'forceload add -16 0 15 31',
+            // control: the same line, not assembled, drawn by Flywheel in the real world
+            'setblock -3 -60 18 create:creative_motor[facing=east]',
+            'fill -2 -60 18 2 -60 18 create:shaft[axis=x]',
+            'setblock 0 -60 18 create:cogwheel[axis=x]',
+            // motor + shafts + cogwheel in the air, assembled into a falling sub-level
+            'setblock -3 -52 12 create:creative_motor[facing=east]',
+            'fill -2 -52 12 2 -52 12 create:shaft[axis=x]',
+            'setblock 0 -52 12 create:cogwheel[axis=x]',
+            'sable assemble area -3 -52 12 2 -52 12',
+            // yawed 45 degrees, so a visual stuck at the plot or ignoring the pose would not match the block's pose
+            'sable teleport @e 4 -50 12 45 0',
+    ].join(';')
+}
 
 loom {
     runs {

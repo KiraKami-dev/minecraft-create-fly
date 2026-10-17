@@ -1,5 +1,6 @@
 package dev.ryanhcode.sable.fabric.platform;
 
+import dev.ryanhcode.sable.fabric.compatibility.create.FlywheelCompatFabric;
 import dev.ryanhcode.sable.platform.SableSubLevelRenderPlatform;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import org.jetbrains.annotations.ApiStatus;
@@ -9,6 +10,8 @@ public class SableSubLevelRenderPlatformImpl implements SableSubLevelRenderPlatf
 
     @Override
     public void tryAddFlywheelVisual(final BlockEntity blockEntity) {
-        // no-op
+        if (FlywheelCompatFabric.FLYWHEEL_LOADED) {
+            FlywheelCompatFabric.tryAddVisual(blockEntity);
+        }
     }
 }
