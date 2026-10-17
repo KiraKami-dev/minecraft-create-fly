@@ -39,7 +39,7 @@ public class SchematicToolBaseMixin {
         }
     }
 
-    @WrapOperation(method = "updateTargetPos", at = @At(value = "INVOKE", target = "Lcom/zurrtum/create/client/foundation/utility/RaycastHelper;rayTraceUntil(Lnet/minecraft/world/phys/Vec3;Lnet/minecraft/world/phys/Vec3;Ljava/util/function/Predicate;)Lcom/zurrtum/create/client/foundation/utility/RaycastHelper$PredicateTraceResult;"), remap = false)
+    @WrapOperation(method = "updateTargetPos", at = @At(value = "INVOKE", target = "Lcom/zurrtum/create/client/foundation/utility/RaycastHelper;rayTraceUntil(Lnet/minecraft/world/phys/Vec3;Lnet/minecraft/world/phys/Vec3;Ljava/util/function/Predicate;)Lcom/zurrtum/create/client/foundation/utility/RaycastHelper$PredicateTraceResult;", remap = true), remap = false)
     public RaycastHelper.PredicateTraceResult sable$rayTraceSublevels(final Vec3 start, final Vec3 end, final Predicate<BlockPos> predicate, final Operation<RaycastHelper.PredicateTraceResult> original, @Local final LocalPlayer player, @Local final SchematicTransformation transformation) {
         final ClientSubLevel subLevel = Sable.HELPER.getContainingClient(transformation.getAnchor());
         if (subLevel != null) {

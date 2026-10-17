@@ -56,7 +56,7 @@ public abstract class StructureTemplateMixin implements StructureTemplateExtensi
         }
     }
 
-    @Inject(method = "fillEntityList", at = @At(value = "INVOKE", target = "Ljava/util/List;clear()V"))
+    @Inject(method = "fillEntityList", at = @At(value = "INVOKE", target = "Ljava/util/List;clear()V", remap = false))
     private void sable$fillEntityList(final Level level,
                                 final BlockPos minPos,
                                 final BlockPos maxPos,

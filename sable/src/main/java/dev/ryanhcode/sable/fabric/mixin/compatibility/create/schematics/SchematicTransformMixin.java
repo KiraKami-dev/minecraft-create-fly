@@ -25,7 +25,7 @@ public abstract class SchematicTransformMixin {
 
     @Shadow(remap = false) public abstract BlockPos getAnchor();
 
-    @WrapOperation(method = "applyTransformations", at = @At(value = "INVOKE", target = "Lcom/zurrtum/create/client/flywheel/lib/transform/PoseTransformStack;translate(Lnet/minecraft/world/phys/Vec3;)Lcom/zurrtum/create/client/flywheel/lib/transform/Translate;", ordinal = 0), remap = false)
+    @WrapOperation(method = "applyTransformations", at = @At(value = "INVOKE", target = "Lcom/zurrtum/create/client/flywheel/lib/transform/PoseTransformStack;translate(Lnet/minecraft/world/phys/Vec3;)Lcom/zurrtum/create/client/flywheel/lib/transform/Translate;", ordinal = 0, remap = true), remap = false)
     public Translate<PoseTransformStack> sable$transformFromSublevel(final PoseTransformStack instance, final Vec3 vec3, final Operation<Translate<PoseTransformStack>> original, @Local(argsOnly = true) final Vec3 camera, @Local final float pt, @Local(argsOnly = true) final PoseStack ms) {
         final Vec3 center = this.getAnchor().getCenter();
 

@@ -56,7 +56,7 @@ import java.util.UUID;
 @Mixin(AllHandle.class)
 public class SchematicPlacePacketMixin {
 
-    @Inject(method = "onSchematicPlace", at = @At(value = "INVOKE", target = "Lcom/zurrtum/create/content/schematics/SchematicPrinter;loadSchematic(Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/world/level/Level;Z)V", shift = At.Shift.AFTER), cancellable = true, remap = false)
+    @Inject(method = "onSchematicPlace", at = @At(value = "INVOKE", target = "Lcom/zurrtum/create/content/schematics/SchematicPrinter;loadSchematic(Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/world/level/Level;Z)V", shift = At.Shift.AFTER, remap = true), cancellable = true, remap = false)
     private static void sable$preHandle(final ServerGamePacketListenerImpl listener,
                                         final SchematicPlacePacket packet,
                                         final CallbackInfo ci,
