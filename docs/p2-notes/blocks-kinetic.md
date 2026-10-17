@@ -85,3 +85,18 @@ Packages: `content/blocks/{steering_wheel,torsion_spring,auger_shaft,directional
 
 ## PORT-TODOs
 - none in these packages.
+
+## Structure-loaded kinetics and extra-kinetics inner BEs (sim-structure-kinetics)
+- Inner "extra kinetics" BEs (torsion spring `Output`, analog transmission cogwheel, swivel bearing cog) are built with
+  the parent's `BlockEntityType`, so Create Fly's `BlockEntityBehaviour.FIRST_READ_REGISTRY`/`CLIENT_REGISTRY` applied
+  the parent's factories to them (client crash: `Output cannot be cast to TorsionSpringBlockEntity`).
+  `mixin/extra_kinetics/SmartBlockEntityMixin` redirects both `Multi.get(type)` calls in `SmartBlockEntity.initialize`
+  to `List.of()` for `ExtraKinetics.ExtraKineticsBlockEntity`.
+- BE ids already matched upstream (`simulated:simple` for the analog transmission is upstream's id too).
+- Upstream `extrakineticstest.*` structures store absolute `Source` positions / network ids from their save world;
+  Create Fly's `validateKinetics` finds the stale source missing and drops speed to 0 with nothing re-propagating
+  (upstream passed only because that position was in an unloaded chunk). `mixin/extra_kinetics/StructureTemplateMixin`
+  calls `warnOfMovement()` (BE and its extra kinetics) before `loadWithComponents` in `StructureTemplate.placeInWorld`,
+  like Create's schematic placement. This also skips the torsion spring's upstream `Sequence {Mode:"TURN_ANGLE"}`
+  (Create Fly's `SequencerInstructions.CODEC` rejects it; only matters for in-world saves from upstream, left as is).
+- The four `simulated_extra_kinetics_test_*` GameTests are now required and pass.

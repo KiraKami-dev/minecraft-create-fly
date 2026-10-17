@@ -73,6 +73,8 @@
     "extra_kinetics.EncasedCogwheelBlockMixin",
     "extra_kinetics.GeneratingKineticBlockEntityMixin",
     "extra_kinetics.KineticBlockEntityMixin",
+    "extra_kinetics.SmartBlockEntityMixin",
+    "extra_kinetics.StructureTemplateMixin",
     "extra_kinetics.KineticBlockMixin",
     "extra_kinetics.KineticNetworkMixin",
     "extra_kinetics.RotationPropagatorMixin",
