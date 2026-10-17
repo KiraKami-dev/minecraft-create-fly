@@ -23,7 +23,8 @@ public class SimBlockEntityBehaviours {
         kinetic(SimBlockEntityTypes.TORSION_SPRING);
         kinetic(SimBlockEntityTypes.ROPE_WINCH);
         kinetic(SimBlockEntityTypes.PORTABLE_ENGINE);
-        kinetic(SimBlockEntityTypes.SWIVEL_BEARING);
+        // the swivel bearing's own tooltip behaviour (SwivelBearingClient) replaces KineticTooltipBehaviour
+        AllBlockEntityBehaviours.add(SimBlockEntityTypes.SWIVEL_BEARING, KineticAudioBehaviour::new);
         kinetic(SimBlockEntityTypes.STEERING_WHEEL);
         kinetic(SimBlockEntityTypes.SWIVEL_BEARING_LINK_BLOCK);
         kinetic(SimBlockEntityTypes.AUGER_SHAFT);

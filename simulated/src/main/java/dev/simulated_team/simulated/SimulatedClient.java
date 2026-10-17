@@ -5,7 +5,9 @@ import com.zurrtum.create.client.content.contraptions.wrench.RadialWrenchMenu;
 import com.zurrtum.create.client.ponder.foundation.PonderIndex;
 import dev.ryanhcode.sable.veillite.platform.VeilEventPlatform;
 import dev.simulated_team.simulated.client.BlockPropertiesTooltip;
+import dev.simulated_team.simulated.content.blocks.physics_assembler.PhysicsAssemblerTooltipBehaviour;
 import dev.simulated_team.simulated.content.blocks.steering_wheel.SteeringWheelRenderer;
+import dev.simulated_team.simulated.content.blocks.swivel_bearing.SwivelBearingClient;
 import dev.simulated_team.simulated.content.display_sources.SimDisplaySourceRenders;
 import dev.simulated_team.simulated.content.end_sea.EndSeaShadowRenderer;
 import dev.simulated_team.simulated.content.items.merging_glue.MergingGlueItemHandler;
@@ -53,10 +55,12 @@ public class SimulatedClient {
         RadialWrenchMenu.registerBlacklistedBlock(BuiltInRegistries.BLOCK.getKey(SimBlocks.SWIVEL_BEARING_LINK_BLOCK));
         RadialWrenchMenu.registerBlacklistedBlock(BuiltInRegistries.BLOCK.getKey(SimBlocks.PAIRED_DOCKING_CONNECTOR));
 
-        // client halves of content, split out by their areas
+        // client halves of content, split out by their areas (after the defaults above: last registration wins)
         PlungerLauncherItemRenderer.registerClient();
         SimParticleProviders.registerClient();
         SimDisplaySourceRenders.registerClient();
+        SwivelBearingClient.registerClient();
+        PhysicsAssemblerTooltipBehaviour.registerClient();
 
         PonderIndex.addPlugin(new SimPonderPlugin());
 

@@ -40,6 +40,7 @@ import dev.simulated_team.simulated.content.blocks.steering_wheel.SteeringWheelR
 import dev.simulated_team.simulated.content.blocks.steering_wheel.SteeringWheelVisual;
 import dev.simulated_team.simulated.content.blocks.swivel_bearing.SwivelBearingRenderer;
 import dev.simulated_team.simulated.content.blocks.swivel_bearing.SwivelBearingVisual;
+import dev.simulated_team.simulated.content.blocks.swivel_bearing.link_block.SwivelBearingPlateBlockEntity;
 import dev.simulated_team.simulated.content.blocks.swivel_bearing.link_block.SwivelBearingPlateBlockRenderer;
 import dev.simulated_team.simulated.content.blocks.throttle_lever.ThrottleLeverRenderer;
 import dev.simulated_team.simulated.content.blocks.throttle_lever.ThrottleLeverVisual;
@@ -119,7 +120,7 @@ public class SimBlockEntityRenders {
         normal(
                 SimBlockEntityTypes.SWIVEL_BEARING_LINK_BLOCK,
                 SwivelBearingPlateBlockRenderer::new,
-                OrientedRotatingVisual.of(SimPartialModels.SHAFT_SIXTEENTH)
+                OrientedRotatingVisual.<SwivelBearingPlateBlockEntity>of(SimPartialModels.SHAFT_SIXTEENTH)
         );
         render(SimBlockEntityTypes.LINKED_TYPEWRITER, LinkedTypewriterRenderer::new);
 

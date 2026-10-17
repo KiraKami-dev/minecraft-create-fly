@@ -79,9 +79,9 @@ public class SimulatedCreativeTab {
 			graphics.fill(x + 2, y + 2, x + textWidth + 8, y + h - 2, background);
 
 			final int light = section.title().color().getRGB();
-			final int dark = section.title().secondaryColor()
-					.map(color -> color.getRGB())
-					.orElse(darken(light, 0.2f));
+			final int dark = section.title().secondaryColor().isPresent()
+					? section.title().secondaryColor().get().getRGB()
+					: darken(light, 0.2f);
 			drawAuraText(graphics, text, dark, light, x + 5, y + 5);
 		}
 		ps.popMatrix();

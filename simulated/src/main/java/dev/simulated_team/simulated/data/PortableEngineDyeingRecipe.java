@@ -72,7 +72,7 @@ public class PortableEngineDyeingRecipe extends CustomRecipe {
         }
 
         final ItemStack dyedEngine = new ItemStack(SimBlocks.PORTABLE_ENGINES.get(color));
-        if (!engine.isComponentsPatchEmpty()) {
+        if (!engine.getComponentsPatch().isEmpty()) {
             dyedEngine.applyComponents(engine.getComponentsPatch());
         }
 
