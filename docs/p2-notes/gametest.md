@@ -39,7 +39,7 @@ Owner files: `e2e/**`, `tools/e2e.sh`.
   `ItemStorage.SIDED.find(level, pos, state, be, @Nullable side)` + `SlottedStorage.getSlot(i).insert(variant, n, tx)` in a
   `Transaction.openOuter()`; slot contents via `StorageView.getResource().toStack(amount)`.
 - GameTest server (`-Dfabric-api.gametest`, Fabric `MainMixin` replaces the dedicated server): flat world, tests at random
-  x/z in +-15M at y -59, every test's chunks force-loaded (`TestInstanceBlockEntity.forceLoadChunks`), structure encased in
+  x/z in +-15M at y -59 (moved to the origin here, see below), every test's chunks force-loaded (`TestInstanceBlockEntity.forceLoadChunks`), structure encased in
   barriers (walls, floor, ceiling unless `skyAccess`). It exits with the number of failed required tests. `manualOnly`
   tests are never run by it (only by `/test run` in a world); `-Dfabric-api.gametest.filter=<selector>` runs a subset.
 - Fabric's `GameTestServerMixin` makes `isDedicatedServer()` return true on the GameTest server, so `E2E`'s scene logic
@@ -62,7 +62,7 @@ Owner files: `e2e/**`, `tools/e2e.sh`.
   its bounds (+1 block, + velocity prediction) touch a chunk that is not `inBlockTickingRange`. 1.21.11 has no spawn chunks,
   so without a player nothing ticks. GameTest areas are force-loaded, so test sub-levels simulate; `SubLevelProbe` fails a
   test as soon as its sub-level is no longer loaded. The plain server scene now `forceload`s its area too and logs
-  `N sub-levels loaded` every 100 ticks.
+  `N sub-levels loaded` every 100 ticks: 38 of 38 stay loaded for the 600 ticks (was 0), so S8a can be closed.
 - Defaults: gravity (0, -11, 0) m/s^2, universal drag 0.09, block mass about 1 (`physics_block_properties`).
 - Rapier damps every substep (`v = (v + g dt) / (1 + drag dt)`, matches to 1e-3) but steps positions more finely than one
   step per Sable substep: after 1 s the drop is 5.347 m, between the exact drag solution (5.338) and one-step-per-substep
@@ -95,7 +95,8 @@ Owner files: `e2e/**`, `tools/e2e.sh`.
 | `sable_physics_test_free_fall_with_drag` | new | after 20 ticks v matches the per-substep damped model to 0.01 m/s, drop within [exact, coarse] bounds, no sideways drift | PASS |
 | `sable_physics_test_falls_and_comes_to_rest` | new (S8a) | 3x2x3 box: stays loaded every tick, falls straight at 50-120% of free-fall speed, rests on the floor (bottom y 1 +-0.1) for 10 ticks, no drift, 18 blocks | PASS |
 (plus vanilla's own optional `minecraft:always_pass`). Suite: 10 tests, about 2-7 s of game time, about 2 min wall time with
-Gradle. Required tests: 6/6 pass; optional failures: `gravity` (upstream test ignores drag), `plot_reuse_in_one_tick` (bug).
+Gradle. Required tests: 5/5 pass; optional: `all_blocks`, `snag` (10/10), `always_pass` pass; `gravity` (upstream test ignores
+drag) and `plot_reuse_in_one_tick` (Sable bug) fail as documented. `tools/e2e.sh gametest` exits 0.
 `tools/e2e.sh gametest <selector> verify` runs a test 100x in each rotation (also exercises the rotation-aware helpers).
 
 ## Findings (not fixed here; Sable is read-only for this area)
