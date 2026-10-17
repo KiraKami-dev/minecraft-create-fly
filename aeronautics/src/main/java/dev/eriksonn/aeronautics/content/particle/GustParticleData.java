@@ -14,11 +14,11 @@ import org.joml.Quaternionf;
 public record GustParticleData(Quaternionf orientation) implements ParticleOptions {
 
     public static final MapCodec<GustParticleData> CODEC = RecordCodecBuilder.mapCodec(instance -> instance.group(
-            ExtraCodecs.QUATERNIONF.fieldOf("orientation").forGetter(o -> o.orientation)
+            ExtraCodecs.QUATERNIONF.<Quaternionf>xmap(Quaternionf::new, q -> q).fieldOf("orientation").forGetter(o -> o.orientation)
     ).apply(instance, GustParticleData::new));
 
     public static final StreamCodec<ByteBuf, GustParticleData> STREAM_CODEC = StreamCodec.composite(
-            ByteBufCodecs.QUATERNIONF, (o -> o.orientation),
+            ByteBufCodecs.QUATERNIONF.<Quaternionf>map(Quaternionf::new, q -> q), (o -> o.orientation),
             GustParticleData::new
     );
 
