@@ -24,10 +24,11 @@ public class PonderSceneMixin implements PonderSceneExtension {
     @Shadow(remap = false) float yOffset;
     @Unique
     LerpedFloat simulated$shadowAlpha = LerpedFloat.linear();
+    // initialised so a scene drawn before its first begin() (e.g. a neighbour during a transition) cannot NPE
     @Unique
-    Vec3 simulated$shadowOffset;
+    Vec3 simulated$shadowOffset = Vec3.ZERO;
     @Unique
-    Vec3 simulated$oldShadowOffset;
+    Vec3 simulated$oldShadowOffset = Vec3.ZERO;
     @Unique
     float simulated$oldScaleFactor;
     @Unique
