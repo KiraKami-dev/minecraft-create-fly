@@ -87,7 +87,6 @@
     "sable_hooks.SableCommonEventsMixin",
     "spring_item_bounce.EntityMixin",
     "tooltip_flag.TooltipFlagDefaultMixin",
-    "torsion_spring.ComparatorBlockMixin",
     "torsion_spring.MechanicalBearingBlockEntityMixin",
     "world_presets.PrimaryLevelDataMixin"
   ],
