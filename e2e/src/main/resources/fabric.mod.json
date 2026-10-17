@@ -6,7 +6,11 @@
   "environment": "*",
   "entrypoints": {
     "main": ["dev.mcf.e2e.E2E"],
-    "client": ["dev.mcf.e2e.E2EClient"]
+    "client": ["dev.mcf.e2e.E2EClient"],
+    "fabric-gametest": [
+      "dev.mcf.e2e.gametest.SablePhysicsTest",
+      "dev.mcf.e2e.gametest.SableAssemblyTest"
+    ]
   },
-  "depends": { "fabric-api": "*" }
+  "depends": { "fabric-api": "*", "sable": "*" }
 }
