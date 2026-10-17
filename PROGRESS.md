@@ -25,6 +25,7 @@ flowchart LR
 - 2026-10-17: S12 merged: Create Fly Flywheel visuals on sub-levels follow the sub-level pose (`tools/e2e.sh client flywheel`); lighting is S12a.
 - 2026-10-17: S10 merged: `tools/e2e.sh playtest` checks assemble, fall/rest, stacking, standing on, carried by push/rotate/translate: 14/14 pass on integration.
 - 2026-10-17: S17 merged: compat mixin review; fixed Shoulder Surfing descriptor (crashed on launch), `-Pe2eCompat` loads Shoulder Surfing + Jade; mods without a 1.21.11 Fabric build left out.
+- 2026-10-17: S13 done: sub-levels darken the world sky light below them (shadow map pass + shadowed terrain pipelines, on by default); `tools/e2e.sh client shadows`.
 - 2026-10-17: merge-integration-p2 refreshed with p2-port 32bc59d: server 38/38, gametest 22 pass + 1 optional (gravity), playtest pass, flight scene ship climbs to y=121.
 
 ## Blockers

@@ -6,6 +6,7 @@ import com.mojang.blaze3d.pipeline.RenderPipeline;
 import com.mojang.blaze3d.systems.RenderPass;
 import com.mojang.blaze3d.textures.GpuSampler;
 import dev.ryanhcode.sable.SableClient;
+import dev.ryanhcode.sable.render.sky_light_shadow.SableSkyLightShadows;
 import dev.ryanhcode.sable.render.water_occlusion.WaterOcclusionRenderer;
 import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.client.renderer.chunk.ChunkSectionLayerGroup;
@@ -19,28 +20,36 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public class ChunkSectionsToRenderMixin {
 
     /**
-     * Renders the water occlusion buffers right before the translucent layer, while no render pass is open
+     * Renders the sky light shadow map right before the first layer group, and the water occlusion buffers right
+     * before the translucent layer, while no render pass is open
      */
     @Inject(method = "renderGroup", at = @At("HEAD"))
-    private void sable$preRenderTranslucent(final ChunkSectionLayerGroup group, final GpuSampler sampler, final CallbackInfo ci) {
-        if (group == ChunkSectionLayerGroup.TRANSLUCENT) {
+    private void sable$preRenderGroup(final ChunkSectionLayerGroup group, final GpuSampler sampler, final CallbackInfo ci) {
+        if (group == ChunkSectionLayerGroup.OPAQUE) {
+            SableSkyLightShadows.renderShadowMap();
+        } else if (group == ChunkSectionLayerGroup.TRANSLUCENT) {
             SableClient.WATER_OCCLUSION_RENDERER.preRenderTranslucent();
         }
     }
 
     /**
-     * Swaps in the occluded translucent terrain pipeline, which discards water inside occlusion volumes
+     * Swaps in the occluded translucent terrain pipeline, which discards water inside occlusion volumes, and the
+     * shadowed terrain pipelines, which darken the sky light below sub-levels
      */
     @WrapOperation(method = "renderGroup", at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/systems/RenderPass;setPipeline(Lcom/mojang/blaze3d/pipeline/RenderPipeline;)V"))
     private void sable$setTranslucentPipeline(final RenderPass renderPass, final RenderPipeline pipeline, final Operation<Void> original) {
         final WaterOcclusionRenderer renderer = SableClient.WATER_OCCLUSION_RENDERER;
 
-        if (pipeline == RenderPipelines.TRANSLUCENT_TERRAIN && renderer.isActive()) {
-            original.call(renderPass, WaterOcclusionRenderer.TRANSLUCENT_TERRAIN_OCCLUDED);
-            renderer.bindSamplers(renderPass);
-            return;
-        }
+        final boolean occluded = pipeline == RenderPipelines.TRANSLUCENT_TERRAIN && renderer.isActive();
+        final RenderPipeline base = occluded ? WaterOcclusionRenderer.TRANSLUCENT_TERRAIN_OCCLUDED : pipeline;
+        final RenderPipeline swapped = SableSkyLightShadows.isActive() ? SableSkyLightShadows.getShadowedPipeline(base) : base;
 
-        original.call(renderPass, pipeline);
+        original.call(renderPass, swapped);
+        if (occluded) {
+            renderer.bindSamplers(renderPass);
+        }
+        if (swapped != base) {
+            SableSkyLightShadows.bind(renderPass);
+        }
     }
 }
