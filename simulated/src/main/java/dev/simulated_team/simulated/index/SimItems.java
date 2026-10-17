@@ -29,7 +29,7 @@ import net.neoforged.neoforge.common.Tags;
 public class SimItems {
     public static final SimulatedRegistrate REGISTRATE = Simulated.getRegistrate();
 
-    public static final ItemEntry<DiagramItem> CONTRAPTION_DIAGRAM =
+    public static final DiagramItem CONTRAPTION_DIAGRAM =
             REGISTRATE.item("contraption_diagram", DiagramItem::new)
                     .recipe((c, p) -> ShapelessRecipeBuilder.shapeless(RecipeCategory.MISC, c.get(), 1)
                             .requires(Items.PAPER)
@@ -38,7 +38,7 @@ public class SimItems {
                             .save(p))
                     .register();
 
-    public static final ItemEntry<SpringItem> SPRING =
+    public static final SpringItem SPRING =
             REGISTRATE.item("spring", SpringItem::new)
                     .properties(p -> p.component(SimDataComponents.BOUNCINESS, 1f))
                     .recipe((ctx, prov) ->
@@ -72,29 +72,29 @@ public class SimItems {
                     .transform(CreativeTabItemTransforms.VisibilityType.INVISIBLE.applyItem())
                     .register();
 
-    public static final ItemEntry<Item> ENGINE_ASSEMBLY = ingredient("engine_assembly");
+    public static final Item ENGINE_ASSEMBLY = ingredient("engine_assembly");
 
-    public static final ItemEntry<SequencedAssemblyItem> INCOMPLETE_ENGINE_ASSEMBLY =
+    public static final SequencedAssemblyItem INCOMPLETE_ENGINE_ASSEMBLY =
             REGISTRATE.item("incomplete_engine_assembly", SequencedAssemblyItem::new)
                     .transform(CreativeTabItemTransforms.VisibilityType.INVISIBLE.applyItem())
                     .register();
 
     static { REGISTRATE.addExtraItem(Identifier.withDefaultNamespace("slime_ball")); }
 
-    public static final ItemEntry<HoneyGlueItem> HONEY_GLUE =
+    public static final HoneyGlueItem HONEY_GLUE =
             REGISTRATE.item("honey_glue", HoneyGlueItem::new)
                     .properties(p -> p.stacksTo(1)
                             .durability(100))
                     .tag(ItemTags.DURABILITY_ENCHANTABLE)
                     .register();
 
-    public static final ItemEntry<PhysicsStaffItem> PHYSICS_STAFF =
+    public static final PhysicsStaffItem PHYSICS_STAFF =
             REGISTRATE.item("creative_physics_staff", PhysicsStaffItem::new)
                     .properties(p -> p.rarity(Rarity.EPIC).stacksTo(1))
                     .model(AssetLookup.itemModelWithPartials())
                     .register();
 
-    public static final ItemEntry<PlungerLauncherItem> PLUNGER_LAUNCHER =
+    public static final PlungerLauncherItem PLUNGER_LAUNCHER =
             REGISTRATE.item("plunger_launcher", PlungerLauncherItem::new)
                     .properties(p -> p.stacksTo(1).durability(200))
                     .model(AssetLookup.itemModelWithPartials())

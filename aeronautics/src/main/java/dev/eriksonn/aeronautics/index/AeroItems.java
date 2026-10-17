@@ -19,7 +19,7 @@ import net.minecraft.world.item.Rarity;
 public class AeroItems {
 	private static final SimulatedRegistrate REGISTRATE = Aeronautics.getRegistrate();
 
-	public static final ItemEntry<AviatorsGogglesItem> AVIATORS_GOGGLES = REGISTRATE
+	public static final AviatorsGogglesItem AVIATORS_GOGGLES = REGISTRATE
 					.item("aviators_goggles", AviatorsGogglesItem::new)
 					.lang("Aviator's Goggles")
 					.recipe((c, p) -> ShapelessRecipeBuilder.shapeless(RecipeCategory.MISC, c.get(), 1)

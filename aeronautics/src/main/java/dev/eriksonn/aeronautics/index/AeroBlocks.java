@@ -75,7 +75,7 @@ public class AeroBlocks {
         return false;
     }
 
-    public static final BlockEntry<EnvelopeBlock> WHITE_ENVELOPE_BLOCK = REGISTRATE
+    public static final EnvelopeBlock WHITE_ENVELOPE_BLOCK = REGISTRATE
             .block("white_envelope", p -> new EnvelopeBlock(p, DyeColor.WHITE))
             .lang("Hot Air Envelope")
             .initialProperties(SharedProperties::wooden)
@@ -195,7 +195,7 @@ public class AeroBlocks {
                 .register();
     });
 
-    public static final BlockEntry<HotAirBurnerBlock> HOT_AIR_BURNER =
+    public static final HotAirBurnerBlock HOT_AIR_BURNER =
             REGISTRATE.block("adjustable_burner", HotAirBurnerBlock::new)
                     .lang("Hot Air Burner")
                     .initialProperties(SharedProperties::stone)
@@ -224,7 +224,7 @@ public class AeroBlocks {
                             .save(p))
                     .register();
 
-    public static final BlockEntry<SteamVentBlock> STEAM_VENT =
+    public static final SteamVentBlock STEAM_VENT =
             REGISTRATE.block("steam_vent", SteamVentBlock::new)
                     .initialProperties(SharedProperties::stone)
                     .properties(p -> p.sound(SoundType.NETHERITE_BLOCK))
@@ -245,7 +245,7 @@ public class AeroBlocks {
                             .save(p))
                     .register();
 
-    public static final BlockEntry<PropellerBearingBlock> PROPELLER_BEARING =
+    public static final PropellerBearingBlock PROPELLER_BEARING =
             REGISTRATE.block("propeller_bearing", PropellerBearingBlock::new)
                     .initialProperties(SharedProperties::stone)
                     .properties(p -> p.sound(SoundType.COPPER))
@@ -265,7 +265,7 @@ public class AeroBlocks {
                             .unlockedBy("has_ingredient", RegistrateRecipeProvider.has(AllBlocks.BRASS_CASING))
                             .save(p))
                     .register();
-    public static final BlockEntry<GyroscopicPropellerBearingBlock> GYROSCOPIC_PROPELLER_BEARING =
+    public static final GyroscopicPropellerBearingBlock GYROSCOPIC_PROPELLER_BEARING =
             REGISTRATE.block("gyroscopic_propeller_bearing", GyroscopicPropellerBearingBlock::new)
                     .initialProperties(SharedProperties::stone)
                     .properties(p -> p.sound(SoundType.COPPER))
@@ -287,7 +287,7 @@ public class AeroBlocks {
                             .save(p))
                     .register();
 
-    public static final BlockEntry<SmartPropellerBlock> SMART_PROPELLER =
+    public static final SmartPropellerBlock SMART_PROPELLER =
             REGISTRATE.block("smart_propeller", SmartPropellerBlock::new)
                     .initialProperties(SharedProperties::softMetal)
                     .transform(axeOrPickaxe())
@@ -313,7 +313,7 @@ public class AeroBlocks {
                     )
                     .register();
 
-    public static final BlockEntry<AndesitePropellerBlock> ANDESITE_PROPELLER =
+    public static final AndesitePropellerBlock ANDESITE_PROPELLER =
             REGISTRATE.block("andesite_propeller", AndesitePropellerBlock::new)
                     .initialProperties(SharedProperties::wooden)
                     .transform(axeOrPickaxe())
@@ -341,7 +341,7 @@ public class AeroBlocks {
                     })
                     .register();
 
-    public static final BlockEntry<WoodenPropellerBlock> WOODEN_PROPELLER =
+    public static final WoodenPropellerBlock WOODEN_PROPELLER =
             REGISTRATE.block("wooden_propeller", WoodenPropellerBlock::new)
                     .initialProperties(SharedProperties::wooden)
                     .transform(axeOrPickaxe())
@@ -359,7 +359,7 @@ public class AeroBlocks {
                     .transform(customItemModel())
                     .register();
 
-    public static final BlockEntry<MountedPotatoCannonBlock> MOUNTED_POTATO_CANNON =
+    public static final MountedPotatoCannonBlock MOUNTED_POTATO_CANNON =
             REGISTRATE.block("mounted_potato_cannon", MountedPotatoCannonBlock::new)
                     .initialProperties(SharedProperties::stone)
                     .blockstate(AeroBlockStateGen::directionalPoweredAxisBlockstate)
@@ -370,7 +370,7 @@ public class AeroBlocks {
                     .transform(customItemModel())
                     .register();
 
-    public static final BlockEntry<Block> LEVITITE = REGISTRATE.block("levitite", Block::new)
+    public static final Block LEVITITE = REGISTRATE.block("levitite", Block::new)
             .properties(p -> p.lightLevel($ -> 10))
             .properties(BlockBehaviour.Properties::noLootTable)
             .properties(p -> p.strength(7, 20))
@@ -390,7 +390,7 @@ public class AeroBlocks {
             .register();
 
 
-    public static final BlockEntry<Block> PEARLESCENT_LEVITITE =
+    public static final Block PEARLESCENT_LEVITITE =
             REGISTRATE.block("pearlescent_levitite", Block::new)
                     .properties(p -> p.lightLevel($ -> 10))
                     .properties(BlockBehaviour.Properties::noLootTable)

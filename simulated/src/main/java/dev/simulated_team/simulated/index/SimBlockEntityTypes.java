@@ -77,39 +77,39 @@ import dev.simulated_team.simulated.service.SimInventoryService;
 public class SimBlockEntityTypes {
     private static final SimulatedRegistrate REGISTRATE = Simulated.getRegistrate();
 
-    public static final BlockEntityEntry<AnalogTransmissionBlockEntity> SIMPLE_BE = REGISTRATE
+    public static final BlockEntityType<AnalogTransmissionBlockEntity> SIMPLE_BE = REGISTRATE
             .blockEntity("simple", AnalogTransmissionBlockEntity::new)
             .visual(() -> AnalogTransmissionVisual::new)
             .validBlocks(SimBlocks.ANALOG_TRANSMISSION)
             .renderer(() -> AnalogTransmissionRenderer::new)
             .register();
 
-    public static final BlockEntityEntry<TorsionSpringBlockEntity> TORSION_SPRING = REGISTRATE
+    public static final BlockEntityType<TorsionSpringBlockEntity> TORSION_SPRING = REGISTRATE
             .blockEntity("torsion_spring", TorsionSpringBlockEntity::new)
             .visual(() -> TorsionSpringVisual::new)
             .validBlocks(SimBlocks.TORSION_SPRING)
             .renderer(() -> TorsionSpringRenderer::new)
             .register();
 
-    public static final BlockEntityEntry<PhysicsAssemblerBlockEntity> PHYSICS_ASSEMBLER = REGISTRATE
+    public static final BlockEntityType<PhysicsAssemblerBlockEntity> PHYSICS_ASSEMBLER = REGISTRATE
             .blockEntity("physics_assembler", PhysicsAssemblerBlockEntity::new)
             .validBlocks(SimBlocks.PHYSICS_ASSEMBLER)
             .renderer(() -> PhysicsAssemblerRenderer::new)
             .register();
 
-    public static final BlockEntityEntry<RopeWinchBlockEntity> ROPE_WINCH = REGISTRATE
+    public static final BlockEntityType<RopeWinchBlockEntity> ROPE_WINCH = REGISTRATE
             .blockEntity("rope_winch", RopeWinchBlockEntity::new)
             .validBlocks(SimBlocks.ROPE_WINCH)
             .renderer(() -> RopeWinchRenderer::new)
             .register();
 
-    public static final BlockEntityEntry<RopeConnectorBlockEntity> ROPE_CONNECTOR = REGISTRATE
+    public static final BlockEntityType<RopeConnectorBlockEntity> ROPE_CONNECTOR = REGISTRATE
             .blockEntity("rope_connector", RopeConnectorBlockEntity::new)
             .validBlocks(SimBlocks.ROPE_CONNECTOR)
             .renderer(() -> RopeConnectorRenderer::new)
             .register();
 
-    public static final BlockEntityEntry<DockingConnectorBlockEntity> DOCKING_CONNECTOR = REGISTRATE
+    public static final BlockEntityType<DockingConnectorBlockEntity> DOCKING_CONNECTOR = REGISTRATE
             .blockEntity("docking_connector", DockingConnectorBlockEntity::new)
             .onRegister(SimInventoryService.INSTANCE.registerInventory((be, dir) -> be.getInventory()))
             .onRegister(SimInventoryService.INSTANCE.registerTank((be, dir) -> be.tank))
@@ -118,61 +118,61 @@ public class SimBlockEntityTypes {
             .renderer(() -> DockingConnectorRenderer::new)
             .register();
 
-    public static final BlockEntityEntry<AltitudeSensorBlockEntity> ALTITUDE_SENSOR = REGISTRATE
+    public static final BlockEntityType<AltitudeSensorBlockEntity> ALTITUDE_SENSOR = REGISTRATE
             .blockEntity("altitude_sensor", AltitudeSensorBlockEntity::new)
             .validBlocks(SimBlocks.ALTITUDE_SENSOR)
             .renderer(() -> AltitudeSensorRenderer::new)
             .register();
 
-    public static final BlockEntityEntry<GimbalSensorBlockEntity> GIMBAL_SENSOR = REGISTRATE
+    public static final BlockEntityType<GimbalSensorBlockEntity> GIMBAL_SENSOR = REGISTRATE
             .blockEntity("gimbal_sensor", GimbalSensorBlockEntity::new)
             .visual(() -> GimbalSensorVisual::new)
             .validBlocks(SimBlocks.GIMBAL_SENSOR)
             .renderer(() -> GimbalSensorRenderer::new)
             .register();
 
-    public static final BlockEntityEntry<HandleBlockEntity> HANDLE = REGISTRATE
+    public static final BlockEntityType<HandleBlockEntity> HANDLE = REGISTRATE
             .blockEntity("handle", HandleBlockEntity::new)
             .validBlock(SimBlocks.IRON_HANDLE)
             .validBlock(SimBlocks.COPPER_HANDLE)
             .validBlocks(SimBlocks.DYED_HANDLES.toArray())
             .register();
 
-    public static final BlockEntityEntry<PortableEngineBlockEntity> PORTABLE_ENGINE = REGISTRATE
+    public static final BlockEntityType<PortableEngineBlockEntity> PORTABLE_ENGINE = REGISTRATE
             .blockEntity("portable_engine", PortableEngineBlockEntity::new)
             .onRegister(SimInventoryService.INSTANCE.registerInventory((be, dir) -> be.inventory))
             .validBlocks(SimBlocks.PORTABLE_ENGINES.toArray())
             .renderer(() -> PortableEngineRenderer::new)
             .register();
 
-    public static final BlockEntityEntry<SwivelBearingBlockEntity> SWIVEL_BEARING = REGISTRATE
+    public static final BlockEntityType<SwivelBearingBlockEntity> SWIVEL_BEARING = REGISTRATE
             .blockEntity("swivel_bearing", SwivelBearingBlockEntity::new)
             .visual(() -> SwivelBearingVisual::new)
             .validBlocks(SimBlocks.SWIVEL_BEARING)
             .renderer(() -> SwivelBearingRenderer::new)
             .register();
 
-    public static final BlockEntityEntry<SteeringWheelBlockEntity> STEERING_WHEEL = REGISTRATE
+    public static final BlockEntityType<SteeringWheelBlockEntity> STEERING_WHEEL = REGISTRATE
             .blockEntity("steering_wheel", SteeringWheelBlockEntity::new)
             .visual(() -> SteeringWheelVisual::new)
             .validBlocks(SimBlocks.STEERING_WHEEL)
             .renderer(() -> SteeringWheelRenderer::new)
             .register();
 
-    public static final BlockEntityEntry<SpringBlockEntity> SPRING = REGISTRATE
+    public static final BlockEntityType<SpringBlockEntity> SPRING = REGISTRATE
             .blockEntity("spring", SpringBlockEntity::new)
             .validBlock(SimBlocks.SPRING)
             .renderer(() -> SpringRenderer::new)
             .register();
 
-    public static final BlockEntityEntry<SwivelBearingPlateBlockEntity> SWIVEL_BEARING_LINK_BLOCK = REGISTRATE
+    public static final BlockEntityType<SwivelBearingPlateBlockEntity> SWIVEL_BEARING_LINK_BLOCK = REGISTRATE
             .blockEntity("swivel_bearing_link_block", SwivelBearingPlateBlockEntity::new)
             .visual(() -> OrientedRotatingVisual.of(SimPartialModels.SHAFT_SIXTEENTH))
             .validBlocks(SimBlocks.SWIVEL_BEARING_LINK_BLOCK)
             .renderer(() -> SwivelBearingPlateBlockRenderer::new)
             .register();
 
-    public static final BlockEntityEntry<LinkedTypewriterBlockEntity> LINKED_TYPEWRITER = REGISTRATE
+    public static final BlockEntityType<LinkedTypewriterBlockEntity> LINKED_TYPEWRITER = REGISTRATE
             .blockEntity("linked_typewriter", LinkedTypewriterBlockEntity::new)
             .validBlocks(SimBlocks.LINKED_TYPEWRITER)
             .renderer(() -> LinkedTypewriterRenderer::new)
@@ -180,17 +180,17 @@ public class SimBlockEntityTypes {
 
     // Lasers
 
-    public static final BlockEntityEntry<OpticalSensorBlockEntity> OPTICAL_SENSOR = REGISTRATE
+    public static final BlockEntityType<OpticalSensorBlockEntity> OPTICAL_SENSOR = REGISTRATE
             .blockEntity("optical_sensor", OpticalSensorBlockEntity::new)
             .validBlocks(SimBlocks.OPTICAL_SENSOR)
             .renderer(() -> OpticalSensorRenderer::new)
             .register();
-    public static final BlockEntityEntry<LaserPointerBlockEntity> LASER_POINTER = REGISTRATE
+    public static final BlockEntityType<LaserPointerBlockEntity> LASER_POINTER = REGISTRATE
             .blockEntity("laser_pointer", LaserPointerBlockEntity::new)
             .validBlocks(SimBlocks.LASER_POINTER)
             .renderer(() -> LaserPointerRenderer::new)
             .register();
-    public static final BlockEntityEntry<LaserSensorBlockEntity> LASER_SENSOR = REGISTRATE
+    public static final BlockEntityType<LaserSensorBlockEntity> LASER_SENSOR = REGISTRATE
             .blockEntity("ir_sensor", LaserSensorBlockEntity::new)
             .validBlocks(SimBlocks.LASER_SENSOR)
             .renderer(() -> SmartBlockEntityRenderer::new)
@@ -198,27 +198,27 @@ public class SimBlockEntityTypes {
 
     // Redstone
 
-    public static final BlockEntityEntry<VelocitySensorBlockEntity> VELOCITY_SENSOR = REGISTRATE
+    public static final BlockEntityType<VelocitySensorBlockEntity> VELOCITY_SENSOR = REGISTRATE
             .blockEntity("velocity_sensor", VelocitySensorBlockEntity::new)
             .validBlocks(SimBlocks.VELOCITY_SENSOR)
             .renderer(() -> VelocitySensorRenderer::new)
             .register();
 
     //TODO technically doesn't even need a renderer?
-    public static final BlockEntityEntry<DirectionalLinkedReceiverBlockEntity> DIRECTIONAL_LINKED_RECEIVER = REGISTRATE
+    public static final BlockEntityType<DirectionalLinkedReceiverBlockEntity> DIRECTIONAL_LINKED_RECEIVER = REGISTRATE
             .blockEntity("directional_linked_receiver", DirectionalLinkedReceiverBlockEntity::new)
             .validBlocks(SimBlocks.DIRECTIONAL_LINKED_RECEIVER)
             .renderer(() -> DirectionalLinkedReceiverRenderer::new)
             .register();
 
     //TODO visual once new nameplate is in
-    public static final BlockEntityEntry<NameplateBlockEntity> NAMEPLATE = REGISTRATE
+    public static final BlockEntityType<NameplateBlockEntity> NAMEPLATE = REGISTRATE
             .blockEntity("nameplate", NameplateBlockEntity::new)
             .validBlocks(SimBlocks.NAMEPLATES.toArray())
             .renderer(() -> NameplateRenderer::new)
             .register();
 
-    public static final BlockEntityEntry<ModulatingLinkedReceiverBlockEntity> MODULATING_LINKED_RECEIVER = REGISTRATE
+    public static final BlockEntityType<ModulatingLinkedReceiverBlockEntity> MODULATING_LINKED_RECEIVER = REGISTRATE
             .blockEntity("modulating_linked_receiver", ModulatingLinkedReceiverBlockEntity::new)
             .visual(() -> ModulatingLinkVisual::new)
             .validBlocks(SimBlocks.MODULATING_LINKED_RECEIVER)
@@ -227,13 +227,13 @@ public class SimBlockEntityTypes {
 
     // TODO visual
     //is a visual for this even possible?
-    public static final BlockEntityEntry<RedstoneAccumulatorBlockEntity> REDSTONE_ACCUMULATOR = REGISTRATE
+    public static final BlockEntityType<RedstoneAccumulatorBlockEntity> REDSTONE_ACCUMULATOR = REGISTRATE
             .blockEntity("redstone_accumulator", RedstoneAccumulatorBlockEntity::new)
             .validBlock(SimBlocks.REDSTONE_ACCUMULATOR)
             .renderer(() -> RedstoneAccumulatorRenderer::new)
             .register();
 
-    public static final BlockEntityEntry<NavTableBlockEntity> NAVIGATION_TABLE = REGISTRATE
+    public static final BlockEntityType<NavTableBlockEntity> NAVIGATION_TABLE = REGISTRATE
             .blockEntity("navigation_table", NavTableBlockEntity::new)
             .visual(() -> NavTableVisual::new)
             .onRegister(SimInventoryService.INSTANCE.registerInventory((be, dir) -> be.inventory))
@@ -241,19 +241,19 @@ public class SimBlockEntityTypes {
             .renderer(() -> NavTableRenderer::new)
             .register();
 
-    public static final BlockEntityEntry<RedstoneInductorBlockEntity> REDSTONE_INDUCTOR = REGISTRATE
+    public static final BlockEntityType<RedstoneInductorBlockEntity> REDSTONE_INDUCTOR = REGISTRATE
             .blockEntity("redstone_inductor", RedstoneInductorBlockEntity::new)
             .visual(() -> RedstoneInductorVisual::new)
             .validBlocks(SimBlocks.REDSTONE_INDUCTOR)
             .renderer(() -> RedstoneInductorRenderer::new)
             .register();
 
-    public static final BlockEntityEntry<RedstoneMagnetBlockEntity> REDSTONE_MAGNET = REGISTRATE
+    public static final BlockEntityType<RedstoneMagnetBlockEntity> REDSTONE_MAGNET = REGISTRATE
             .blockEntity("redstone_magnet", RedstoneMagnetBlockEntity::new)
             .validBlocks(SimBlocks.REDSTONE_MAGNET)
             .register();
 
-    public static final BlockEntityEntry<ThrottleLeverBlockEntity> THROTTLE_LEVER = REGISTRATE
+    public static final BlockEntityType<ThrottleLeverBlockEntity> THROTTLE_LEVER = REGISTRATE
             .blockEntity("throttle_lever", ThrottleLeverBlockEntity::new)
             .visual(() -> ThrottleLeverVisual::new)
             .validBlocks(SimBlocks.THROTTLE_LEVER)
@@ -261,14 +261,14 @@ public class SimBlockEntityTypes {
             .register();
 
     /*
-    public static final BlockEntityEntry<AbsorberBlockEntity> ABSORBER = REGISTRATE
+    public static final BlockEntityType<AbsorberBlockEntity> ABSORBER = REGISTRATE
             .blockEntity("absorber", AbsorberBlockEntity::new)
             .validBlocks(SimBlocks.ABSORBER)
             .renderer(() -> AbsorberRenderer::new)
             .register();
 */
 
-    public static final BlockEntityEntry<AugerShaftBlockEntity> AUGER_SHAFT = REGISTRATE
+    public static final BlockEntityType<AugerShaftBlockEntity> AUGER_SHAFT = REGISTRATE
             .blockEntity("auger_shaft", AugerShaftBlockEntity::new)
             .visual(() -> (ctx, blockEntity, partialTick) -> {
                 if (blockEntity.getBlockState().getBlock() instanceof AugerCogBlock) {
@@ -291,13 +291,13 @@ public class SimBlockEntityTypes {
             .renderer(() -> AugerShaftRenderer::new)
             .register();
 
-    public static final BlockEntityEntry<MergingGlueBlockEntity> MERGING_GLUE = REGISTRATE
+    public static final BlockEntityType<MergingGlueBlockEntity> MERGING_GLUE = REGISTRATE
             .blockEntity("merging_glue", MergingGlueBlockEntity::new)
             .validBlocks(SimBlocks.MERGING_GLUE)
             .renderer(() -> MergingGlueRenderer::new)
             .register();
 
-    public static final BlockEntityEntry<DirectionalGearshiftBlockEntity> DIRECTIONAL_GEARSHIFT = REGISTRATE
+    public static final BlockEntityType<DirectionalGearshiftBlockEntity> DIRECTIONAL_GEARSHIFT = REGISTRATE
             .blockEntity("directional_gearshift", DirectionalGearshiftBlockEntity::new)
             .visual(() -> SplitShaftVisual::new)
             .renderer(() -> DirectionalGearshiftRenderer::new)

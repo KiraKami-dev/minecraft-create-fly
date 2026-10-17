@@ -9,7 +9,7 @@ import java.util.function.Supplier;
 
 public class AeroDisplaySources {
 
-    public static final RegistryEntry<DisplaySource, GasDisplaySource> GAS_DISPLAY = simple("gas_display", GasDisplaySource::new);
+    public static final GasDisplaySource GAS_DISPLAY = simple("gas_display", GasDisplaySource::new);
 
     private static <T extends DisplaySource> RegistryEntry<DisplaySource, T> simple(final String name, final Supplier<T> supplier) {
         return Aeronautics.getRegistrate().displaySource(name, supplier).register();

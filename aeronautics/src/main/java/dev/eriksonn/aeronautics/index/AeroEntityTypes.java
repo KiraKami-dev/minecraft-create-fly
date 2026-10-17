@@ -13,7 +13,7 @@ import net.minecraft.world.entity.MobCategory;
 public class AeroEntityTypes {
 	private static final SimulatedRegistrate REGISTRATE = Aeronautics.getRegistrate();
 
-	public static final EntityEntry<PropellerBearingContraptionEntity> PROPELLER_CONTROLLED_CONTRAPTION =
+	public static final EntityType<PropellerBearingContraptionEntity> PROPELLER_CONTROLLED_CONTRAPTION =
 			REGISTRATE.entity("propeller_bearing_contraption", PropellerBearingContraptionEntity::new, MobCategory.MISC)
 					.visual(() -> ContraptionVisual::new)
 					.renderer(() -> ContraptionEntityRenderer::new)
@@ -25,7 +25,7 @@ public class AeroEntityTypes {
 										.fireImmune()))
 					.register();
 
-    public static final EntityEntry<GustEntity> GUST =
+    public static final EntityType<GustEntity> GUST =
             REGISTRATE.<GustEntity>entity("gust", GustEntity::new, MobCategory.MISC)
                     .renderer(() -> NoopRenderer::new)
                     .transform((builder) -> builder.properties(b -> b

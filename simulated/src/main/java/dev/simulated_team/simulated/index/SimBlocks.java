@@ -100,7 +100,7 @@ import static com.zurrtum.create.foundation.data.TagGen.*;
 public class SimBlocks {
     private static final SimulatedRegistrate REGISTRATE = Simulated.getRegistrate();
 
-    public static final BlockEntry<PhysicsAssemblerBlock> PHYSICS_ASSEMBLER = REGISTRATE.block("physics_assembler", PhysicsAssemblerBlock::new)
+    public static final PhysicsAssemblerBlock PHYSICS_ASSEMBLER = REGISTRATE.block("physics_assembler", PhysicsAssemblerBlock::new)
                     .initialProperties(SharedProperties::wooden)
                     .tag(BlockTags.MINEABLE_WITH_PICKAXE)
                     .tag(BlockTags.MINEABLE_WITH_AXE)
@@ -118,7 +118,7 @@ public class SimBlocks {
                             .save(p))
                     .register();
 
-    public static final BlockEntry<SwivelBearingBlock> SWIVEL_BEARING =
+    public static final SwivelBearingBlock SWIVEL_BEARING =
             REGISTRATE.block("swivel_bearing", SwivelBearingBlock::new)
                     .tag(AllBlockTags.SAFE_NBT)
                     .tag(AllBlockTags.NON_MOVABLE)
@@ -143,7 +143,7 @@ public class SimBlocks {
                             .save(p))
                     .register();
 
-    public static final BlockEntry<SwivelBearingPlateBlock> SWIVEL_BEARING_LINK_BLOCK =
+    public static final SwivelBearingPlateBlock SWIVEL_BEARING_LINK_BLOCK =
             REGISTRATE.block("swivel_bearing_link_block", SwivelBearingPlateBlock::new)
                     .tag(AllBlockTags.NON_MOVABLE)
                     .blockstate((ctx, prov) ->
@@ -155,7 +155,7 @@ public class SimBlocks {
                     .tag(BlockTags.MINEABLE_WITH_PICKAXE, SimTags.Blocks.SUPER_LIGHT)
                     .register();
 
-    public static final BlockEntry<MergingGlueBlock> MERGING_GLUE =
+    public static final MergingGlueBlock MERGING_GLUE =
             REGISTRATE.block("merging_glue", MergingGlueBlock::new)
                     .blockstate((ctx, prov) ->
                             prov.directionalBlock(ctx.getEntry(), blockState -> prov.models().getExistingFile(prov.modLoc("block/merging_glue/block"))))
@@ -163,7 +163,7 @@ public class SimBlocks {
                     .addLayer(() -> RenderType::cutoutMipped)
                     .register();
 
-    public static final BlockEntry<RopeWinchBlock> ROPE_WINCH =
+    public static final RopeWinchBlock ROPE_WINCH =
             REGISTRATE.block("rope_winch", RopeWinchBlock::new)
                     .tag(AllBlockTags.NON_MOVABLE)
                     .initialProperties(SharedProperties::stone)
@@ -186,7 +186,7 @@ public class SimBlocks {
                     .transform(customItemModel())
                     .register();
 
-    public static final BlockEntry<RopeConnectorBlock> ROPE_CONNECTOR =
+    public static final RopeConnectorBlock ROPE_CONNECTOR =
             REGISTRATE.block("rope_connector", RopeConnectorBlock::new)
                     .tag(AllBlockTags.NON_MOVABLE)
                     .initialProperties(SharedProperties::stone)
@@ -205,7 +205,7 @@ public class SimBlocks {
                     .transform(customItemModel())
                     .register();
 
-    public static final BlockEntry<HandleBlock> IRON_HANDLE = createHandle(null, HandleBlock.Variant.IRON)
+    public static final HandleBlock IRON_HANDLE = createHandle(null, HandleBlock.Variant.IRON)
             .recipe((c, p) -> {
                 ShapedRecipeBuilder.shaped(RecipeCategory.MISC, c.get(), 1)
                     .pattern("N")
@@ -222,7 +222,7 @@ public class SimBlocks {
             })
             .register();
 
-    public static final BlockEntry<HandleBlock> COPPER_HANDLE = createHandle(null, HandleBlock.Variant.COPPER)
+    public static final HandleBlock COPPER_HANDLE = createHandle(null, HandleBlock.Variant.COPPER)
             .recipe((c, p) -> ShapelessRecipeBuilder.shapeless(RecipeCategory.MISC, c.get(), 1)
                     .requires(IRON_HANDLE)
                     .requires(CommonMetal.COPPER.nuggets)
@@ -244,7 +244,7 @@ public class SimBlocks {
                 .register()
     );
 
-    public static final BlockEntry<DirectionalGearshiftBlock> DIRECTIONAL_GEARSHIFT = REGISTRATE
+    public static final DirectionalGearshiftBlock DIRECTIONAL_GEARSHIFT = REGISTRATE
             .block("directional_gearshift", DirectionalGearshiftBlock::new)
             .initialProperties(SharedProperties::stone)
             .properties(p -> p.noOcclusion()
@@ -265,7 +265,7 @@ public class SimBlocks {
             .item()
             .transform(customItemModel())
             .register();
-    public static final BlockEntry<TorsionSpringBlock> TORSION_SPRING =
+    public static final TorsionSpringBlock TORSION_SPRING =
             REGISTRATE.block("torsion_spring", TorsionSpringBlock::new)
                     .initialProperties(SharedProperties::stone)
                     .properties(BlockBehaviour.Properties::noOcclusion)
@@ -287,7 +287,7 @@ public class SimBlocks {
                             .save(p))
                     .item().transform(customItemModel())
                     .register();
-    public static final BlockEntry<AugerShaftBlock> AUGER_SHAFT =
+    public static final AugerShaftBlock AUGER_SHAFT =
             REGISTRATE.block("auger_shaft", AugerShaftBlock::new)
                     .initialProperties(SharedProperties::softMetal)
                     .blockstate(SimBlockStateService.INSTANCE.augerShaftGenerate("auger_shaft", false))
@@ -313,7 +313,7 @@ public class SimBlocks {
                     .transform(DisplaySource.displaySource(SimDisplaySources.AUGER_DISPLAY))
                     .item().transform(customItemModel())
                     .register();
-    public static final BlockEntry<AugerCogBlock> AUGER_COG =
+    public static final AugerCogBlock AUGER_COG =
             REGISTRATE.block("auger_cog", AugerCogBlock::new)
                     .initialProperties(SharedProperties::softMetal)
                     .blockstate(SimBlockStateService.INSTANCE.augerShaftGenerate("auger_cog", true))
@@ -389,7 +389,7 @@ public class SimBlocks {
                 .tag(BlockTags.MINEABLE_WITH_PICKAXE);
     }
 
-    public static final BlockEntry<LaserPointerBlock> LASER_POINTER =
+    public static final LaserPointerBlock LASER_POINTER =
             REGISTRATE.block("laser_pointer", LaserPointerBlock::new)
                     .initialProperties(SharedProperties::softMetal)
                     .addLayer(() -> RenderType::cutoutMipped)
@@ -409,7 +409,7 @@ public class SimBlocks {
                     .item().transform(customItemModel())
                     .register();
 
-    public static final BlockEntry<LaserSensorBlock> LASER_SENSOR =
+    public static final LaserSensorBlock LASER_SENSOR =
             REGISTRATE.block("laser_sensor", LaserSensorBlock::new)
                     .transform(DisplaySource.displaySource(SimDisplaySources.LASER_SENSOR_DISPLAY))
                     .initialProperties(SharedProperties::wooden)
@@ -430,7 +430,7 @@ public class SimBlocks {
                     .transform(customItemModel())
                     .register();
 
-    public static final BlockEntry<VelocitySensorBlock> VELOCITY_SENSOR =
+    public static final VelocitySensorBlock VELOCITY_SENSOR =
             REGISTRATE.block("velocity_sensor", VelocitySensorBlock::new)
                     .initialProperties(SharedProperties::wooden)
                     .transform(axeOrPickaxe())
@@ -451,7 +451,7 @@ public class SimBlocks {
                     .addLayer(() -> RenderType::cutoutMipped)
                     .register();
 
-    public static final BlockEntry<AltitudeSensorBlock> ALTITUDE_SENSOR =
+    public static final AltitudeSensorBlock ALTITUDE_SENSOR =
             REGISTRATE.block("altitude_sensor", AltitudeSensorBlock::new)
                     .initialProperties(SharedProperties::wooden)
                     .transform(axeOrPickaxe())
@@ -476,7 +476,7 @@ public class SimBlocks {
                     .transform(customItemModel())
                     .register();
 
-    public static final BlockEntry<GimbalSensorBlock> GIMBAL_SENSOR =
+    public static final GimbalSensorBlock GIMBAL_SENSOR =
             REGISTRATE.block("gimbal_sensor", GimbalSensorBlock::new)
                     .addLayer(() -> RenderType::cutoutMipped)
                     .properties(BlockBehaviour.Properties::noOcclusion)
@@ -501,7 +501,7 @@ public class SimBlocks {
                     .transform(customItemModel())
                     .register();
 
-    public static final BlockEntry<NavTableBlock> NAVIGATION_TABLE =
+    public static final NavTableBlock NAVIGATION_TABLE =
             REGISTRATE.block("navigation_table", NavTableBlock::new)
                     .initialProperties(SharedProperties::wooden)
                     .transform(axeOrPickaxe())
@@ -523,7 +523,7 @@ public class SimBlocks {
                     .item().transform(customItemModel())
                     .register();
 
-    public static final BlockEntry<OpticalSensorBlock> OPTICAL_SENSOR =
+    public static final OpticalSensorBlock OPTICAL_SENSOR =
             REGISTRATE.block("optical_sensor", OpticalSensorBlock::new)
                     .initialProperties(SharedProperties::softMetal)
                     .transform(DisplaySource.displaySource(SimDisplaySources.OPTICAL_SENSOR_DISPLAY))
@@ -544,7 +544,7 @@ public class SimBlocks {
                             .save(p))
                     .register();
 
-    public static final BlockEntry<DockingConnectorBlock> DOCKING_CONNECTOR =
+    public static final DockingConnectorBlock DOCKING_CONNECTOR =
             REGISTRATE.block("docking_connector", DockingConnectorBlock::new)
                     .tag(AllBlockTags.NON_MOVABLE)
                     .initialProperties(SharedProperties::stone)
@@ -563,7 +563,7 @@ public class SimBlocks {
                     .transform(customItemModel())
                     .register();
 
-    public static final BlockEntry<PairedDockingConnectorBlock> PAIRED_DOCKING_CONNECTOR =
+    public static final PairedDockingConnectorBlock PAIRED_DOCKING_CONNECTOR =
             REGISTRATE.block("paired_docking_connector", PairedDockingConnectorBlock::new)
                     .tag(AllBlockTags.NON_MOVABLE)
                     .initialProperties(SharedProperties::stone)
@@ -577,7 +577,7 @@ public class SimBlocks {
                             .forceSolidOff())
                     .register();
 
-    public static final BlockEntry<AnalogTransmissionBlock> ANALOG_TRANSMISSION =
+    public static final AnalogTransmissionBlock ANALOG_TRANSMISSION =
             REGISTRATE.block("analog_transmission", AnalogTransmissionBlock::new)
                     .initialProperties(SharedProperties::stone)
                     .properties((p) -> p.noOcclusion()
@@ -601,7 +601,7 @@ public class SimBlocks {
                             .save(p))
                     .register();
 
-    public static final BlockEntry<SteeringWheelBlock> STEERING_WHEEL =
+    public static final SteeringWheelBlock STEERING_WHEEL =
             REGISTRATE.block("steering_wheel", SteeringWheelBlock::new)
                     .initialProperties(SharedProperties::wooden)
                     .properties(p -> p.mapColor(MapColor.PODZOL))
@@ -625,7 +625,7 @@ public class SimBlocks {
                     .transform(customItemModel())
                     .register();
 
-    public static final BlockEntry<ThrottleLeverBlock> THROTTLE_LEVER =
+    public static final ThrottleLeverBlock THROTTLE_LEVER =
             REGISTRATE.block("throttle_lever", ThrottleLeverBlock::new)
                     .initialProperties(() -> Blocks.LEVER)
                     .transform(axeOrPickaxe())
@@ -643,7 +643,7 @@ public class SimBlocks {
                     .transform(customItemModel())
                     .register();
 
-    public static final BlockEntry<LinkedTypewriterBlock> LINKED_TYPEWRITER =
+    public static final LinkedTypewriterBlock LINKED_TYPEWRITER =
             REGISTRATE.block("linked_typewriter", LinkedTypewriterBlock::new)
                     .initialProperties(SharedProperties::softMetal)
                     .blockstate((ctx, prov) -> {
@@ -658,7 +658,7 @@ public class SimBlocks {
                     .addLayer(() -> RenderType::cutoutMipped)
                     .register();
 
-    public static final BlockEntry<DirectionalLinkedReceiverBlock> DIRECTIONAL_LINKED_RECEIVER =
+    public static final DirectionalLinkedReceiverBlock DIRECTIONAL_LINKED_RECEIVER =
             REGISTRATE.block("directional_linked_receiver", DirectionalLinkedReceiverBlock::new)
                     .initialProperties(SharedProperties::stone)
                     .properties(p -> p.noOcclusion().forceSolidOn())
@@ -678,7 +678,7 @@ public class SimBlocks {
                             .save(p))
                     .register();
 
-    public static final BlockEntry<ModulatingLinkedReceiverBlock> MODULATING_LINKED_RECEIVER =
+    public static final ModulatingLinkedReceiverBlock MODULATING_LINKED_RECEIVER =
             REGISTRATE.block("modulating_linked_receiver", ModulatingLinkedReceiverBlock::new)
                     .initialProperties(SharedProperties::stone)
                     .properties(p -> p.noOcclusion().forceSolidOn())
@@ -698,7 +698,7 @@ public class SimBlocks {
                             .save(p))
                     .register();
 
-    public static final BlockEntry<RedstoneAccumulatorBlock> REDSTONE_ACCUMULATOR =
+    public static final RedstoneAccumulatorBlock REDSTONE_ACCUMULATOR =
             REGISTRATE.block("redstone_accumulator", RedstoneAccumulatorBlock::new)
                     .initialProperties(() -> Blocks.REPEATER)
                     .blockstate(RedstoneAccumulatorBlockStateGen.generate())
@@ -719,7 +719,7 @@ public class SimBlocks {
                     .addLayer(() -> RenderType::cutoutMipped)
                     .register();
 
-    public static final BlockEntry<RedstoneInductorBlock> REDSTONE_INDUCTOR =
+    public static final RedstoneInductorBlock REDSTONE_INDUCTOR =
             REGISTRATE.block("redstone_inductor", RedstoneInductorBlock::new)
                     .initialProperties(() -> Blocks.REPEATER)
                     .blockstate(SimBlockStateGen::redstoneInductorBlockstate)
@@ -740,7 +740,7 @@ public class SimBlocks {
                     .addLayer(() -> RenderType::cutoutMipped)
                     .register();
 
-/*    public static final BlockEntry<AbsorberBlock> ABSORBER =
+/*    public static final AbsorberBlock ABSORBER =
             REGISTRATE.block("absorber", AbsorberBlock::new)
                     .initialProperties(SharedProperties::copperMetal)
                     .properties(BlockBehaviour.Properties::noOcclusion)
@@ -761,7 +761,7 @@ public class SimBlocks {
                     .item().transform(customItemModel())
                     .register();
  */
-    public static final BlockEntry<RedstoneMagnetBlock> REDSTONE_MAGNET =
+    public static final RedstoneMagnetBlock REDSTONE_MAGNET =
             REGISTRATE.block("redstone_magnet", RedstoneMagnetBlock::new)
                     .initialProperties(SharedProperties::stone)
                     .addLayer(() -> RenderType::cutoutMipped)
@@ -780,7 +780,7 @@ public class SimBlocks {
                             .save(p))
                     .register();
 
-    public static final BlockEntry<SymmetricSailBlock> WHITE_SYMMETRIC_SAIL =
+    public static final SymmetricSailBlock WHITE_SYMMETRIC_SAIL =
             REGISTRATE.block("white_symmetric_sail", (prov) -> SymmetricSailBlock.withCanvas(prov, DyeColor.WHITE))
                     .initialProperties(SharedProperties::wooden)
                     .properties(p -> p.sound(SoundType.SCAFFOLDING))
@@ -870,7 +870,7 @@ public class SimBlocks {
                 .register();
     });
 
-    public static final BlockEntry<SpringBlock> SPRING =
+    public static final SpringBlock SPRING =
             REGISTRATE.block("spring", SpringBlock::new)
                     .transform(pickaxeOnly())
                     .initialProperties(SharedProperties::softMetal)

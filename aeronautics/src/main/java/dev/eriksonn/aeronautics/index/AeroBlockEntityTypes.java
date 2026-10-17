@@ -32,60 +32,60 @@ import dev.eriksonn.aeronautics.content.blocks.mounted_potato_cannon.MountedPota
 public class AeroBlockEntityTypes {
     private static final SimulatedRegistrate REGISTRATE = Aeronautics.getRegistrate();
 
-    public static final BlockEntityEntry<SteamVentBlockEntity> STEAM_VENT = REGISTRATE
+    public static final BlockEntityType<SteamVentBlockEntity> STEAM_VENT = REGISTRATE
             .blockEntity("steam_vent", SteamVentBlockEntity::new)
             .validBlocks(AeroBlocks.STEAM_VENT)
             .renderer(() -> SteamVentRenderer::new)
             .register();
 
-    public static final BlockEntityEntry<HotAirBurnerBlockEntity> HOT_AIR_BURNER = REGISTRATE
+    public static final BlockEntityType<HotAirBurnerBlockEntity> HOT_AIR_BURNER = REGISTRATE
             .blockEntity("adjustable_burner", HotAirBurnerBlockEntity::new)
             .validBlocks(AeroBlocks.HOT_AIR_BURNER)
             .renderer(() -> HotAirBurnerRenderer::new)
             .register();
 
-    public static final BlockEntityEntry<PropellerBearingBlockEntity> PROPELLER_BEARING = REGISTRATE
+    public static final BlockEntityType<PropellerBearingBlockEntity> PROPELLER_BEARING = REGISTRATE
             .blockEntity("propeller_bearing", PropellerBearingBlockEntity::new)
             .visual(() -> PropellerBearingVisual::new)
             .validBlocks(AeroBlocks.PROPELLER_BEARING)
             .renderer(() -> PropellerBearingRenderer::new)
             .register();
 
-    public static final BlockEntityEntry<GyroscopicPropellerBearingBlockEntity> GYROSCOPIC_PROPELLER_BEARING = REGISTRATE
+    public static final BlockEntityType<GyroscopicPropellerBearingBlockEntity> GYROSCOPIC_PROPELLER_BEARING = REGISTRATE
             .blockEntity("gyroscopic_propeller_bearing", GyroscopicPropellerBearingBlockEntity::new)
             .visual(() -> GyroscopicPropellerBearingVisual::new)
             .validBlocks(AeroBlocks.GYROSCOPIC_PROPELLER_BEARING)
             .renderer(() -> GyroscopicPropellerBearingRenderer::new)
             .register();
 
-    public static final BlockEntityEntry<KineticBlockEntity> ENVELOPE_ENCASED_SHAFT = REGISTRATE
+    public static final BlockEntityType<KineticBlockEntity> ENVELOPE_ENCASED_SHAFT = REGISTRATE
             .blockEntity("envelope_encased_shaft", KineticBlockEntity::new)
             .visual(() -> SingleAxisRotatingVisual::shaft, false)
             .validBlocks(AeroBlocks.ENVELOPE_ENCASED_SHAFTS.toArray())
             .renderer(() -> ShaftRenderer::new)
             .register();
 
-    public static final BlockEntityEntry<AndesitePropellerBlockEntity> ANDESITE_PROPELLER = REGISTRATE
+    public static final BlockEntityType<AndesitePropellerBlockEntity> ANDESITE_PROPELLER = REGISTRATE
             .blockEntity("andesite_propeller", AndesitePropellerBlockEntity::new)
             .visual(() -> AndesitePropellerVisual::new, false)
             .validBlocks(AeroBlocks.ANDESITE_PROPELLER)
             .renderer(() -> AndesitePropellerRenderer::new)
             .register();
 
-    public static final BlockEntityEntry<WoodenPropellerBlockEntity> WOODEN_PROPELLER = REGISTRATE
+    public static final BlockEntityType<WoodenPropellerBlockEntity> WOODEN_PROPELLER = REGISTRATE
             .blockEntity("wooden_propeller", WoodenPropellerBlockEntity::new)
             .visual(() -> WoodenPropellerVisual::new, false)
             .renderer(() -> WoodenPropellerRenderer::new)
             .validBlocks(AeroBlocks.WOODEN_PROPELLER)
             .register();
 
-    public static final BlockEntityEntry<SmartPropellerBlockEntity> SMART_PROPELLER = REGISTRATE
+    public static final BlockEntityType<SmartPropellerBlockEntity> SMART_PROPELLER = REGISTRATE
             .blockEntity("smart_propeller", SmartPropellerBlockEntity::new)
             .renderer(() -> SmartPropellerRenderer::new)
             .validBlocks(AeroBlocks.SMART_PROPELLER)
             .register();
 
-    public static final BlockEntityEntry<MountedPotatoCannonBlockEntity> MOUNTED_POTATO_CANNON = REGISTRATE
+    public static final BlockEntityType<MountedPotatoCannonBlockEntity> MOUNTED_POTATO_CANNON = REGISTRATE
             .blockEntity("mounted_potato_cannon", MountedPotatoCannonBlockEntity::new)
             .visual(() -> MountedPotatoCannonVisual::new)
             .onRegister(SimInventoryService.INSTANCE.registerInventory((be, dir) -> be.getInventory()))

@@ -14,7 +14,7 @@ import net.minecraft.world.inventory.AbstractContainerMenu;
 
 public class SimMenuTypes {
 
-    public static final MenuEntry<LinkedTypewriterMenuCommon> LINKED_TYPEWRITER =
+    public static final MenuType<LinkedTypewriterMenuCommon> LINKED_TYPEWRITER =
             register("linked_typewriter", SimMenuService.INSTANCE::getLoaderLinkedTypewriter, () -> LinkedTypewriterScreen::new);
 
     private static <C extends AbstractContainerMenu, S extends Screen & MenuAccess<C>> MenuEntry<C> register(
