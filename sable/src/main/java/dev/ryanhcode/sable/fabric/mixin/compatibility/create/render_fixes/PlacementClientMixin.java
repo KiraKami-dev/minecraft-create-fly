@@ -15,7 +15,7 @@ import org.spongepowered.asm.mixin.injection.Redirect;
 public class PlacementClientMixin {
 
     @Redirect(method = "drawDirectionIndicator",
-            at = @At(value = "INVOKE", target = "Lcom/zurrtum/create/catnip/math/VecHelper;getCenterOf(Lnet/minecraft/core/Vec3i;)Lnet/minecraft/world/phys/Vec3;"),
+            at = @At(value = "INVOKE", target = "Lcom/zurrtum/create/catnip/math/VecHelper;getCenterOf(Lnet/minecraft/core/Vec3i;)Lnet/minecraft/world/phys/Vec3;", remap = true),
             remap = false)
     private static Vec3 sable$projectLastTargetedPos(final Vec3i pos) {
         return JOMLConversion.toMojang(Sable.HELPER.projectOutOfSubLevel(Minecraft.getInstance().level, JOMLConversion.atCenterOf(pos)));

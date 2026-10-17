@@ -41,7 +41,7 @@ public abstract class AABBOutlineMixin extends Outline implements AABBOutlineRen
         }
     }
 
-    @ModifyArg(method = "render", at = @At(value = "INVOKE", target = "Lcom/zurrtum/create/client/catnip/outliner/AABBOutline;renderBox(Lcom/mojang/blaze3d/vertex/PoseStack;Lcom/zurrtum/create/client/catnip/render/SuperRenderTypeBuffer;Lnet/minecraft/world/phys/Vec3;Lnet/minecraft/world/phys/AABB;Lorg/joml/Vector4f;IZ)V"), remap = false)
+    @ModifyArg(method = "render", at = @At(value = "INVOKE", target = "Lcom/zurrtum/create/client/catnip/outliner/AABBOutline;renderBox(Lcom/mojang/blaze3d/vertex/PoseStack;Lcom/zurrtum/create/client/catnip/render/SuperRenderTypeBuffer;Lnet/minecraft/world/phys/Vec3;Lnet/minecraft/world/phys/AABB;Lorg/joml/Vector4f;IZ)V", remap = true), remap = false)
     private AABB sable$moveBB(final AABB box) {
         return box.move(SublevelRenderOffsetHelper.translation(box.getCenter()).scale(-1.0));
     }
