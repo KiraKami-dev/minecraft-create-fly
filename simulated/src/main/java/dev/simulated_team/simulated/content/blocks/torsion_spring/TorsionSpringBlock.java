@@ -98,7 +98,7 @@ public class TorsionSpringBlock extends DirectionalKineticBlock implements IBE<T
 
     @Override
     public BlockEntityType<? extends TorsionSpringBlockEntity> getBlockEntityType() {
-        return SimBlockEntityTypes.TORSION_SPRING.get();
+        return SimBlockEntityTypes.TORSION_SPRING;
     }
 
     @Override

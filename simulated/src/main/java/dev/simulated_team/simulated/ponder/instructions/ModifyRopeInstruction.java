@@ -6,8 +6,8 @@ import dev.simulated_team.simulated.ponder.SmoothMovementUtils;
 import dev.simulated_team.simulated.ponder.elements.rope.PonderRopePose;
 import dev.simulated_team.simulated.ponder.elements.rope.RopeStrandElement;
 import it.unimi.dsi.fastutil.floats.FloatUnaryOperator;
-import net.createmod.ponder.foundation.PonderScene;
-import net.createmod.ponder.foundation.instruction.TickingInstruction;
+import com.zurrtum.create.client.ponder.foundation.PonderScene;
+import com.zurrtum.create.client.ponder.foundation.instruction.TickingInstruction;
 import net.minecraft.world.phys.Vec3;
 
 public class ModifyRopeInstruction extends TickingInstruction {

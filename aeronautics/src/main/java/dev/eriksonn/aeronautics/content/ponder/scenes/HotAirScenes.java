@@ -17,15 +17,15 @@ import dev.eriksonn.aeronautics.content.blocks.hot_air.hot_air_burner.HotAirBurn
 import dev.eriksonn.aeronautics.content.blocks.hot_air.steam_vent.SteamVentBlock;
 import dev.eriksonn.aeronautics.content.ponder.instructions.RedstoneSignalInstruction;
 import dev.eriksonn.aeronautics.index.AeroBlocks;
-import net.createmod.catnip.math.Pointing;
-import net.createmod.ponder.api.PonderPalette;
-import net.createmod.ponder.api.element.ElementLink;
-import net.createmod.ponder.api.element.WorldSectionElement;
-import net.createmod.ponder.api.scene.SceneBuilder;
-import net.createmod.ponder.api.scene.SceneBuildingUtil;
-import net.createmod.ponder.api.scene.Selection;
-import net.createmod.ponder.api.scene.WorldInstructions;
-import net.createmod.ponder.foundation.instruction.RotateSceneInstruction;
+import com.zurrtum.create.catnip.math.Pointing;
+import com.zurrtum.create.client.ponder.api.PonderPalette;
+import com.zurrtum.create.client.ponder.api.element.ElementLink;
+import com.zurrtum.create.client.ponder.api.element.WorldSectionElement;
+import com.zurrtum.create.client.ponder.api.scene.SceneBuilder;
+import com.zurrtum.create.client.ponder.api.scene.SceneBuildingUtil;
+import com.zurrtum.create.client.ponder.api.scene.Selection;
+import com.zurrtum.create.client.ponder.api.scene.WorldInstructions;
+import com.zurrtum.create.client.ponder.foundation.instruction.RotateSceneInstruction;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.item.DyeColor;
@@ -238,7 +238,7 @@ public class HotAirScenes {
             scene.idle(20);
 
             final Selection centerBlaze = util.select().position(4, 1, 3);
-            world.setBlocks(blazeSelection.substract(centerBlaze), AllBlocks.BLAZE_BURNER.getDefaultState()
+            world.setBlocks(blazeSelection.substract(centerBlaze), AllBlocks.BLAZE_BURNER.defaultBlockState()
                             .setValue(BlazeBurnerBlock.HEAT_LEVEL, BlazeBurnerBlock.HeatLevel.KINDLED),
                     false);
 
@@ -296,10 +296,10 @@ public class HotAirScenes {
         }
         if (isVent) {
             scene.overlay().showControls(util.vector().blockSurface(burnerPos.west(), Direction.NORTH).add(0, shipOffset, 0), Pointing.RIGHT, 30)
-                    .withItem(new ItemStack(AllItems.IRON_SHEET.get()));
+                    .withItem(new ItemStack(AllItems.IRON_SHEET));
             scene.idle(5);
             scene.world().setBlock(burnerPos,
-                    AeroBlocks.STEAM_VENT.getDefaultState()
+                    AeroBlocks.STEAM_VENT.defaultBlockState()
                             .setValue(SteamVentBlock.VARIANT, SteamVentBlock.Variant.IRON)
                             .setValue(SteamVentBlock.FACING, Direction.WEST),
                     true);
@@ -314,7 +314,7 @@ public class HotAirScenes {
                     .withItem(new ItemStack(Blocks.SOUL_SAND.asItem()));
             scene.idle(5);
             scene.world().setBlock(burnerPos,
-                    AeroBlocks.HOT_AIR_BURNER.getDefaultState().setValue(HotAirBurnerBlock.VARIANT, HotAirBurnerBlock.Variant.SOUL_FIRE),
+                    AeroBlocks.HOT_AIR_BURNER.defaultBlockState().setValue(HotAirBurnerBlock.VARIANT, HotAirBurnerBlock.Variant.SOUL_FIRE),
                     true);
             scene.idle(5);
             scene.overlay().showText(80)
@@ -452,7 +452,7 @@ public class HotAirScenes {
         scene.idle(10);
 
         final BlockEntry<EnvelopeEncasedShaftBlock> envelopeEncased = AeroBlocks.ENVELOPE_ENCASED_SHAFTS.get(DyeColor.WHITE);
-        final ItemStack envelopeItem = AeroBlocks.WHITE_ENVELOPE_BLOCK.asStack();
+        final ItemStack envelopeItem = new ItemStack(AeroBlocks.WHITE_ENVELOPE_BLOCK);
 
         scene.overlay().showControls(util.vector().topOf(shaftPos), Pointing.DOWN, 20).rightClick()
                 .withItem(envelopeItem);

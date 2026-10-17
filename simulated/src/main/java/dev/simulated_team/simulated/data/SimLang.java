@@ -10,10 +10,10 @@ import dev.simulated_team.simulated.data.advancements.SimAdvancements;
 import dev.simulated_team.simulated.index.SimKeys;
 import dev.simulated_team.simulated.index.SimSoundEvents;
 import dev.simulated_team.simulated.index.ponder.SimPonderPlugin;
-import net.createmod.catnip.lang.Lang;
-import net.createmod.catnip.lang.LangBuilder;
-import net.createmod.catnip.lang.LangNumberFormat;
-import net.createmod.ponder.foundation.PonderIndex;
+import com.zurrtum.create.client.catnip.lang.Lang;
+import com.zurrtum.create.client.catnip.lang.LangBuilder;
+import com.zurrtum.create.client.catnip.lang.LangNumberFormat;
+import com.zurrtum.create.client.ponder.foundation.PonderIndex;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.level.block.state.BlockState;
 

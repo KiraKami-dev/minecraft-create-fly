@@ -8,9 +8,9 @@ import com.zurrtum.create.foundation.blockEntity.SmartBlockEntity;
 import com.zurrtum.create.api.behaviour.BlockEntityBehaviour;
 import com.zurrtum.create.client.foundation.blockEntity.behaviour.ValueBoxTransform;
 import com.zurrtum.create.client.foundation.blockEntity.behaviour.scrollValue.ScrollValueBehaviour;
-import dev.engine_room.flywheel.lib.transform.TransformStack;
-import net.createmod.catnip.animation.LerpedFloat;
-import net.createmod.catnip.math.AngleHelper;
+import com.zurrtum.create.client.flywheel.lib.transform.TransformStack;
+import com.zurrtum.create.catnip.animation.LerpedFloat;
+import com.zurrtum.create.catnip.math.AngleHelper;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.HolderLookup;
@@ -89,7 +89,7 @@ public class RedstoneAccumulatorBlockEntity extends SmartBlockEntity implements 
             this.level.updateNeighborsAt(this.worldPosition, this.getBlockState().getBlock());
             this.level.updateNeighborsAt(this.worldPosition.relative(facing), this.getBlockState().getBlock());
         }
-        if(this.level.isClientSide) this.lerpedState.tickChaser();
+        if(this.level.isClientSide()) this.lerpedState.tickChaser();
         this.lerpedState.chase(this.outputSignal, 0.4, LerpedFloat.Chaser.EXP);
     }
 

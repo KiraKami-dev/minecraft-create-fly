@@ -16,7 +16,7 @@ import dev.ryanhcode.sable.sublevel.SubLevel;
 import dev.ryanhcode.sable.sublevel.system.SubLevelPhysicsSystem;
 import dev.simulated_team.simulated.content.items.spring.SpringItemHandler;
 import dev.simulated_team.simulated.util.SimLevelUtil;
-import net.createmod.catnip.animation.LerpedFloat;
+import com.zurrtum.create.catnip.animation.LerpedFloat;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.HolderLookup;
@@ -135,7 +135,7 @@ public class SpringBlockEntity extends SmartBlockEntity implements BlockEntitySu
     public void tick() {
         super.tick();
 
-        if (this.level.isClientSide) {
+        if (this.level.isClientSide()) {
             this.renderLength.updateChaseTarget((float) this.desiredLength);
             this.renderLength.tickChaser();
             return;
@@ -371,7 +371,7 @@ public class SpringBlockEntity extends SmartBlockEntity implements BlockEntitySu
 
     @Override
     public void remove() {
-        if (!this.level.isClientSide && this.partnerPos != null && !this.assembling) {
+        if (!this.level.isClientSide() && this.partnerPos != null && !this.assembling) {
             this.level.destroyBlock(this.partnerPos, false);
         }
 

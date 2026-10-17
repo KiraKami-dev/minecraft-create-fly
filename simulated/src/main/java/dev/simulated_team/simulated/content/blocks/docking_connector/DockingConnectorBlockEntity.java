@@ -21,7 +21,7 @@ import dev.simulated_team.simulated.multiloader.inventory.AbstractContainer;
 import dev.simulated_team.simulated.service.SimConfigService;
 import dev.simulated_team.simulated.util.SimMathUtils;
 import dev.simulated_team.simulated.util.SimMovementContext;
-import net.createmod.catnip.animation.LerpedFloat;
+import com.zurrtum.create.catnip.animation.LerpedFloat;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.HolderLookup;
@@ -125,18 +125,18 @@ public class DockingConnectorBlockEntity extends SmartBlockEntity implements Sim
         final BlockState frontState = this.level.getBlockState(frontPos);
 
         this.powered = state.getValue(BlockStateProperties.POWERED);
-        if (!frontState.isAir() && (!frontState.is(SimBlocks.PAIRED_DOCKING_CONNECTOR.get()) || frontState.getValue(BlockStateProperties.FACING).getOpposite() != direction)) {
+        if (!frontState.isAir() && (!frontState.is(SimBlocks.PAIRED_DOCKING_CONNECTOR) || frontState.getValue(BlockStateProperties.FACING).getOpposite() != direction)) {
             this.powered = false;
         }
         if (!this.level.isClientSide() && this.isExtended()) {
             this.searchForPairs();
 
-            if (!frontState.is(SimBlocks.PAIRED_DOCKING_CONNECTOR.get())) {
-                this.level.setBlock(frontPos, SimBlocks.PAIRED_DOCKING_CONNECTOR.get().defaultBlockState().setValue(BlockStateProperties.FACING, direction.getOpposite()), 3);
+            if (!frontState.is(SimBlocks.PAIRED_DOCKING_CONNECTOR)) {
+                this.level.setBlock(frontPos, SimBlocks.PAIRED_DOCKING_CONNECTOR.defaultBlockState().setValue(BlockStateProperties.FACING, direction.getOpposite()), 3);
             }
         }
 
-        if (this.otherConnectorPosition != null && !this.level.isClientSide) {
+        if (this.otherConnectorPosition != null && !this.level.isClientSide()) {
             if (!(this.level.getBlockEntity(this.otherConnectorPosition) instanceof final DockingConnectorBlockEntity be && Objects.equals(be.otherConnectorPosition, this.getBlockPos()))) {
                 this.unDock();
                 this.state = DockingConnectorState.EXTENDED;
@@ -158,7 +158,7 @@ public class DockingConnectorBlockEntity extends SmartBlockEntity implements Sim
                         1.0f,
                         false);
             } else {
-                if (!this.powered && frontState.is(SimBlocks.PAIRED_DOCKING_CONNECTOR.get())) {
+                if (!this.powered && frontState.is(SimBlocks.PAIRED_DOCKING_CONNECTOR)) {
                     this.level.setBlock(frontPos, Blocks.AIR.defaultBlockState(), 3);
                 }
             }
@@ -497,7 +497,7 @@ public class DockingConnectorBlockEntity extends SmartBlockEntity implements Sim
     public void remove() {
         super.remove();
         this.removeConstraint();
-        if (this.level == null || !this.level.isClientSide) {
+        if (this.level == null || !this.level.isClientSide()) {
             this.ccWiredElement.remove();
         }
     }

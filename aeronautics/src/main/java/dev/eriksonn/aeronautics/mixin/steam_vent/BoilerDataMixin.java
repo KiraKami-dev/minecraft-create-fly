@@ -53,7 +53,7 @@ public abstract class BoilerDataMixin {
 
 	@Inject(method = "evaluate", at = @At(value = "INVOKE", target = "Lcom/tterrag/registrate/util/entry/BlockEntry;has(Lnet/minecraft/world/level/block/state/BlockState;)Z", ordinal = 0))
 	private void aeronautics$countVents2(final FluidTankBlockEntity controller, final CallbackInfoReturnable<Boolean> cir, @Local(ordinal = 1) final BlockState attachedState) {
-		if (AeroBlocks.STEAM_VENT.has(attachedState)) {
+		if (attachedState.is(AeroBlocks.STEAM_VENT)) {
 			this.aeronautics$attachedVents++;
 		}
 	}
@@ -83,9 +83,9 @@ public abstract class BoilerDataMixin {
 
 	/*
 	double totalSU = getEngineEfficiency(boilerSize) * 16 * Math.max(boilerLevel, attachedEngines)
-			* BlockStressValues.getCapacity(AllBlocks.STEAM_ENGINE.get());
+			* BlockStressValues.getCapacity(AllBlocks.STEAM_ENGINE);
 		->
-	double totalSU = (1 or 1/8) * 16 * Math.max(boilerLevel, 1) * BlockStressValues.getCapacity(AllBlocks.STEAM_ENGINE.get())
+	double totalSU = (1 or 1/8) * 16 * Math.max(boilerLevel, 1) * BlockStressValues.getCapacity(AllBlocks.STEAM_ENGINE)
 	 */
 	@Redirect(method = "addToGoggleTooltip", at = @At(value = "INVOKE", target = "Lcom/simibubi/create/content/fluids/tank/BoilerData;getEngineEfficiency(I)F"))
 	private float aeronautics$trueMaxSU1(final BoilerData instance, final int boilerSize) {

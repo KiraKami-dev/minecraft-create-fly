@@ -83,7 +83,7 @@ public record PlaceSpringPacket(BlockPos parentPos, BlockPos childPos, Direction
     }
 
     private SpringBlockEntity addSpring(final Level level, final BlockPos placedPos, final BlockPos childPos, final Direction facing, final boolean controller, final float distance) {
-        final BlockState newState = SimBlocks.SPRING.getDefaultState();
+        final BlockState newState = SimBlocks.SPRING.defaultBlockState();
 
         if (level.setBlockAndUpdate(placedPos, newState.setValue(SpringBlock.FACING, facing))) {
             final SpringBlockEntity parentSpring = (SpringBlockEntity) level.getBlockEntity(placedPos);

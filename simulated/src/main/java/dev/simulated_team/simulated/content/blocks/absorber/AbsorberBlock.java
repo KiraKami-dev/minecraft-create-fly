@@ -13,7 +13,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.InteractionHand;
-import net.minecraft.world.ItemInteractionResult;
+import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
@@ -51,7 +51,7 @@ public class AbsorberBlock extends HorizontalDirectionalBlock implements IBE<Abs
 
     @Override
     protected void neighborChanged(final BlockState state, final Level level, final BlockPos pos, final Block block, final BlockPos fromPos, final boolean isMoving) {
-        if (!level.isClientSide) {
+        if (!level.isClientSide()) {
             final boolean flag = state.getValue(POWERED);
             if (flag != level.hasNeighborSignal(pos)) {
                 level.setBlock(pos, state.cycle(POWERED), 2);
@@ -71,7 +71,7 @@ public class AbsorberBlock extends HorizontalDirectionalBlock implements IBE<Abs
     }
 
     @Override
-    protected ItemInteractionResult useItemOn(final ItemStack stack, final BlockState state, final Level level, final BlockPos pos, final Player player, final InteractionHand hand, final BlockHitResult hitResult) {
+    protected InteractionResult useItemOn(final ItemStack stack, final BlockState state, final Level level, final BlockPos pos, final Player player, final InteractionHand hand, final BlockHitResult hitResult) {
         if (stack.is(Items.CARROT) && state.getValue(POWERED)) {
             level.playLocalSound(pos, SoundEvents.GENERIC_EAT, SoundSource.BLOCKS, 0.8f, 0.9f + 0.2f * level.random.nextFloat(), false);
             level.playLocalSound(pos, SimSoundEvents.ABSORBER_EATS.event(), SoundSource.BLOCKS, 0.33f, 0.8f + 0.2f * level.random.nextFloat(), false);
@@ -82,7 +82,7 @@ public class AbsorberBlock extends HorizontalDirectionalBlock implements IBE<Abs
             }
 
             stack.consume(1, player);
-            return ItemInteractionResult.CONSUME;
+            return InteractionResult.CONSUME;
         }
         return super.useItemOn(stack, state, level, pos, player, hand, hitResult);
     }
@@ -102,7 +102,7 @@ public class AbsorberBlock extends HorizontalDirectionalBlock implements IBE<Abs
 
     @Override
     public BlockEntityType<? extends AbsorberBlockEntity> getBlockEntityType() {
-        //return SimBlockEntityTypes.ABSORBER.get();
+        //return SimBlockEntityTypes.ABSORBER;
         return null;
     }
 }

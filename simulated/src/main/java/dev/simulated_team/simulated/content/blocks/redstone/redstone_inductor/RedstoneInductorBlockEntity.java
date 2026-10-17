@@ -8,9 +8,9 @@ import com.zurrtum.create.api.behaviour.BlockEntityBehaviour;
 import com.zurrtum.create.client.foundation.blockEntity.behaviour.ValueBoxTransform;
 import com.zurrtum.create.client.foundation.blockEntity.behaviour.scrollValue.ScrollValueBehaviour;
 import com.zurrtum.create.client.foundation.utility.CreateLang;
-import dev.engine_room.flywheel.lib.transform.TransformStack;
-import net.createmod.catnip.animation.LerpedFloat;
-import net.createmod.catnip.math.AngleHelper;
+import com.zurrtum.create.client.flywheel.lib.transform.TransformStack;
+import com.zurrtum.create.catnip.animation.LerpedFloat;
+import com.zurrtum.create.catnip.math.AngleHelper;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.HolderLookup;
@@ -80,7 +80,7 @@ public class RedstoneInductorBlockEntity extends SmartBlockEntity implements IHa
 
         final boolean powered = this.getBlockState().getValue(RedstoneInductorBlock.POWERED);
 
-        if (!this.level.isClientSide) {
+        if (!this.level.isClientSide()) {
             if (tempPower == 0 && !powered) {
                 this.delayTicks = 0;
                 // setDischarge(false, level);
@@ -107,7 +107,7 @@ public class RedstoneInductorBlockEntity extends SmartBlockEntity implements IHa
             }
         }
 
-        if(this.level.isClientSide) this.lerpedState.tickChaser();
+        if(this.level.isClientSide()) this.lerpedState.tickChaser();
     }
 
     private void updateFacingBlock(final RedstoneInductorBlock block, final Level levelIn) {

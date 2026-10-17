@@ -39,7 +39,7 @@ public class PropellerAirParticleData implements ParticleOptions, ICustomParticl
 
     @Override
     public ParticleType<?> getType() {
-        return AeroParticleTypes.PROPELLER_AIR_FLOW.get();
+        return AeroParticleTypes.PROPELLER_AIR_FLOW;
     }
 
     @Override

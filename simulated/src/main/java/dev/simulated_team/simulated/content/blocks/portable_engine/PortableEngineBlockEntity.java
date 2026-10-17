@@ -9,7 +9,7 @@ import com.zurrtum.create.content.kinetics.base.GeneratingKineticBlockEntity;
 import com.zurrtum.create.api.behaviour.BlockEntityBehaviour;
 import com.zurrtum.create.client.foundation.blockEntity.behaviour.ValueBoxTransform;
 import com.zurrtum.create.client.foundation.blockEntity.behaviour.scrollValue.ScrollOptionBehaviour;
-import dev.engine_room.flywheel.lib.transform.TransformStack;
+import com.zurrtum.create.client.flywheel.lib.transform.TransformStack;
 import dev.ryanhcode.sable.Sable;
 import dev.ryanhcode.sable.companion.math.JOMLConversion;
 import dev.simulated_team.simulated.data.SimLang;
@@ -18,10 +18,10 @@ import dev.simulated_team.simulated.index.SimStats;
 import dev.simulated_team.simulated.multiloader.inventory.ContainerSlot;
 import dev.simulated_team.simulated.multiloader.inventory.ItemInfoWrapper;
 import dev.simulated_team.simulated.service.SimItemService;
-import net.createmod.catnip.animation.LerpedFloat;
-import net.createmod.catnip.lang.LangBuilder;
-import net.createmod.catnip.math.AngleHelper;
-import net.createmod.catnip.math.VecHelper;
+import com.zurrtum.create.catnip.animation.LerpedFloat;
+import com.zurrtum.create.client.catnip.lang.LangBuilder;
+import com.zurrtum.create.catnip.math.AngleHelper;
+import com.zurrtum.create.catnip.math.VecHelper;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
@@ -131,7 +131,7 @@ public class PortableEngineBlockEntity extends GeneratingKineticBlockEntity impl
     }
 
     private void onDirectionChanged() {
-        if (!this.level.isClientSide) {
+        if (!this.level.isClientSide()) {
             this.updateGeneratedRotation();
         }
     }
@@ -156,7 +156,7 @@ public class PortableEngineBlockEntity extends GeneratingKineticBlockEntity impl
         final boolean isLit = this.burnTime > 0;
 
         //Update visualSpeed and play sounds
-        if (this.level.isClientSide) {
+        if (this.level.isClientSide()) {
             final float targetSpeed = this.isVirtual() ? this.speed : this.getGeneratedSpeed();
             this.visualSpeed.updateChaseTarget(targetSpeed);
             this.visualSpeed.tickChaser();

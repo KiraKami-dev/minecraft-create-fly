@@ -85,6 +85,6 @@ public class LaserSensorBlock extends DirectedDirectionalBlock implements IBE<La
 
     @Override
     public BlockEntityType<? extends LaserSensorBlockEntity> getBlockEntityType() {
-        return SimBlockEntityTypes.LASER_SENSOR.get();
+        return SimBlockEntityTypes.LASER_SENSOR;
     }
 }

@@ -34,7 +34,7 @@ public class HotAirEmberParticleData implements ParticleOptions, ICustomParticle
 
     @Override
     public ParticleType<?> getType() {
-        return AeroParticleTypes.HOT_AIR_EMBER.get();
+        return AeroParticleTypes.HOT_AIR_EMBER;
     }
 
     @Override

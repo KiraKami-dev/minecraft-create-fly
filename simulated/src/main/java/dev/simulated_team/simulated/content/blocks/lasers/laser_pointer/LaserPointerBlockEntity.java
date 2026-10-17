@@ -5,7 +5,7 @@ import com.zurrtum.create.content.equipment.clipboard.ClipboardCloneable;
 import com.zurrtum.create.api.behaviour.BlockEntityBehaviour;
 import com.zurrtum.create.client.foundation.blockEntity.behaviour.ValueBoxTransform;
 import com.zurrtum.create.client.foundation.blockEntity.behaviour.scrollValue.ScrollValueBehaviour;
-import dev.engine_room.flywheel.lib.transform.TransformStack;
+import com.zurrtum.create.client.flywheel.lib.transform.TransformStack;
 import dev.simulated_team.simulated.content.blocks.lasers.AbstractLaserBlockEntity;
 import dev.simulated_team.simulated.content.blocks.lasers.laser_sensor.LaserSensorBlockEntity;
 import dev.simulated_team.simulated.content.blocks.lasers.laser_sensor.LaserSensorInteractorBehaviour;
@@ -13,8 +13,8 @@ import dev.simulated_team.simulated.data.SimLang;
 import dev.simulated_team.simulated.service.SimConfigService;
 import dev.simulated_team.simulated.util.SimColors;
 import dev.simulated_team.simulated.util.SimLevelUtil;
-import net.createmod.catnip.math.AngleHelper;
-import net.createmod.catnip.math.VecHelper;
+import com.zurrtum.create.catnip.math.AngleHelper;
+import com.zurrtum.create.catnip.math.VecHelper;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.HolderLookup;
@@ -66,7 +66,7 @@ public class LaserPointerBlockEntity extends AbstractLaserBlockEntity implements
             return;
         }
 
-        if (!this.level.isClientSide || this.isVirtual()) {
+        if (!this.level.isClientSide() || this.isVirtual()) {
             final int currentPower = this.level.getBestNeighborSignal(this.worldPosition);
             if (currentPower != this.bestPower) {
                 this.bestPower = currentPower;
@@ -190,7 +190,7 @@ public class LaserPointerBlockEntity extends AbstractLaserBlockEntity implements
     public void setRainbow(final boolean rainbow) {
         this.rainbow = rainbow;
 
-        if (!this.getLevel().isClientSide) {
+        if (!this.getLevel().isClientSide()) {
             this.notifyUpdate();
         }
     }

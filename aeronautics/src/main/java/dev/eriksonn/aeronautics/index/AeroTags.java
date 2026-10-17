@@ -1,7 +1,6 @@
 package dev.eriksonn.aeronautics.index;
 
 import com.zurrtum.create.AllBlocks;
-import com.zurrtum.create.AllTags;
 import com.zurrtum.create.foundation.data.TagGen;
 import com.tterrag.registrate.providers.ProviderType;
 import com.tterrag.registrate.providers.RegistrateItemTagsProvider;
@@ -53,7 +52,7 @@ public class AeroTags {
 					.add(Blocks.CLAY,Blocks.MUD,Blocks.PACKED_MUD,Blocks.COARSE_DIRT);
 
 			prov.tag(LEVITITE_CATALYZER)
-					.add(Blocks.CAMPFIRE, Blocks.MAGMA_BLOCK, Blocks.TORCH, Blocks.WALL_TORCH, AllBlocks.LIT_BLAZE_BURNER.get(), Blocks.FIRE);
+					.add(Blocks.CAMPFIRE, Blocks.MAGMA_BLOCK, Blocks.TORCH, Blocks.WALL_TORCH, AllBlocks.LIT_BLAZE_BURNER, Blocks.FIRE);
 			prov.tag(LEVITITE_ADJACENT_CATALYZER)
 					.add(Blocks.NETHERRACK)
 					.addTag(Tags.Blocks.STORAGE_BLOCKS_COAL);

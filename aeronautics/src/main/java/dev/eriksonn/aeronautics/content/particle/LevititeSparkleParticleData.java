@@ -53,6 +53,6 @@ public class LevititeSparkleParticleData implements ParticleOptions, ICustomPart
 
     @Override
     public ParticleType<?> getType() {
-        return AeroParticleTypes.LEVITITE_SPARKLE.get();
+        return AeroParticleTypes.LEVITITE_SPARKLE;
     }
 }

@@ -9,7 +9,7 @@ import com.zurrtum.create.foundation.blockEntity.SmartBlockEntity;
 import com.zurrtum.create.api.behaviour.BlockEntityBehaviour;
 import com.zurrtum.create.client.foundation.blockEntity.behaviour.ValueBoxTransform;
 import com.zurrtum.create.client.foundation.blockEntity.behaviour.scrollValue.ScrollValueBehaviour;
-import dev.engine_room.flywheel.lib.transform.TransformStack;
+import com.zurrtum.create.client.flywheel.lib.transform.TransformStack;
 import dev.eriksonn.aeronautics.config.AeroConfig;
 import dev.eriksonn.aeronautics.config.server.AeroBlockConfigs;
 import dev.eriksonn.aeronautics.content.blocks.hot_air.BlockEntityLiftingGasProvider;
@@ -22,10 +22,10 @@ import dev.eriksonn.aeronautics.data.AeroLang;
 import dev.eriksonn.aeronautics.index.AeroLiftingGasTypes;
 import dev.eriksonn.aeronautics.index.AeroSoundEvents;
 import dev.eriksonn.aeronautics.util.AeroSoundDistUtil;
-import net.createmod.catnip.animation.LerpedFloat;
-import net.createmod.catnip.data.Iterate;
-import net.createmod.catnip.math.AngleHelper;
-import net.createmod.catnip.math.VecHelper;
+import com.zurrtum.create.catnip.animation.LerpedFloat;
+import com.zurrtum.create.catnip.data.Iterate;
+import com.zurrtum.create.catnip.math.AngleHelper;
+import com.zurrtum.create.catnip.math.VecHelper;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -124,7 +124,7 @@ public class SteamVentBlockEntity extends SmartBlockEntity implements BlockEntit
         this.intensity.chase(intensityGoal, 0.1, LerpedFloat.Chaser.EXP);
         this.intensity.tickChaser();
 
-        if (this.level.isClientSide) {
+        if (this.level.isClientSide()) {
             final GasEmitterRenderHandler renderHandler = this.getRenderHandler();
 
             if (this.isVirtual()) {
@@ -156,7 +156,7 @@ public class SteamVentBlockEntity extends SmartBlockEntity implements BlockEntit
     public void invalidate() {
         super.invalidate();
 
-        if (this.level.isClientSide) {
+        if (this.level.isClientSide()) {
             AeroSoundDistUtil.removePosSteamVentSound(this.getBlockPos());
         } else {
             this.removeFromBalloon();
@@ -184,7 +184,7 @@ public class SteamVentBlockEntity extends SmartBlockEntity implements BlockEntit
         final int newStrength = this.level.getBestNeighborSignal(this.getBlockPos());
 
         if (newStrength != this.rawSignalStrength) {
-            if (!this.level.isClientSide) {
+            if (!this.level.isClientSide()) {
                 final BlockState existentState = this.level.getBlockState(this.getBlockPos()); // this.getBlockState() might not be up to date with the variant yet
                 if (newStrength > 0 && this.rawSignalStrength == 0) { //if new signal is not 0, and current signal is 0 power
                     this.level.setBlockAndUpdate(this.worldPosition, existentState.setValue(SteamVentBlock.POWERED, true));
@@ -363,7 +363,7 @@ public class SteamVentBlockEntity extends SmartBlockEntity implements BlockEntit
             this.direction = direction;
 
             Level level = this.be.getLevel();
-            if (level != null && level.isClientSide && direction == Direction.UP) {
+            if (level != null && level.isClientSide() && direction == Direction.UP) {
                 final Minecraft mc = Minecraft.getInstance();
                 final HitResult target = mc.hitResult;
                 if (target instanceof BlockHitResult) {
@@ -410,7 +410,7 @@ public class SteamVentBlockEntity extends SmartBlockEntity implements BlockEntit
         @Override
         protected boolean isSideActive(final BlockState state, final Direction direction) {
             Level level = this.be.getLevel();
-            if (level != null && level.isClientSide && direction == Direction.UP) {
+            if (level != null && level.isClientSide() && direction == Direction.UP) {
                 final Minecraft mc = Minecraft.getInstance();
                 final HitResult target = mc.hitResult;
                 if (target instanceof BlockHitResult) {

@@ -2,9 +2,9 @@ package dev.simulated_team.simulated.index;
 
 import com.mojang.blaze3d.systems.RenderSystem;
 import dev.simulated_team.simulated.Simulated;
-import net.createmod.catnip.gui.UIRenderHelper;
-import net.createmod.catnip.gui.element.ScreenElement;
-import net.createmod.catnip.theme.Color;
+import com.zurrtum.create.client.catnip.gui.UIRenderHelper;
+import com.zurrtum.create.client.catnip.gui.element.ScreenElement;
+import com.zurrtum.create.catnip.theme.Color;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.resources.Identifier;
 import org.jetbrains.annotations.NotNull;

@@ -12,7 +12,7 @@ import net.minecraft.core.Direction;
 import net.minecraft.util.StringRepresentable;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
-import net.minecraft.world.ItemInteractionResult;
+import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.context.BlockPlaceContext;
@@ -95,7 +95,7 @@ public class AltitudeSensorBlock extends FaceAttachedHorizontalDirectionalBlock 
 
     @Override
     public BlockEntityType<? extends AltitudeSensorBlockEntity> getBlockEntityType() {
-        return SimBlockEntityTypes.ALTITUDE_SENSOR.get();
+        return SimBlockEntityTypes.ALTITUDE_SENSOR;
     }
 
     @Override
@@ -153,20 +153,20 @@ public class AltitudeSensorBlock extends FaceAttachedHorizontalDirectionalBlock 
     }
 
     @Override
-    protected @NotNull ItemInteractionResult useItemOn(final @NotNull ItemStack stack,
+    protected @NotNull InteractionResult useItemOn(final @NotNull ItemStack stack,
                                                        final @NotNull BlockState state,
                                                        final @NotNull Level level,
                                                        final @NotNull BlockPos pos,
                                                        final @NotNull Player player,
                                                        final @NotNull InteractionHand hand,
                                                        final @NotNull BlockHitResult hitResult) {
-        return AllItems.WRENCH.isIn(stack) ? ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION : this.onBlockEntityUseItemOn(level, pos, (be) -> {
+        return stack.is(AllItems.WRENCH) ? InteractionResult.TRY_WITH_EMPTY_HAND : this.onBlockEntityUseItemOn(level, pos, (be) -> {
 
-            if (level.isClientSide) {
+            if (level.isClientSide()) {
                 this.withBlockEntityDo(level, pos, AltitudeSensorScreen::open);
             }
 
-            return ItemInteractionResult.SUCCESS;
+            return InteractionResult.SUCCESS;
         });
     }
 

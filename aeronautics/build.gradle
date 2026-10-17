@@ -1,0 +1,31 @@
+version = '1.3.2+mc1.21.11-port'
+group = 'dev.eriksonn.aeronautics'
+
+base { archivesName = 'aeronautics-fabric-1.21.11' }
+
+loom {
+    accessWidenerPath = file('src/main/resources/aeronautics.accesswidener')
+}
+
+dependencies {
+    implementation project(path: ':sable', configuration: 'namedElements')
+    implementation project(path: ':simulated', configuration: 'namedElements')
+    modImplementation "maven.modrinth:create-fly:${create_fly_version}"
+    modImplementation "fuzs.forgeconfigapiport:forgeconfigapiport-fabric:${forgeconfigapiport_version}"
+    compileOnly 'com.google.code.findbugs:jsr305:3.0.2'
+
+    // Optional compat targets (compileOnly; mixins are gated on mod presence)
+    modCompileOnly "maven.modrinth:sodium:mc1.21.11-0.8.14-fabric"
+    modCompileOnly "maven.modrinth:iris:1.10.8+1.21.11-fabric"
+}
+
+processResources {
+    def props = [
+            mod_id: 'aeronautics', version: project.version, mod_name: 'Create Aeronautics', mod_author: 'Simulated Team',
+            description: 'Enables all manner of flying contraptions with hot air, propellers, and magic floating rocks.',
+            fabric_loader_version: loader_version, minecraft_version: minecraft_version, java_version: java_version
+    ]
+    inputs.properties props
+    filesMatching(['fabric.mod.json', '*.mixins.json']) { expand props }
+    exclude 'datagen/**'
+}

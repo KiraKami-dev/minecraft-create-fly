@@ -7,14 +7,14 @@ import com.zurrtum.create.foundation.block.IBE;
 import dev.eriksonn.aeronautics.index.AeroBlockEntityTypes;
 import dev.eriksonn.aeronautics.index.AeroBlockShapes;
 import dev.eriksonn.aeronautics.index.AeroTags;
-import net.createmod.catnip.data.Iterate;
+import com.zurrtum.create.catnip.data.Iterate;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.StringRepresentable;
 import net.minecraft.world.InteractionHand;
-import net.minecraft.world.ItemInteractionResult;
+import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -59,7 +59,7 @@ public class SteamVentBlock extends Block implements IBE<SteamVentBlockEntity>, 
     }
 
     @Override
-    protected @NotNull ItemInteractionResult useItemOn(final ItemStack itemStack,
+    protected @NotNull InteractionResult useItemOn(final ItemStack itemStack,
                                                        final @NotNull BlockState blockState,
                                                        final @NotNull Level level,
                                                        final @NotNull BlockPos blockPos,
@@ -73,11 +73,11 @@ public class SteamVentBlock extends Block implements IBE<SteamVentBlockEntity>, 
             if (conversion != current) {
                 level.setBlockAndUpdate(blockPos, blockState.setValue(VARIANT, conversion));
                 level.playLocalSound(blockPos.getX(), blockPos.getY(), blockPos.getZ(), SoundEvents.COPPER_PLACE, SoundSource.BLOCKS, 1, 1, false);
-                return ItemInteractionResult.SUCCESS;
+                return InteractionResult.SUCCESS;
             }
         }
 
-        return ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
+        return InteractionResult.TRY_WITH_EMPTY_HAND;
     }
 
     @Override
@@ -120,7 +120,7 @@ public class SteamVentBlock extends Block implements IBE<SteamVentBlockEntity>, 
 
     @Override
     public void neighborChanged(final BlockState state, final Level level, final BlockPos pos, final Block blockIn, final BlockPos fromPos, final boolean isMoving) {
-        if (level.isClientSide)
+        if (level.isClientSide())
             return;
 
         this.withBlockEntityDo(level, pos, SteamVentBlockEntity::updateRawSignal);
@@ -149,7 +149,7 @@ public class SteamVentBlock extends Block implements IBE<SteamVentBlockEntity>, 
 
     @Override
     public BlockEntityType<? extends SteamVentBlockEntity> getBlockEntityType() {
-        return AeroBlockEntityTypes.STEAM_VENT.get();
+        return AeroBlockEntityTypes.STEAM_VENT;
     }
 
     public enum Variant implements StringRepresentable {

@@ -14,13 +14,13 @@ import com.zurrtum.create.client.foundation.blockEntity.ValueSettingsBoard;
 import com.zurrtum.create.client.foundation.blockEntity.ValueSettingsFormatter;
 import com.zurrtum.create.client.foundation.blockEntity.behaviour.scrollValue.ScrollValueBehaviour;
 import com.zurrtum.create.client.foundation.utility.CreateLang;
-import dev.engine_room.flywheel.lib.transform.TransformStack;
+import com.zurrtum.create.client.flywheel.lib.transform.TransformStack;
 import dev.simulated_team.simulated.content.blocks.behaviour.HoldTipBehaviour;
 import dev.simulated_team.simulated.data.SimLang;
 import dev.simulated_team.simulated.index.SimBlocks;
 import dev.simulated_team.simulated.index.SimClickInteractions;
-import net.createmod.catnip.math.AngleHelper;
-import net.createmod.catnip.math.VecHelper;
+import com.zurrtum.create.catnip.math.AngleHelper;
+import com.zurrtum.create.catnip.math.VecHelper;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -31,7 +31,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.tags.BlockTags;
 import net.minecraft.util.Mth;
-import net.minecraft.world.ItemInteractionResult;
+import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.ItemStack;
@@ -160,7 +160,7 @@ public class SteeringWheelBlockEntity extends GeneratingKineticBlockEntity {
     public void tick() {
         super.tick();
 
-        if (this.level.isClientSide) {
+        if (this.level.isClientSide()) {
             this.oldClientAngle = this.clientAngle;
             if (SimClickInteractions.STEERING_WHEEL_MANAGER.isBlockActive(this.getBlockPos())) {
                 this.clientAngle = this.targetAngleToUpdate;
@@ -176,12 +176,12 @@ public class SteeringWheelBlockEntity extends GeneratingKineticBlockEntity {
         if (this.inUse > 0) {
             this.inUse--;
 
-            if (this.inUse == 0 && !this.level.isClientSide) {
+            if (this.inUse == 0 && !this.level.isClientSide()) {
                 this.sequenceContext = null;
                 this.generatedSpeed = 0;
                 this.updateGeneratedRotation();
             }
-        } else if(!this.level.isClientSide) {
+        } else if(!this.level.isClientSide()) {
             this.updateTargetAngle(this.targetAngleToUpdate);
         }
     }
@@ -283,7 +283,7 @@ public class SteeringWheelBlockEntity extends GeneratingKineticBlockEntity {
 
     @Override
     protected Block getStressConfigKey() {
-        return SimBlocks.STEERING_WHEEL.get();
+        return SimBlocks.STEERING_WHEEL;
     }
 
     public float getRenderAngle(final float partialTicks) {
@@ -368,16 +368,16 @@ public class SteeringWheelBlockEntity extends GeneratingKineticBlockEntity {
         return material.is(BlockTags.PLANKS);
     }
 
-    public ItemInteractionResult applyMaterialIfValid(final ItemStack stack) {
+    public InteractionResult applyMaterialIfValid(final ItemStack stack) {
         if (this.isMaterialValid(stack) && (stack.getItem()instanceof final BlockItem blockItem)) {
             if (this.level.isClientSide() && !this.isVirtual())
-                return ItemInteractionResult.SUCCESS;
+                return InteractionResult.SUCCESS;
             this.material = blockItem.getBlock().defaultBlockState();;
             this.notifyUpdate();
             this.level.levelEvent(LevelEvent.PARTICLES_DESTROY_BLOCK, this.worldPosition, Block.getId(material));
-            return ItemInteractionResult.SUCCESS;
+            return InteractionResult.SUCCESS;
         }
-        return ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
+        return InteractionResult.TRY_WITH_EMPTY_HAND;
     }
 
     private static class SteeringWheelValueBoxTransform extends ValueBoxTransform.Sided {

@@ -182,9 +182,9 @@ public class AeroBlocks {
                                 p.modLoc("block/envelope_encased_shaft/block"))
                         .texture("0", p.modLoc("block/envelope_block/envelope_" + colorName))))
                 .loot((p, b) -> p.add(b, p.createSingleItemTable(DYED_ENVELOPE_BLOCKS.get(color))
-                        .withPool(p.applyExplosionCondition(AllBlocks.SHAFT.get(), LootPool.lootPool()
+                        .withPool(p.applyExplosionCondition(AllBlocks.SHAFT, LootPool.lootPool()
                                 .setRolls(ConstantValue.exactly(1.0F))
-                                .add(LootItem.lootTableItem(AllBlocks.SHAFT.get()))))))
+                                .add(LootItem.lootTableItem(AllBlocks.SHAFT))))))
                 .tag(AeroTags.BlockTags.ENVELOPE)
                 .transform(axeOnly())
                 .transform(EncasingRegistry.addVariantTo(AllBlocks.SHAFT))
@@ -324,9 +324,9 @@ public class AeroBlocks {
                     .transform(customItemModel())
                     .recipe((c, p) -> {
                         ShapelessRecipeBuilder.shapeless(RecipeCategory.MISC, c.get(), 1)
-                                .requires(AeroBlocks.WOODEN_PROPELLER.get())
+                                .requires(AeroBlocks.WOODEN_PROPELLER)
                                 .group("aeronautics:propeller_style")
-                                .unlockedBy("has_ingredient", RegistrateRecipeProvider.has(AllItems.PROPELLER.get()))
+                                .unlockedBy("has_ingredient", RegistrateRecipeProvider.has(AllItems.PROPELLER))
                                 .save(p, Aeronautics.path(c.getName() + "_from_andesite"));
 
                         ShapedRecipeBuilder.shaped(RecipeCategory.MISC, c.get(), 1)
@@ -336,7 +336,7 @@ public class AeroBlocks {
                                 .define('P', AllItems.PROPELLER)
                                 .define('C', ItemTags.WOODEN_SLABS)
                                 .define('S', AllBlocks.SHAFT)
-                                .unlockedBy("has_ingredient", RegistrateRecipeProvider.has(AllItems.PROPELLER.get()))
+                                .unlockedBy("has_ingredient", RegistrateRecipeProvider.has(AllItems.PROPELLER))
                                 .save(p);
                     })
                     .register();

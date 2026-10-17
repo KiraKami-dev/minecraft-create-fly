@@ -8,7 +8,7 @@ import dev.eriksonn.aeronautics.content.blocks.hot_air.balloon.ServerBalloon;
 import dev.eriksonn.aeronautics.content.blocks.hot_air.BlockEntityLiftingGasProvider;
 import dev.eriksonn.aeronautics.data.AeroLang;
 import joptsimple.internal.Strings;
-import net.createmod.catnip.lang.LangNumberFormat;
+import com.zurrtum.create.client.catnip.lang.LangNumberFormat;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;

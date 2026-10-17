@@ -2,9 +2,9 @@ package dev.simulated_team.simulated.content.particle;
 
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.zurrtum.create.content.equipment.goggles.GogglesItem;
-import net.createmod.catnip.animation.AnimationTickHolder;
-import net.createmod.catnip.math.VecHelper;
-import net.createmod.catnip.theme.Color;
+import com.zurrtum.create.client.catnip.animation.AnimationTickHolder;
+import com.zurrtum.create.catnip.math.VecHelper;
+import com.zurrtum.create.catnip.theme.Color;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;

@@ -7,7 +7,7 @@ import com.zurrtum.create.client.foundation.utility.CreateLang;
 import dev.simulated_team.simulated.content.blocks.behaviour.HoldTipBehaviour;
 import dev.simulated_team.simulated.data.SimLang;
 import dev.simulated_team.simulated.index.SimClickInteractions;
-import net.createmod.catnip.animation.LerpedFloat;
+import com.zurrtum.create.catnip.animation.LerpedFloat;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
@@ -58,7 +58,7 @@ public class ThrottleLeverBlockEntity extends SmartBlockEntity implements IHaveG
                 this.updateOutput();
         }
 
-        if (this.level.isClientSide) {
+        if (this.level.isClientSide()) {
             this.clientAngle.tickChaser();
             final boolean pressed = SimClickInteractions.THROTTLE_LEVER_MANAGER.isBlockActive(this.getBlockPos());
             this.clientPressedLerp.updateChaseTarget(pressed ? 1 : 0);

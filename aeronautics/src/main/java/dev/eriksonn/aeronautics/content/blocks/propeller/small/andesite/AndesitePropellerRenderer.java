@@ -1,6 +1,6 @@
 package dev.eriksonn.aeronautics.content.blocks.propeller.small.andesite;
 
-import dev.engine_room.flywheel.lib.model.baked.PartialModel;
+import com.zurrtum.create.client.flywheel.lib.model.baked.PartialModel;
 import dev.eriksonn.aeronautics.content.blocks.propeller.small.SimplePropellerRenderer;
 import dev.eriksonn.aeronautics.index.AeroPartialModels;
 import net.minecraft.client.renderer.blockentity.BlockEntityRendererProvider;

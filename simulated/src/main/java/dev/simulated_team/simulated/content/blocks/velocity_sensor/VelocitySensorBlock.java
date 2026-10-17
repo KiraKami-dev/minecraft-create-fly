@@ -110,7 +110,7 @@ public class VelocitySensorBlock extends AbstractDirectionalAxisBlock implements
 
     @Override
     public BlockEntityType<? extends VelocitySensorBlockEntity> getBlockEntityType() {
-        return SimBlockEntityTypes.VELOCITY_SENSOR.get();
+        return SimBlockEntityTypes.VELOCITY_SENSOR;
     }
     private static final VelocitySensorShaper VELOCITY_SENSOR = VelocitySensorShaper.make();
     @Override

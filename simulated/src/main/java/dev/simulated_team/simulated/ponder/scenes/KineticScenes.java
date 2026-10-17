@@ -15,15 +15,15 @@ import dev.simulated_team.simulated.content.blocks.torsion_spring.TorsionSpringB
 import dev.simulated_team.simulated.ponder.SmoothMovementUtils;
 import dev.simulated_team.simulated.ponder.instructions.*;
 import dev.simulated_team.simulated.service.SimItemService;
-import net.createmod.catnip.math.Pointing;
-import net.createmod.catnip.outliner.Outliner;
-import net.createmod.ponder.api.PonderPalette;
-import net.createmod.ponder.api.element.ElementLink;
-import net.createmod.ponder.api.element.ParrotElement;
-import net.createmod.ponder.api.element.ParrotPose;
-import net.createmod.ponder.api.element.WorldSectionElement;
-import net.createmod.ponder.api.scene.*;
-import net.createmod.ponder.foundation.instruction.RotateSceneInstruction;
+import com.zurrtum.create.catnip.math.Pointing;
+import com.zurrtum.create.client.catnip.outliner.Outliner;
+import com.zurrtum.create.client.ponder.api.PonderPalette;
+import com.zurrtum.create.client.ponder.api.element.ElementLink;
+import com.zurrtum.create.client.ponder.api.element.ParrotElement;
+import com.zurrtum.create.client.ponder.api.element.ParrotPose;
+import com.zurrtum.create.client.ponder.api.element.WorldSectionElement;
+import com.zurrtum.create.client.ponder.api.scene.*;
+import com.zurrtum.create.client.ponder.foundation.instruction.RotateSceneInstruction;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.particles.BlockParticleOption;
@@ -102,7 +102,7 @@ public class KineticScenes {
 
         world.hideSection(select.position(shaftPos), Direction.DOWN);
         scene.idle(15);
-        final BlockState cogState = AllBlocks.COGWHEEL.getDefaultState();
+        final BlockState cogState = AllBlocks.COGWHEEL.defaultBlockState();
         world.setBlock(shaftPos, cogState.setValue(CogWheelBlock.AXIS, Direction.Axis.Z), false);
 
         world.showSection(select.position(shaftPos).add(select.fromTo(0, 1, 1, 1, 2, 2)), Direction.DOWN);
@@ -141,9 +141,9 @@ public class KineticScenes {
             be.openHatchOverride = true;
         });
         scene.idle(10);
-        overlay.showControls(textPos, Pointing.DOWN, 30).withItem(AllItems.BLAZE_CAKE.asStack());
+        overlay.showControls(textPos, Pointing.DOWN, 30).withItem(new ItemStack(AllItems.BLAZE_CAKE));
         world.modifyBlockEntity(enginePos, PortableEngineBlockEntity.class, be -> {
-            be.setCurrentBurnTime(SimItemService.INSTANCE.getBurnTime(AllItems.BLAZE_CAKE.asStack()));
+            be.setCurrentBurnTime(SimItemService.INSTANCE.getBurnTime(new ItemStack(AllItems.BLAZE_CAKE)));
             be.setSuperHeated(true);
             be.openHatchOverride = false;
         });

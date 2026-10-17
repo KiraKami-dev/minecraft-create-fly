@@ -82,7 +82,7 @@ public record PlaceMergingGluePacket(BlockPos parentPos, BlockPos childPos, Dire
     }
 
     private MergingGlueBlockEntity addMergingGlue(final Level level, final BlockPos placedPos, final BlockPos childPos, final Direction facing, final boolean controller, final float distance) {
-        final BlockState newState = SimBlocks.MERGING_GLUE.getDefaultState();
+        final BlockState newState = SimBlocks.MERGING_GLUE.defaultBlockState();
 
         if (level.setBlockAndUpdate(placedPos, newState.setValue(MergingGlueBlock.FACING, facing))) {
             final MergingGlueBlockEntity parentSpring = (MergingGlueBlockEntity) level.getBlockEntity(placedPos);

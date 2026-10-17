@@ -3,8 +3,8 @@ package dev.simulated_team.simulated.content.blocks.swivel_bearing.link_block;
 import com.zurrtum.create.client.content.kinetics.base.KineticBlockEntityRenderer;
 import dev.simulated_team.simulated.content.blocks.swivel_bearing.SwivelBearingBlock;
 import dev.simulated_team.simulated.index.SimPartialModels;
-import net.createmod.catnip.render.CachedBuffers;
-import net.createmod.catnip.render.SuperByteBuffer;
+import com.zurrtum.create.client.catnip.render.CachedBuffers;
+import com.zurrtum.create.client.catnip.render.SuperByteBuffer;
 import net.minecraft.client.renderer.blockentity.BlockEntityRendererProvider;
 import net.minecraft.world.level.block.state.BlockState;
 

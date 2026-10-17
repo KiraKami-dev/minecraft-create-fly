@@ -12,8 +12,8 @@ import dev.ryanhcode.sable.Sable;
 import dev.ryanhcode.sable.api.SubLevelHelper;
 import dev.ryanhcode.sable.companion.math.JOMLConversion;
 import dev.ryanhcode.sable.sublevel.SubLevel;
-import net.createmod.catnip.data.Couple;
-import net.createmod.catnip.math.VecHelper;
+import com.zurrtum.create.catnip.data.Couple;
+import com.zurrtum.create.catnip.math.VecHelper;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.HolderLookup;
@@ -65,7 +65,7 @@ public abstract class AbstractLinkedReceiverBlockEntity extends SmartBlockEntity
     public void tick() {
         super.tick();
 
-        if (this.level.isClientSide) {
+        if (this.level.isClientSide()) {
             return;
         }
 

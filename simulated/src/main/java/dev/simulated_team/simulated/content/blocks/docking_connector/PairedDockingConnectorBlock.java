@@ -120,7 +120,7 @@ public class PairedDockingConnectorBlock extends DirectionalBlock {
 
     @Override
     public @NotNull ItemStack getCloneItemStack(final @NotNull LevelReader level, final @NotNull BlockPos pos, final @NotNull BlockState state) {
-        return SimBlocks.DOCKING_CONNECTOR.asStack();
+        return new ItemStack(SimBlocks.DOCKING_CONNECTOR);
     }
 
     @Override

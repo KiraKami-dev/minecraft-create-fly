@@ -31,7 +31,7 @@ import dev.simulated_team.simulated.util.SimAssemblyHelper;
 import dev.simulated_team.simulated.util.SimMathUtils;
 import dev.simulated_team.simulated.util.assembly.SimAssemblyException;
 import dev.ryanhcode.sable.veillite.api.network.VeilPacketManager;
-import net.createmod.catnip.animation.LerpedFloat;
+import com.zurrtum.create.catnip.animation.LerpedFloat;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
@@ -358,7 +358,7 @@ public class PhysicsAssemblerBlockEntity extends SmartBlockEntity implements IDi
     public void remove() {
         //if we're the primary assembler, set the parent's primary assembler to null to ensure any assembler can disassemble
         if (this.primaryAssembler) {
-            if (!this.level.isClientSide) {
+            if (!this.level.isClientSide()) {
                 final SubLevel subLevel = this.getSubLevel();
                 if (subLevel instanceof final ServerSubLevel ssb) {
                     ((PrimaryAssemblerExtension) ssb).simulated$setPrimaryAssembler(null);
@@ -400,7 +400,7 @@ public class PhysicsAssemblerBlockEntity extends SmartBlockEntity implements IDi
         this.lastException = null;
 
         final SubLevel subLevel = Sable.HELPER.getContaining(level, this.getBlockPos());
-        if (!level.isClientSide && this.primaryAssembler && subLevel instanceof ServerSubLevel) {
+        if (!level.isClientSide() && this.primaryAssembler && subLevel instanceof ServerSubLevel) {
             final PrimaryAssemblerExtension duck = (PrimaryAssemblerExtension) subLevel;
             if (duck.simulated$getPrimaryAssembler() == null) {
                 duck.simulated$setPrimaryAssembler(this.getBlockPos());

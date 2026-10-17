@@ -8,8 +8,8 @@ import dev.simulated_team.simulated.index.SimEntityTypes;
 import dev.simulated_team.simulated.index.SimItems;
 import dev.simulated_team.simulated.network.packets.honey_glue.HoneyGlueSyncBoundsPacket;
 import dev.ryanhcode.sable.veillite.api.network.VeilPacketManager;
-import net.createmod.catnip.data.Iterate;
-import net.createmod.catnip.math.VecHelper;
+import com.zurrtum.create.catnip.data.Iterate;
+import com.zurrtum.create.catnip.math.VecHelper;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.particles.ItemParticleOption;
@@ -52,7 +52,7 @@ public class HoneyGlueEntity extends Entity implements SpecialEntityItemRequirem
     }
 
     public HoneyGlueEntity(final Level world, final AABB boundingBox) {
-        this(SimEntityTypes.HONEY_GLUE.get(), world);
+        this(SimEntityTypes.HONEY_GLUE, world);
         this.setBoundingBox(boundingBox);
         this.resetPositionToBounds();
         this.setBoundsAndSync(boundingBox);
@@ -67,7 +67,7 @@ public class HoneyGlueEntity extends Entity implements SpecialEntityItemRequirem
         this.yo = this.getY();
         this.zo = this.getZ();
 
-        if (this.level().isClientSide) {
+        if (this.level().isClientSide()) {
             this.updateClientBounds();
         } else {
             if (this.getBoundingBox().getXsize() <0.9f || this.getBoundingBox().getYsize() <0.9f || this.getBoundingBox().getZsize() < 0.9f) {
@@ -185,7 +185,7 @@ public class HoneyGlueEntity extends Entity implements SpecialEntityItemRequirem
 
         final Level level = this.level();
 
-        if (level.isClientSide) {
+        if (level.isClientSide()) {
             this.setBounds(bb);
         } else {
             this.setBoundsAndSync(bb);
@@ -204,7 +204,7 @@ public class HoneyGlueEntity extends Entity implements SpecialEntityItemRequirem
     public void setBoundsAndSync(final AABB bounds) {
         final Level level = this.level();
 
-        if (level.isClientSide) {
+        if (level.isClientSide()) {
             return;
         }
 
@@ -215,7 +215,7 @@ public class HoneyGlueEntity extends Entity implements SpecialEntityItemRequirem
     public void setBoundsAndSync(final AABB bounds, @Nullable final Player player) {
         final Level level = this.level();
 
-        if (level.isClientSide) {
+        if (level.isClientSide()) {
             return;
         }
 
@@ -237,7 +237,7 @@ public class HoneyGlueEntity extends Entity implements SpecialEntityItemRequirem
 
     @Override
     public void move(final MoverType typeIn, final Vec3 pos) {
-        if (!this.level().isClientSide && this.isAlive() && pos.lengthSqr() > 0.0D) {
+        if (!this.level().isClientSide() && this.isAlive() && pos.lengthSqr() > 0.0D) {
             this.discard();
         }
     }
@@ -258,7 +258,7 @@ public class HoneyGlueEntity extends Entity implements SpecialEntityItemRequirem
 
     @Override
     public ItemRequirement getRequiredItems() {
-        return new ItemRequirement(ItemRequirement.ItemUseType.DAMAGE, SimItems.HONEY_GLUE.get());
+        return new ItemRequirement(ItemRequirement.ItemUseType.DAMAGE, SimItems.HONEY_GLUE);
     }
 
     @Override

@@ -1,10 +1,10 @@
 package dev.simulated_team.simulated.ponder.instructions;
 
-import net.createmod.catnip.math.VecHelper;
-import net.createmod.ponder.api.PonderPalette;
-import net.createmod.ponder.api.scene.SceneBuilder;
-import net.createmod.ponder.foundation.PonderScene;
-import net.createmod.ponder.foundation.instruction.PonderInstruction;
+import com.zurrtum.create.catnip.math.VecHelper;
+import com.zurrtum.create.client.ponder.api.PonderPalette;
+import com.zurrtum.create.client.ponder.api.scene.SceneBuilder;
+import com.zurrtum.create.client.ponder.foundation.PonderScene;
+import com.zurrtum.create.client.ponder.foundation.instruction.PonderInstruction;
 import net.minecraft.core.Direction;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;

@@ -14,6 +14,6 @@ import org.spongepowered.asm.mixin.injection.At;
 public abstract class LinkedControllerItemMixin {
 	@WrapOperation(method = "onItemUseFirst", at = @At(value = "INVOKE", target = "Lcom/tterrag/registrate/util/entry/BlockEntry;has(Lnet/minecraft/world/level/block/state/BlockState;)Z", ordinal = 1))
 	private <T extends Block> boolean simulated$onItemUseFirst(final BlockEntry<T> instance, final BlockState state, final Operation<Boolean> original) {
-		return original.call(instance, state) || SimBlocks.MODULATING_LINKED_RECEIVER.has(state) || SimBlocks.DIRECTIONAL_LINKED_RECEIVER.has(state);
+		return original.call(instance, state) || state.is(SimBlocks.MODULATING_LINKED_RECEIVER) || state.is(SimBlocks.DIRECTIONAL_LINKED_RECEIVER);
 	}
 }

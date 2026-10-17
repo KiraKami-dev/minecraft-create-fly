@@ -1,6 +1,6 @@
 package dev.simulated_team.simulated.api;
 
-import net.createmod.catnip.lang.LangBuilder;
+import com.zurrtum.create.client.catnip.lang.LangBuilder;
 
 public interface CustomStressImpactTooltipProvider {
 

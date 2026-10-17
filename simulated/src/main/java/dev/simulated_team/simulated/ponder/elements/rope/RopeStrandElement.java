@@ -10,12 +10,12 @@ import dev.simulated_team.simulated.index.SimPartialModels;
 import dev.simulated_team.simulated.ponder.instructions.ModifyRopeInstruction;
 import dev.simulated_team.simulated.util.SimMathUtils;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
-import net.createmod.catnip.render.CachedBuffers;
-import net.createmod.catnip.render.SuperByteBuffer;
-import net.createmod.ponder.api.element.AnimatedSceneElement;
-import net.createmod.ponder.api.level.PonderLevel;
-import net.createmod.ponder.foundation.PonderScene;
-import net.createmod.ponder.foundation.element.AnimatedSceneElementBase;
+import com.zurrtum.create.client.catnip.render.CachedBuffers;
+import com.zurrtum.create.client.catnip.render.SuperByteBuffer;
+import com.zurrtum.create.client.ponder.api.element.AnimatedSceneElement;
+import com.zurrtum.create.client.ponder.api.level.PonderLevel;
+import com.zurrtum.create.client.ponder.foundation.PonderScene;
+import com.zurrtum.create.client.ponder.foundation.element.AnimatedSceneElementBase;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.renderer.LightTexture;
 import net.minecraft.client.renderer.MultiBufferSource;
@@ -76,8 +76,8 @@ public class RopeStrandElement extends AnimatedSceneElementBase implements Anima
 
     @Override
     protected void renderLast(final PonderLevel world, final MultiBufferSource buffer, final GuiGraphics graphics, final float fade, final float pt) {
-        final SuperByteBuffer middle = CachedBuffers.partialFacing(SimPartialModels.ROPE, AllBlocks.ROPE.getDefaultState(), Direction.NORTH);
-        final SuperByteBuffer knot = CachedBuffers.partialFacing(SimPartialModels.ROPE_KNOT, AllBlocks.ROPE.getDefaultState(), Direction.NORTH);
+        final SuperByteBuffer middle = CachedBuffers.partialFacing(SimPartialModels.ROPE, AllBlocks.ROPE.defaultBlockState(), Direction.NORTH);
+        final SuperByteBuffer knot = CachedBuffers.partialFacing(SimPartialModels.ROPE_KNOT, AllBlocks.ROPE.defaultBlockState(), Direction.NORTH);
         final VertexConsumer vb = buffer.getBuffer(RenderType.solid());
         final PoseStack ps = graphics.pose();
 

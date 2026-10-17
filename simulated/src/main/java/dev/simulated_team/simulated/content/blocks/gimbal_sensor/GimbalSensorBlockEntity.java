@@ -10,7 +10,7 @@ import com.zurrtum.create.client.foundation.blockEntity.behaviour.ValueBoxTransf
 import com.zurrtum.create.client.foundation.blockEntity.ValueSettingsBoard;
 import com.zurrtum.create.client.foundation.blockEntity.ValueSettingsFormatter;
 import com.zurrtum.create.client.foundation.blockEntity.behaviour.scrollValue.ScrollValueBehaviour;
-import dev.engine_room.flywheel.lib.transform.TransformStack;
+import com.zurrtum.create.client.flywheel.lib.transform.TransformStack;
 import dev.ryanhcode.sable.Sable;
 import dev.ryanhcode.sable.api.SubLevelHelper;
 import dev.ryanhcode.sable.companion.math.Pose3d;
@@ -19,9 +19,9 @@ import dev.ryanhcode.sable.physics.config.dimension_physics.DimensionPhysicsData
 import dev.ryanhcode.sable.sublevel.SubLevel;
 import dev.ryanhcode.sable.companion.math.JOMLConversion;
 import dev.simulated_team.simulated.data.SimLang;
-import net.createmod.catnip.data.Iterate;
-import net.createmod.catnip.math.AngleHelper;
-import net.createmod.catnip.math.VecHelper;
+import com.zurrtum.create.catnip.data.Iterate;
+import com.zurrtum.create.catnip.math.AngleHelper;
+import com.zurrtum.create.catnip.math.VecHelper;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -107,7 +107,7 @@ public class GimbalSensorBlockEntity extends SmartBlockEntity implements IHaveGo
         final SubLevel subLevel = Sable.HELPER.getContaining(this);
         final Pose3dc pose = subLevel != null ? subLevel.logicalPose() : IDENTITY_POSE;
 
-        if (this.level.isClientSide)
+        if (this.level.isClientSide())
             this.animateClientRotation(subLevel, pose);
         if (subLevel == null)
             return;

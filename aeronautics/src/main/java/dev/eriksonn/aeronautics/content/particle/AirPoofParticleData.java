@@ -34,6 +34,6 @@ public class AirPoofParticleData implements ParticleOptions, ICustomParticleData
 
     @Override
     public ParticleType<?> getType() {
-        return AeroParticleTypes.AIR_POOF.get();
+        return AeroParticleTypes.AIR_POOF;
     }
 }

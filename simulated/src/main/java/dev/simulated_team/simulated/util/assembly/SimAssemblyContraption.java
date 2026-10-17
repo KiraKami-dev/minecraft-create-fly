@@ -24,8 +24,8 @@ import dev.simulated_team.simulated.index.SimTags;
 import dev.simulated_team.simulated.service.SimAssemblyService;
 import dev.simulated_team.simulated.service.SimConfigService;
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
-import net.createmod.catnip.data.Iterate;
-import net.createmod.catnip.data.UniqueLinkedList;
+import com.zurrtum.create.catnip.data.Iterate;
+import com.zurrtum.create.catnip.data.UniqueLinkedList;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.Direction.Axis;
@@ -193,7 +193,7 @@ public class SimAssemblyContraption {
         }
 
         //swivel bearings have special cases with honey glue and glue, ignored in our API
-        if (SimBlocks.SWIVEL_BEARING.has(state)) {
+        if (state.is(SimBlocks.SWIVEL_BEARING)) {
             this.moveSwivelBearing(world, pos, frontier, visited, state);
         }
 
@@ -222,7 +222,7 @@ public class SimAssemblyContraption {
         // Cart assemblers attach themselves
         final BlockPos posDown = pos.below();
         final BlockState stateBelow = world.getBlockState(posDown);
-        if (!visited.contains(posDown) && AllBlocks.CART_ASSEMBLER.has(stateBelow)) {
+        if (!visited.contains(posDown) && stateBelow.is(AllBlocks.CART_ASSEMBLER)) {
             frontier.add(posDown);
         }
 
@@ -349,7 +349,7 @@ public class SimAssemblyContraption {
         for (final Direction d : Iterate.directionsInAxis(rotationAxis)) {
             offset = pos.relative(d);
             final BlockState offsetState = world.getBlockState(offset);
-            if (AllBlocks.GANTRY_SHAFT.has(offsetState) && offsetState.getValue(GantryShaftBlock.FACING)
+            if (offsetState.is(AllBlocks.GANTRY_SHAFT) && offsetState.getValue(GantryShaftBlock.FACING)
                     .getAxis() == d.getAxis())
                 if (!visited.contains(offset))
                     frontier.add(offset);
@@ -363,10 +363,10 @@ public class SimAssemblyContraption {
             if (!visited.contains(offset)) {
                 final BlockState offsetState = world.getBlockState(offset);
                 final Direction facing = state.getValue(GantryShaftBlock.FACING);
-                if (d.getAxis() == facing.getAxis() && AllBlocks.GANTRY_SHAFT.has(offsetState)
+                if (d.getAxis() == facing.getAxis() && offsetState.is(AllBlocks.GANTRY_SHAFT)
                         && offsetState.getValue(GantryShaftBlock.FACING) == facing)
                     frontier.add(offset);
-                else if (AllBlocks.GANTRY_CARRIAGE.has(offsetState)
+                else if (offsetState.is(AllBlocks.GANTRY_CARRIAGE)
                         && offsetState.getValue(GantryCarriageBlock.FACING) == d)
                     frontier.add(offset);
             }
@@ -401,7 +401,7 @@ public class SimAssemblyContraption {
         BlockPos offset = pos.relative(direction.getOpposite());
         if (!visited.contains(offset)) {
             final BlockState poleState = world.getBlockState(offset);
-            if (AllBlocks.PISTON_EXTENSION_POLE.has(poleState) && poleState.getValue(PistonExtensionPoleBlock.FACING)
+            if (poleState.is(AllBlocks.PISTON_EXTENSION_POLE) && poleState.getValue(PistonExtensionPoleBlock.FACING)
                     .getAxis() == direction.getAxis())
                 frontier.add(offset);
         }

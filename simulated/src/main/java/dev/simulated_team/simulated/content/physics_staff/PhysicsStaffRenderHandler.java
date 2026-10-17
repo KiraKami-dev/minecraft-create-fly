@@ -15,7 +15,7 @@ import dev.simulated_team.simulated.index.SimRenderTypes;
 import dev.ryanhcode.sable.veillite.api.client.color.Color;
 import dev.ryanhcode.sable.veillite.api.client.render.MatrixStack;
 import dev.ryanhcode.sable.veillite.api.event.VeilRenderLevelStageEvent;
-import net.createmod.catnip.outliner.Outliner;
+import com.zurrtum.create.client.catnip.outliner.Outliner;
 import net.minecraft.client.Camera;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;

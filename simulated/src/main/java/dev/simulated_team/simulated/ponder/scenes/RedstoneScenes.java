@@ -12,13 +12,13 @@ import dev.simulated_team.simulated.ponder.SmoothMovementUtils;
 import dev.simulated_team.simulated.ponder.instructions.ChasingLineInstruction;
 import dev.simulated_team.simulated.ponder.instructions.CustomAnimateWorldSectionInstruction;
 import dev.simulated_team.simulated.ponder.instructions.PullTheAssemblerKronkInstruction;
-import net.createmod.catnip.math.Pointing;
-import net.createmod.ponder.api.PonderPalette;
-import net.createmod.ponder.api.element.ElementLink;
-import net.createmod.ponder.api.element.WorldSectionElement;
-import net.createmod.ponder.api.level.PonderLevel;
-import net.createmod.ponder.api.scene.*;
-import net.createmod.ponder.foundation.PonderScene;
+import com.zurrtum.create.catnip.math.Pointing;
+import com.zurrtum.create.client.ponder.api.PonderPalette;
+import com.zurrtum.create.client.ponder.api.element.ElementLink;
+import com.zurrtum.create.client.ponder.api.element.WorldSectionElement;
+import com.zurrtum.create.client.ponder.api.level.PonderLevel;
+import com.zurrtum.create.client.ponder.api.scene.*;
+import com.zurrtum.create.client.ponder.foundation.PonderScene;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.RegistryAccess;
@@ -843,7 +843,7 @@ public class RedstoneScenes {
                 .placeNearTarget()
                 .pointAt(leverVec);
         scene.idle(70);
-        overlay.showControls(vector.centerOf(leverPos), Pointing.DOWN, 40).rightClick().withItem(AllItems.WRENCH.asStack());
+        overlay.showControls(vector.centerOf(leverPos), Pointing.DOWN, 40).rightClick().withItem(new ItemStack(AllItems.WRENCH));
         scene.idle(6);
         for (int i = 0; i < 10; i++) {
             final int state = i + 1;

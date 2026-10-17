@@ -19,8 +19,8 @@ import dev.simulated_team.simulated.util.SimColors;
 import dev.simulated_team.simulated.util.SimDistUtil;
 import dev.simulated_team.simulated.util.click_interactions.InteractCallback;
 import dev.ryanhcode.sable.veillite.api.network.VeilPacketManager;
-import net.createmod.catnip.data.Pair;
-import net.createmod.catnip.outliner.Outliner;
+import com.zurrtum.create.catnip.data.Pair;
+import com.zurrtum.create.client.catnip.outliner.Outliner;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.core.BlockPos;
@@ -359,7 +359,7 @@ public class HoneyGlueClientHandler implements InteractCallback {
     }
 
     private static @NotNull List<HoneyGlueEntity> getHoneyGlue(final Player player) {
-        return player.level().getEntities(SimEntityTypes.HONEY_GLUE.get(), player.getBoundingBox().inflate(SimConfigService.INSTANCE.server().assembly.honeyGlueRange.get()), e -> true);
+        return player.level().getEntities(SimEntityTypes.HONEY_GLUE, player.getBoundingBox().inflate(SimConfigService.INSTANCE.server().assembly.honeyGlueRange.get()), e -> true);
     }
 
     @Nullable

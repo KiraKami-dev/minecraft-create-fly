@@ -1,6 +1,6 @@
 package dev.simulated_team.simulated.content.blocks.rope.strand.client;
 
-import com.zurrtum.create.AllTags;
+import com.zurrtum.create.AllItemTags;
 import com.zurrtum.create.client.foundation.utility.RaycastHelper;
 import dev.ryanhcode.sable.Sable;
 import dev.ryanhcode.sable.api.math.OrientedBoundingBox3d;
@@ -15,7 +15,7 @@ import dev.simulated_team.simulated.util.SimMathUtils;
 import dev.simulated_team.simulated.util.click_interactions.InteractCallback;
 import dev.ryanhcode.sable.veillite.api.network.VeilPacketManager;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
-import net.createmod.catnip.animation.AnimationTickHolder;
+import com.zurrtum.create.client.catnip.animation.AnimationTickHolder;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
@@ -167,7 +167,7 @@ public class ZiplineClientManager implements InteractCallback {
         final Minecraft mc = Minecraft.getInstance();
         if (mc.isPaused())
             return;
-        if (!AllTags.AllItemTags.CHAIN_RIDEABLE.matches(mc.player.getMainHandItem())) {
+        if (!mc.player.getMainHandItem().is(AllItemTags.CHAIN_RIDEABLE)) {
             disembark();
             return;
         }
@@ -303,7 +303,7 @@ public class ZiplineClientManager implements InteractCallback {
     }
 
     public static boolean isRopeInteractable(final ItemStack stack) {
-        return AllTags.AllItemTags.CHAIN_RIDEABLE.matches(stack) || stack.is(SimTags.Items.DESTROYS_ROPE);
+        return stack.is(AllItemTags.CHAIN_RIDEABLE) || stack.is(SimTags.Items.DESTROYS_ROPE);
     }
 
     public static void embark(final UUID rope) {
@@ -336,7 +336,7 @@ public class ZiplineClientManager implements InteractCallback {
         final Minecraft mc = Minecraft.getInstance();
         final ItemStack mainHandItem = mc.player.getMainHandItem();
 
-        final boolean isWrench = AllTags.AllItemTags.CHAIN_RIDEABLE.matches(mainHandItem);
+        final boolean isWrench = mainHandItem.is(AllItemTags.CHAIN_RIDEABLE);
         final boolean isDestroyer = mainHandItem.is(SimTags.Items.DESTROYS_ROPE);
         if (isWrench && !mc.player.isShiftKeyDown()) {
             final ClientLevelRopeManager ropeManager = ClientLevelRopeManager.getOrCreate(mc.player.level());

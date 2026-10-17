@@ -13,7 +13,7 @@ import dev.simulated_team.simulated.multiloader.CommonRedstoneBlock;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.InteractionHand;
-import net.minecraft.world.ItemInteractionResult;
+import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.context.BlockPlaceContext;
@@ -73,7 +73,7 @@ public class ModulatingLinkedReceiverBlock extends WrenchableDirectionalBlock im
 
     @Override
     public BlockEntityType<? extends ModulatingLinkedReceiverBlockEntity> getBlockEntityType() {
-        return SimBlockEntityTypes.MODULATING_LINKED_RECEIVER.get();
+        return SimBlockEntityTypes.MODULATING_LINKED_RECEIVER;
     }
 
     @Override
@@ -110,7 +110,7 @@ public class ModulatingLinkedReceiverBlock extends WrenchableDirectionalBlock im
     @Override
     public void neighborChanged(final BlockState state, final Level level, final BlockPos pos, final Block blockIn, final BlockPos fromPos,
                                 final boolean isMoving) {
-        if (level.isClientSide)
+        if (level.isClientSide())
             return;
 
         final Direction blockFacing = state.getValue(FACING);
@@ -135,15 +135,15 @@ public class ModulatingLinkedReceiverBlock extends WrenchableDirectionalBlock im
     }
 
     @Override
-    protected ItemInteractionResult useItemOn(final ItemStack itemStack, final BlockState blockState, final Level level, final BlockPos blockPos, final Player player, final InteractionHand interactionHand, final BlockHitResult blockHitResult) {
+    protected InteractionResult useItemOn(final ItemStack itemStack, final BlockState blockState, final Level level, final BlockPos blockPos, final Player player, final InteractionHand interactionHand, final BlockHitResult blockHitResult) {
         if (!player.getMainHandItem().is(SimBlocks.LINKED_TYPEWRITER.asItem())) { //TODO: make this more generalized
 	        if (level.isClientSide()) {
                 this.withBlockEntityDo(level, blockPos, ModulatingLinkedReceiverScreen::open);
 	        }
 
-	        return ItemInteractionResult.SUCCESS;
+	        return InteractionResult.SUCCESS;
         }
 
-		return ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
+		return InteractionResult.TRY_WITH_EMPTY_HAND;
     }
 }

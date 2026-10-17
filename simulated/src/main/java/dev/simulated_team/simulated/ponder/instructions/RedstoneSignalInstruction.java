@@ -2,10 +2,10 @@ package dev.simulated_team.simulated.ponder.instructions;
 
 import com.zurrtum.create.content.redstone.analogLever.AnalogLeverBlockEntity;
 import com.zurrtum.create.content.redstone.nixieTube.NixieTubeBlockEntity;
-import net.createmod.ponder.api.level.PonderLevel;
-import net.createmod.ponder.api.scene.Selection;
-import net.createmod.ponder.foundation.PonderScene;
-import net.createmod.ponder.foundation.instruction.WorldModifyInstruction;
+import com.zurrtum.create.client.ponder.api.level.PonderLevel;
+import com.zurrtum.create.client.ponder.api.scene.Selection;
+import com.zurrtum.create.client.ponder.foundation.PonderScene;
+import com.zurrtum.create.client.ponder.foundation.instruction.WorldModifyInstruction;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.RedstoneTorchBlock;

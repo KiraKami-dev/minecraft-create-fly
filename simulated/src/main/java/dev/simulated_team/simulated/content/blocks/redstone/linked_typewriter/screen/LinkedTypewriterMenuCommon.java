@@ -26,7 +26,7 @@ public abstract class LinkedTypewriterMenuCommon extends GhostItemMenu<LinkedTyp
     }
 
     public static LinkedTypewriterMenuCommon create(final int id, final Inventory inv, final LinkedTypewriterBlockEntity be) {
-        return SimMenuService.INSTANCE.getLoaderLinkedTypewriter(SimMenuTypes.LINKED_TYPEWRITER.get(), id, inv, be);
+        return SimMenuService.INSTANCE.getLoaderLinkedTypewriter(SimMenuTypes.LINKED_TYPEWRITER, id, inv, be);
     }
 
     @Override

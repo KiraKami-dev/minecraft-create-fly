@@ -28,7 +28,7 @@ public record Converter(ItemStack item, int ticks, Optional<Identifier> sound, O
 	).apply(instance, Converter::new));
 
 	public static Converter cloudSkipper() {
-		return new Converter(AeroItems.MUSIC_DISC_CLOUD_SKIPPER.asStack(), 60,
+		return new Converter(new ItemStack(AeroItems.MUSIC_DISC_CLOUD_SKIPPER), 60,
 				Optional.of(AeroSoundEvents.CLOUD_SKIPPER_TRANSFORM.id()),
 				Optional.of(Identifier.withDefaultNamespace("white_smoke")));
 	}

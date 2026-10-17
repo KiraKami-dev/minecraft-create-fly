@@ -14,8 +14,8 @@ import dev.simulated_team.simulated.index.SimResourceManagers;
 import dev.simulated_team.simulated.index.ponder.SimPonderPlugin;
 import dev.ryanhcode.sable.veillite.api.event.VeilRenderLevelStageEvent;
 import dev.ryanhcode.sable.veillite.platform.VeilEventPlatform;
-import net.createmod.catnip.render.SuperByteBufferCache;
-import net.createmod.ponder.foundation.PonderIndex;
+import com.zurrtum.create.client.catnip.render.SuperByteBufferCache;
+import com.zurrtum.create.client.ponder.foundation.PonderIndex;
 
 public class SimulatedClient {
 

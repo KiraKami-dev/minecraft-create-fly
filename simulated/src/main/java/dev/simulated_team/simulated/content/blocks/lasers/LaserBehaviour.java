@@ -5,7 +5,7 @@ import com.zurrtum.create.foundation.blockEntity.behaviour.BehaviourType;
 import com.zurrtum.create.api.behaviour.BlockEntityBehaviour;
 import dev.ryanhcode.sable.Sable;
 import dev.simulated_team.simulated.index.SimTags;
-import net.createmod.catnip.data.Couple;
+import com.zurrtum.create.catnip.data.Couple;
 import net.minecraft.world.entity.projectile.ProjectileUtil;
 import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.level.Level;

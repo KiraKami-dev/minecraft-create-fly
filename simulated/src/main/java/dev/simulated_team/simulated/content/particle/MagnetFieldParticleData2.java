@@ -6,7 +6,7 @@ import com.mojang.serialization.codecs.RecordCodecBuilder;
 import com.zurrtum.create.foundation.particle.ICustomParticleDataWithSprite;
 import dev.simulated_team.simulated.index.SimParticleTypes;
 import io.netty.buffer.ByteBuf;
-import net.createmod.catnip.codecs.stream.CatnipStreamCodecs;
+import com.zurrtum.create.catnip.codecs.stream.CatnipStreamCodecs;
 import net.minecraft.client.particle.ParticleEngine;
 import net.minecraft.core.particles.ParticleOptions;
 import net.minecraft.core.particles.ParticleType;
@@ -47,7 +47,7 @@ public class MagnetFieldParticleData2 implements ParticleOptions, ICustomParticl
     }
 
     public ParticleType<?> getType() {
-        return SimParticleTypes.MAGNET_FIELD2.get();
+        return SimParticleTypes.MAGNET_FIELD2;
     }
 
     public MapCodec<MagnetFieldParticleData2> getCodec(final ParticleType<MagnetFieldParticleData2> type) {

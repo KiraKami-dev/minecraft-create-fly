@@ -84,7 +84,7 @@ public class DockingConnectorBlock extends WrenchableDirectionalBlock implements
         }
 
         if (blockChanged) {
-            level.getBlockEntity(pos, SimBlockEntityTypes.DOCKING_CONNECTOR.get()).ifPresent(connector -> Containers.dropContents(level, pos, connector.inventory));
+            level.getBlockEntity(pos, SimBlockEntityTypes.DOCKING_CONNECTOR).ifPresent(connector -> Containers.dropContents(level, pos, connector.inventory));
             super.onRemove(state, level, pos, newState, isMoving);
         }
     }
@@ -119,7 +119,7 @@ public class DockingConnectorBlock extends WrenchableDirectionalBlock implements
 
     @Override
     public BlockEntityType<? extends DockingConnectorBlockEntity> getBlockEntityType() {
-        return SimBlockEntityTypes.DOCKING_CONNECTOR.get();
+        return SimBlockEntityTypes.DOCKING_CONNECTOR;
     }
 
     @Override

@@ -7,7 +7,7 @@ import com.zurrtum.create.client.foundation.virtualWorld.VirtualRenderWorld;
 import dev.ryanhcode.sable.Sable;
 import dev.ryanhcode.sable.api.SubLevelHelper;
 import dev.ryanhcode.sable.companion.math.JOMLConversion;
-import net.createmod.catnip.animation.AnimationTickHolder;
+import com.zurrtum.create.client.catnip.animation.AnimationTickHolder;
 import net.minecraft.client.renderer.LevelRenderer;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.util.Mth;

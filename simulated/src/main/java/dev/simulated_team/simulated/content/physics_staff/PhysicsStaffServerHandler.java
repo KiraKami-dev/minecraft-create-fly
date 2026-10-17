@@ -19,7 +19,7 @@ import dev.simulated_team.simulated.service.SimConfigService;
 import dev.ryanhcode.sable.veillite.api.network.VeilPacketManager;
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
-import net.createmod.catnip.data.Pair;
+import com.zurrtum.create.catnip.data.Pair;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;

@@ -67,11 +67,11 @@ public class ThrottleLeverBlock extends FaceAttachedHorizontalDirectionalBlock i
 
     @Override
     protected InteractionResult useWithoutItem(final BlockState state, final Level level, final BlockPos pos, final Player player, final BlockHitResult hitResult) {
-        if (AllItems.WRENCH.isIn(player.getMainHandItem())) {
+        if (player.getMainHandItem().is(AllItems.WRENCH)) {
             return InteractionResult.PASS;
         }
 
-        if (level.isClientSide && player.isLocalPlayer()) {
+        if (level.isClientSide() && player.isLocalPlayer()) {
             addParticles(state, level, pos, 1.0F);
             return this.onBlockEntityUse(level, pos, be -> {
                 if (!SimClickInteractions.THROTTLE_LEVER_MANAGER.isActive()) {
@@ -93,7 +93,7 @@ public class ThrottleLeverBlock extends FaceAttachedHorizontalDirectionalBlock i
     @Override
     public InteractionResult onWrenched(final BlockState state, final UseOnContext context) {
         final Level level = context.getLevel();
-        if (level.isClientSide)
+        if (level.isClientSide())
             return InteractionResult.SUCCESS;
         final BlockPos pos = context.getClickedPos();
         final int signal = this.getSignal(state, level, pos, context.getClickedFace());
@@ -167,7 +167,7 @@ public class ThrottleLeverBlock extends FaceAttachedHorizontalDirectionalBlock i
 
     @Override
     public BlockEntityType<? extends ThrottleLeverBlockEntity> getBlockEntityType() {
-        return SimBlockEntityTypes.THROTTLE_LEVER.get();
+        return SimBlockEntityTypes.THROTTLE_LEVER;
     }
 
     @Override

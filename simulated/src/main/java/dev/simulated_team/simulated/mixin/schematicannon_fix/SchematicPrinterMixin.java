@@ -3,7 +3,7 @@ package dev.simulated_team.simulated.mixin.schematicannon_fix;
 import com.llamalad7.mixinextras.sugar.Local;
 import com.zurrtum.create.content.schematics.SchematicPrinter;
 import com.zurrtum.create.foundation.utility.BlockHelper;
-import net.createmod.catnip.levelWrappers.SchematicLevel;
+import com.zurrtum.create.catnip.levelWrappers.SchematicLevel;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.level.Level;

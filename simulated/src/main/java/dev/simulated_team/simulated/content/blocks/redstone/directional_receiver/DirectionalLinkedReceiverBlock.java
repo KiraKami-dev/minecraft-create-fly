@@ -69,7 +69,7 @@ public class DirectionalLinkedReceiverBlock extends WrenchableDirectionalBlock i
 
     @Override
     public BlockEntityType<? extends DirectionalLinkedReceiverBlockEntity> getBlockEntityType() {
-        return SimBlockEntityTypes.DIRECTIONAL_LINKED_RECEIVER.get();
+        return SimBlockEntityTypes.DIRECTIONAL_LINKED_RECEIVER;
     }
 
     @Override
@@ -106,7 +106,7 @@ public class DirectionalLinkedReceiverBlock extends WrenchableDirectionalBlock i
     @Override
     public void neighborChanged(final BlockState state, final Level level, final BlockPos pos, final Block blockIn, final BlockPos fromPos,
                                 final boolean isMoving) {
-        if (level.isClientSide)
+        if (level.isClientSide())
             return;
 
         final Direction blockFacing = state.getValue(FACING);

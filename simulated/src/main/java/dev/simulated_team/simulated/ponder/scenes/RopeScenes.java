@@ -1,6 +1,7 @@
 package dev.simulated_team.simulated.ponder.scenes;
 
 import com.zurrtum.create.client.foundation.ponder.CreateSceneBuilder;
+import net.minecraft.world.item.ItemStack;
 import com.zurrtum.create.client.infrastructure.ponder.scenes.highLogistics.FrogAndConveyorScenes;
 import dev.simulated_team.simulated.content.blocks.rope.rope_connector.RopeConnectorBlockEntity;
 import dev.simulated_team.simulated.content.blocks.rope.rope_winch.RopeWinchBlockEntity;
@@ -8,15 +9,15 @@ import dev.simulated_team.simulated.index.SimItems;
 import dev.simulated_team.simulated.ponder.SmoothMovementUtils;
 import dev.simulated_team.simulated.ponder.elements.rope.RopeStrandElement;
 import dev.simulated_team.simulated.ponder.instructions.*;
-import net.createmod.catnip.math.Pointing;
-import net.createmod.ponder.api.PonderPalette;
-import net.createmod.ponder.api.element.ElementLink;
-import net.createmod.ponder.api.element.ParrotElement;
-import net.createmod.ponder.api.element.ParrotPose;
-import net.createmod.ponder.api.element.WorldSectionElement;
-import net.createmod.ponder.api.scene.*;
-import net.createmod.ponder.foundation.element.ElementLinkImpl;
-import net.createmod.ponder.foundation.instruction.CreateParrotInstruction;
+import com.zurrtum.create.catnip.math.Pointing;
+import com.zurrtum.create.client.ponder.api.PonderPalette;
+import com.zurrtum.create.client.ponder.api.element.ElementLink;
+import com.zurrtum.create.client.ponder.api.element.ParrotElement;
+import com.zurrtum.create.client.ponder.api.element.ParrotPose;
+import com.zurrtum.create.client.ponder.api.element.WorldSectionElement;
+import com.zurrtum.create.client.ponder.api.scene.*;
+import com.zurrtum.create.client.ponder.foundation.element.ElementLinkImpl;
+import com.zurrtum.create.client.ponder.foundation.instruction.CreateParrotInstruction;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.item.Items;
@@ -58,7 +59,7 @@ public class RopeScenes {
         world.showSection(select.position(connector), Direction.DOWN);
         scene.idle(15);
 
-        overlay.showControls(vector.topOf(winch).subtract(0,0.25,0), Pointing.DOWN, 60).withItem(SimItems.ROPE_COUPLING.asStack());
+        overlay.showControls(vector.topOf(winch).subtract(0,0.25,0), Pointing.DOWN, 60).withItem(new ItemStack(SimItems.ROPE_COUPLING));
         scene.idle(6);
 
         // Using chasingLine because nothing else has custom line width
@@ -74,7 +75,7 @@ public class RopeScenes {
 
         scene.idle(20);
 
-        overlay.showControls(vector.centerOf(connector), Pointing.DOWN, 40).withItem(SimItems.ROPE_COUPLING.asStack());
+        overlay.showControls(vector.centerOf(connector), Pointing.DOWN, 40).withItem(new ItemStack(SimItems.ROPE_COUPLING));
 
         scene.idle(6);
 
@@ -303,8 +304,8 @@ public class RopeScenes {
 
         scene.idle(20);
 
-        overlay.showControls(vector.centerOf(tallConnector).add(0,0,0.25), Pointing.LEFT, 40).withItem(SimItems.ROPE_COUPLING.asStack());
-        overlay.showControls(vector.centerOf(lowConnector).subtract(0,-0.25,0.5), Pointing.RIGHT, 40).withItem(SimItems.ROPE_COUPLING.asStack());
+        overlay.showControls(vector.centerOf(tallConnector).add(0,0,0.25), Pointing.LEFT, 40).withItem(new ItemStack(SimItems.ROPE_COUPLING));
+        overlay.showControls(vector.centerOf(lowConnector).subtract(0,-0.25,0.5), Pointing.RIGHT, 40).withItem(new ItemStack(SimItems.ROPE_COUPLING));
 
         scene.idle(6);
 
@@ -331,8 +332,8 @@ public class RopeScenes {
 
         scene.idle(20);
 
-        overlay.showControls(vector.centerOf(tallWinch).add(0,0,0.25), Pointing.LEFT, 20).withItem(SimItems.ROPE_COUPLING.asStack());
-        overlay.showControls(vector.centerOf(lowWinch).subtract(0,-0.25,0.5), Pointing.RIGHT, 20).withItem(SimItems.ROPE_COUPLING.asStack());
+        overlay.showControls(vector.centerOf(tallWinch).add(0,0,0.25), Pointing.LEFT, 20).withItem(new ItemStack(SimItems.ROPE_COUPLING));
+        overlay.showControls(vector.centerOf(lowWinch).subtract(0,-0.25,0.5), Pointing.RIGHT, 20).withItem(new ItemStack(SimItems.ROPE_COUPLING));
 
         scene.idle(6);
 

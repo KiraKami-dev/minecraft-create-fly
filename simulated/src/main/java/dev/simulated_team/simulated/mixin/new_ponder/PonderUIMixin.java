@@ -1,8 +1,8 @@
 package dev.simulated_team.simulated.mixin.new_ponder;
 
 import dev.simulated_team.simulated.ponder.new_ponder_tooltip.NewPonderTooltipManager;
-import net.createmod.ponder.foundation.PonderScene;
-import net.createmod.ponder.foundation.ui.PonderUI;
+import com.zurrtum.create.client.ponder.foundation.PonderScene;
+import com.zurrtum.create.client.ponder.foundation.ui.PonderUI;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;

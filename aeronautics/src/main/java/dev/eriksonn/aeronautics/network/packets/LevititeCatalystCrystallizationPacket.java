@@ -7,7 +7,7 @@ import dev.eriksonn.aeronautics.index.AeroLevititeBlendPropagationContexts;
 import dev.eriksonn.aeronautics.index.AeroTags;
 import dev.eriksonn.aeronautics.util.CatalyzerHelper;
 import dev.ryanhcode.sable.veillite.api.network.handler.ServerPacketContext;
-import net.createmod.catnip.codecs.stream.CatnipStreamCodecs;
+import com.zurrtum.create.catnip.codecs.stream.CatnipStreamCodecs;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;

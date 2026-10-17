@@ -4,16 +4,16 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.zurrtum.create.content.redstone.analogLever.AnalogLeverBlock;
 import com.zurrtum.create.foundation.blockEntity.renderer.SafeBlockEntityRenderer;
-import dev.engine_room.flywheel.api.visualization.VisualizationManager;
-import dev.engine_room.flywheel.lib.transform.PoseTransformStack;
-import dev.engine_room.flywheel.lib.transform.TransformStack;
+import com.zurrtum.create.client.flywheel.api.visualization.VisualizationManager;
+import com.zurrtum.create.client.flywheel.lib.transform.PoseTransformStack;
+import com.zurrtum.create.client.flywheel.lib.transform.TransformStack;
 import dev.simulated_team.simulated.index.SimBlocks;
 import dev.simulated_team.simulated.index.SimPartialModels;
 import dev.simulated_team.simulated.mixin.accessor.LevelRendererAccessor;
 import dev.simulated_team.simulated.util.SimColors;
-import net.createmod.catnip.math.AngleHelper;
-import net.createmod.catnip.render.CachedBuffers;
-import net.createmod.catnip.render.SuperByteBuffer;
+import com.zurrtum.create.catnip.math.AngleHelper;
+import com.zurrtum.create.client.catnip.render.CachedBuffers;
+import com.zurrtum.create.client.catnip.render.SuperByteBuffer;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.rendertype.RenderType;
@@ -104,7 +104,7 @@ public class ThrottleLeverRenderer extends SafeBlockEntityRenderer<ThrottleLever
 
     private static void renderOutline(final ThrottleLeverBlockEntity be, final PoseStack ms, final MultiBufferSource bufferSource, final float angle) {
         final VertexConsumer consumer = bufferSource.getBuffer(RenderType.lines());
-        final VoxelShape leverShape = SimBlocks.THROTTLE_LEVER.get().getHandleShape(SimBlocks.THROTTLE_LEVER.getDefaultState());
+        final VoxelShape leverShape = SimBlocks.THROTTLE_LEVER.getHandleShape(SimBlocks.THROTTLE_LEVER.defaultBlockState());
 
         ms.pushPose();
         final PoseTransformStack stack = TransformStack.of(ms);

@@ -83,6 +83,6 @@ public class MergingGlueBlock extends DirectionalBlock implements IBE<MergingGlu
 
     @Override
     public BlockEntityType<? extends MergingGlueBlockEntity> getBlockEntityType() {
-        return SimBlockEntityTypes.MERGING_GLUE.get();
+        return SimBlockEntityTypes.MERGING_GLUE;
     }
 }

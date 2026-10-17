@@ -1,6 +1,6 @@
 package dev.simulated_team.simulated.content.navigation_targets.lodestone_compass_compatability;
 
-import dev.engine_room.flywheel.lib.util.LevelAttached;
+import com.zurrtum.create.client.flywheel.lib.util.LevelAttached;
 import dev.ryanhcode.sable.Sable;
 import dev.ryanhcode.sable.api.SubLevelHelper;
 import dev.ryanhcode.sable.api.sublevel.ServerSubLevelContainer;
@@ -58,7 +58,7 @@ public class LodestoneTrackingMap extends SavedData {
 	private static final BlockPos.MutableBlockPos DUMMY_POS = new BlockPos.MutableBlockPos();
 
 	public static LodestoneTrackingMap getOrLoad(final Level level) {
-		if (level.isClientSide) {
+		if (level.isClientSide()) {
 			return null;
 		}
 

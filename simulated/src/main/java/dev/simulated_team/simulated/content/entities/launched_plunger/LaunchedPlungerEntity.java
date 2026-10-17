@@ -16,8 +16,8 @@ import dev.simulated_team.simulated.index.SimItems;
 import dev.simulated_team.simulated.index.SimSoundEvents;
 import dev.simulated_team.simulated.mixin_interface.PlayerLaunchedPlungerExtension;
 import dev.simulated_team.simulated.service.SimConfigService;
-import net.createmod.catnip.math.VecHelper;
-import net.createmod.catnip.nbt.NBTHelper;
+import com.zurrtum.create.catnip.math.VecHelper;
+import com.zurrtum.create.catnip.nbt.NBTHelper;
 import net.minecraft.commands.arguments.EntityAnchorArgument;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -111,7 +111,7 @@ public class LaunchedPlungerEntity extends ThrowableProjectile {
         final Level level = this.level();
 
 
-        if (!level.isClientSide && !this.addedToPlungerHandler) {
+        if (!level.isClientSide() && !this.addedToPlungerHandler) {
             LaunchedPlungerServerHandler.addLaunchedPlunger(level, this);
             this.addedToPlungerHandler = true;
         }
@@ -126,7 +126,7 @@ public class LaunchedPlungerEntity extends ThrowableProjectile {
         }
 
         final LaunchedPlungerEntity other = this.getOther();
-        if (!level.isClientSide && other != null) {
+        if (!level.isClientSide() && other != null) {
             this.setData(TARGET_POS, other.position());
             final double distance = Math.sqrt(Sable.HELPER.distanceSquaredWithSubLevels(level, this.position(), other.position()));
             if (distance > SimConfigService.INSTANCE.server().equipment.maxPlungerLauncherRange.get()) {
@@ -134,10 +134,10 @@ public class LaunchedPlungerEntity extends ThrowableProjectile {
             }
         } else {
             this.setData(TARGET_POS, Vec3.ZERO);
-            if (!level.isClientSide) {
-                if (this.getEntityData().get(OTHER_PLUNGER).isPresent() || (this.getEntityData().get(OTHER_PLUNGER).isEmpty() && owner instanceof final Player player && !player.isHolding(SimItems.PLUNGER_LAUNCHER.get()))) {
+            if (!level.isClientSide()) {
+                if (this.getEntityData().get(OTHER_PLUNGER).isPresent() || (this.getEntityData().get(OTHER_PLUNGER).isEmpty() && owner instanceof final Player player && !player.isHolding(SimItems.PLUNGER_LAUNCHER))) {
                     this.discard();
-                } else if (this.getEntityData().get(OTHER_PLUNGER).isEmpty() && owner instanceof final Player player && player.isHolding(SimItems.PLUNGER_LAUNCHER.get())) {
+                } else if (this.getEntityData().get(OTHER_PLUNGER).isEmpty() && owner instanceof final Player player && player.isHolding(SimItems.PLUNGER_LAUNCHER)) {
                     final double distance = Math.sqrt(Sable.HELPER.distanceSquaredWithSubLevels(this.level(), this.position(), player.position()));
                     if (distance > SimConfigService.INSTANCE.server().equipment.maxPlungerLauncherRange.get()) {
                         this.discard();
@@ -171,7 +171,7 @@ public class LaunchedPlungerEntity extends ThrowableProjectile {
             }
         }
 
-        if (level.isClientSide) {
+        if (level.isClientSide()) {
             this.tickSmoothing();
         }
     }
@@ -352,7 +352,7 @@ public class LaunchedPlungerEntity extends ThrowableProjectile {
     public void remove(final RemovalReason removalReason) {
         this.removeConstraint();
 
-        if (!this.level().isClientSide) {
+        if (!this.level().isClientSide()) {
             this.playSound(SimSoundEvents.PLUNGER_RELEASE.event(), 1.0f, 0.9f + 0.2f * this.level().random.nextFloat());
             LaunchedPlungerServerHandler.removeLaunchedPlunger(this.level(), this);
         }
@@ -445,7 +445,7 @@ public class LaunchedPlungerEntity extends ThrowableProjectile {
             return this.cachedOtherPlunger;
         }
 
-        if (!this.level().isClientSide) {
+        if (!this.level().isClientSide()) {
             final Optional<UUID> otherID = this.getData(OTHER_PLUNGER);
             if (otherID.isPresent()) {
                 final Entity entity = ((ServerLevel) this.level()).getEntity(otherID.get());

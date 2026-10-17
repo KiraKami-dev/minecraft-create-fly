@@ -5,7 +5,7 @@ import dev.simulated_team.simulated.SimulatedClient;
 import dev.simulated_team.simulated.content.items.plunger_launcher.PlungerLauncherItemRenderer;
 import dev.ryanhcode.sable.veillite.api.network.handler.PacketContext;
 import io.netty.buffer.ByteBuf;
-import net.createmod.catnip.codecs.stream.CatnipStreamCodecs;
+import com.zurrtum.create.catnip.codecs.stream.CatnipStreamCodecs;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;

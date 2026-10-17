@@ -85,7 +85,7 @@ public class LevititeShaderManager {
     }
 
     public static void setMaterialProperties(ShaderInstance shader) {
-        FloatingBlockMaterial material = PhysicsBlockPropertyHelper.getFloatingMaterial(AeroBlocks.LEVITITE.getDefaultState());
+        FloatingBlockMaterial material = PhysicsBlockPropertyHelper.getFloatingMaterial(AeroBlocks.LEVITITE.defaultBlockState());
         if (material == null)
             return;
         shader.safeGetUniform("materialTransitionSpeed").set((float) material.transitionSpeed());

@@ -37,7 +37,7 @@ public class GustEntity extends Entity implements IEntityWithComplexSpawn {
     public static void addGust(final Level level, final BlockPos pos, final Direction direction) {
         final Quaterniond orientation = new Quaterniond(direction.getRotation());
 
-        final GustEntity gust = new GustEntity(AeroEntityTypes.GUST.get(), level, orientation);
+        final GustEntity gust = new GustEntity(AeroEntityTypes.GUST, level, orientation);
         gust.setPos(pos.getCenter());
 
         level.addFreshEntity(gust);
@@ -56,7 +56,7 @@ public class GustEntity extends Entity implements IEntityWithComplexSpawn {
     public void tick() {
         super.tick();
 
-        if (this.level().isClientSide) {
+        if (this.level().isClientSide()) {
             this.spawnClientEffects();
         } else {
             final SubLevel subLevel = Sable.HELPER.getContaining(this);

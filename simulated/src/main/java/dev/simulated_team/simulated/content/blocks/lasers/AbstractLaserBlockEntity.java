@@ -1,7 +1,7 @@
 package dev.simulated_team.simulated.content.blocks.lasers;
 
 import com.zurrtum.create.foundation.blockEntity.SmartBlockEntity;
-import net.createmod.catnip.data.Couple;
+import com.zurrtum.create.catnip.data.Couple;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.Vec3i;

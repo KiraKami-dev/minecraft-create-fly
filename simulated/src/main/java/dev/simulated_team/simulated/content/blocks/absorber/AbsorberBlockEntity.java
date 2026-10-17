@@ -8,7 +8,7 @@ import dev.ryanhcode.sable.sublevel.water_occlusion.WaterOcclusionRegion;
 import dev.ryanhcode.sable.util.BoundedBitVolume3i;
 import dev.ryanhcode.sable.util.LevelAccelerator;
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
-import net.createmod.catnip.animation.LerpedFloat;
+import com.zurrtum.create.catnip.animation.LerpedFloat;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.particles.ParticleTypes;
@@ -86,7 +86,7 @@ public class AbsorberBlockEntity extends SmartBlockEntity {
         if(this.animationTimer.settled()) {
             this.animationTimer.updateChaseTarget(powered ? 1 : 0);
         }
-        if(this.animationTimer.settled() && !this.level.isClientSide)
+        if(this.animationTimer.settled() && !this.level.isClientSide())
         {
             if (powered) {
                 if (this.currentRegion == null) {
@@ -113,7 +113,7 @@ public class AbsorberBlockEntity extends SmartBlockEntity {
                     this.level.setBlock(this.getBlockPos(), this.getBlockState().cycle(AbsorberBlock.WET), 2);
             }
         }
-        if(this.level.isClientSide && this.animationTimer.getChaseTarget() < this.animationTimer.getValue() && this.getBlockState().getValue(AbsorberBlock.WET))
+        if(this.level.isClientSide() && this.animationTimer.getChaseTarget() < this.animationTimer.getValue() && this.getBlockState().getValue(AbsorberBlock.WET))
         {
             final BlockPos pos = this.getBlockPos();
             final float t = this.animationTimer.getValue();

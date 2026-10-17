@@ -46,7 +46,7 @@ import net.minecraft.world.entity.Pose;
 import net.minecraft.world.entity.decoration.HangingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.level.GameRules;
+import net.minecraft.world.level.gamerules.GameRules;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.DiodeBlock;
@@ -83,7 +83,7 @@ public class DiagramEntity extends HangingEntity implements ISyncPersistentData,
     }
 
     public DiagramEntity(final Level world, final BlockPos pos, final Direction facing, final Direction verticalOrientation) {
-        super(SimEntityTypes.CONTRAPTION_DIAGRAM.get(), world, pos);
+        super(SimEntityTypes.CONTRAPTION_DIAGRAM, world, pos);
 
         for (int size = 3; size > 0; size--) {
             this.size = size;
@@ -375,12 +375,12 @@ public class DiagramEntity extends HangingEntity implements ISyncPersistentData,
             }
         }
 
-        this.spawnAtLocation(SimItems.CONTRAPTION_DIAGRAM.asStack());
+        this.spawnAtLocation(new ItemStack(SimItems.CONTRAPTION_DIAGRAM));
     }
 
     @Override
     public ItemStack getPickResult() {
-        return SimItems.CONTRAPTION_DIAGRAM.asStack();
+        return new ItemStack(SimItems.CONTRAPTION_DIAGRAM);
     }
 
     @Override
@@ -415,7 +415,7 @@ public class DiagramEntity extends HangingEntity implements ISyncPersistentData,
     @Override
     public InteractionResult interactAt(final Player player, final Vec3 vec, final InteractionHand hand) {
 
-        if (this.level().isClientSide) {
+        if (this.level().isClientSide()) {
             final SubLevel subLevel = Sable.HELPER.getContaining(this);
 
             if (subLevel == null) {
@@ -471,7 +471,7 @@ public class DiagramEntity extends HangingEntity implements ISyncPersistentData,
 
     @Override
     public ItemRequirement getRequiredItems() {
-        return new ItemRequirement(ItemRequirement.ItemUseType.CONSUME, SimItems.CONTRAPTION_DIAGRAM.get());
+        return new ItemRequirement(ItemRequirement.ItemUseType.CONSUME, SimItems.CONTRAPTION_DIAGRAM);
     }
 
     public void setConfig(final DiagramConfig config) {

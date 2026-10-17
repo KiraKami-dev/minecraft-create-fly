@@ -20,7 +20,7 @@ import net.minecraft.core.Direction;
 import net.minecraft.util.Mth;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
-import net.minecraft.world.ItemInteractionResult;
+import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.context.BlockPlaceContext;
@@ -162,9 +162,9 @@ public class SteeringWheelBlock extends HorizontalDirectionalBlock
     }
 
     @Override
-    protected ItemInteractionResult useItemOn(final ItemStack stack, final BlockState state, final Level level, final BlockPos pos, final Player player, final InteractionHand hand, final BlockHitResult hitResult) {
+    protected InteractionResult useItemOn(final ItemStack stack, final BlockState state, final Level level, final BlockPos pos, final Player player, final InteractionHand hand, final BlockHitResult hitResult) {
         if (player.isShiftKeyDown()) {
-            return ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
+            return InteractionResult.TRY_WITH_EMPTY_HAND;
         }
         return this.onBlockEntityUseItemOn(level, pos, be -> be.applyMaterialIfValid(stack));
     }
@@ -246,6 +246,6 @@ public class SteeringWheelBlock extends HorizontalDirectionalBlock
 
     @Override
     public BlockEntityType<? extends SteeringWheelBlockEntity> getBlockEntityType() {
-        return SimBlockEntityTypes.STEERING_WHEEL.get();
+        return SimBlockEntityTypes.STEERING_WHEEL;
     }
 }

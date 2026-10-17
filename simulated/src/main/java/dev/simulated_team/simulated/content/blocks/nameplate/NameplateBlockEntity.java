@@ -85,7 +85,7 @@ public class NameplateBlockEntity extends SmartBlockEntity implements ClipboardC
     public void tick() {
         super.tick();
 
-        if (!this.level.isClientSide) {
+        if (!this.level.isClientSide()) {
             final DyeColor color = this.getColor();
             final Direction facing = this.getBlockState().getValue(NameplateBlock.FACING);
 
@@ -98,7 +98,7 @@ public class NameplateBlockEntity extends SmartBlockEntity implements ClipboardC
     @Override
     public void lazyTick() {
         super.lazyTick();
-        if (!this.level.isClientSide && this.controller && this.allowsEditing()
+        if (!this.level.isClientSide() && this.controller && this.allowsEditing()
                     && this.connectedSubLevel != null && !Objects.equals(this.connectedSubLevel.getName(), this.name)) {
             this.setName(this.connectedSubLevel.getName(), true, null);
         }

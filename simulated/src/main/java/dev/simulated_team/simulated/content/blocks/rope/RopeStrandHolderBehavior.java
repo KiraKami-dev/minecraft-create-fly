@@ -42,7 +42,7 @@ import net.minecraft.util.Mth;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.ChunkPos;
-import net.minecraft.world.level.GameRules;
+import net.minecraft.world.level.gamerules.GameRules;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.phys.Vec3;
@@ -311,7 +311,7 @@ public class RopeStrandHolderBehavior extends BlockEntityBehaviour {
             this.removeServerStrand(level);
         }
 
-        if (level != null && level.isClientSide) {
+        if (level != null && level.isClientSide()) {
             this.removeClientStrand();
         }
     }
@@ -366,7 +366,7 @@ public class RopeStrandHolderBehavior extends BlockEntityBehaviour {
             final Vector3d middlePointPos = new Vector3d(points.get(points.size() / 2));
 
             if (returnItem) {
-                final ItemStack stack = new ItemStack(SimItems.ROPE_COUPLING.get());
+                final ItemStack stack = new ItemStack(SimItems.ROPE_COUPLING);
 
                 if (player != null) {
                     if (!player.hasInfiniteMaterials() || !player.getInventory().contains(stack)) {
@@ -385,7 +385,7 @@ public class RopeStrandHolderBehavior extends BlockEntityBehaviour {
 
                 if (level instanceof final ServerLevel serverLevel) {
                     serverLevel.sendParticles(
-                            new BlockParticleOption(ParticleTypes.BLOCK, AllBlocks.ROPE.getDefaultState()),
+                            new BlockParticleOption(ParticleTypes.BLOCK, AllBlocks.ROPE.defaultBlockState()),
                             position.x, position.y, position.z,
                             10, 0.1, 0.1, 0.1, 0.1
                     );
@@ -567,7 +567,7 @@ public class RopeStrandHolderBehavior extends BlockEntityBehaviour {
         final ServerRopeStrand attachedStrand = this.getAttachedStrand();
 
         final Level level = this.getLevel();
-        if (level != null && level.isClientSide) {
+        if (level != null && level.isClientSide()) {
             this.removeClientStrand();
         }
 

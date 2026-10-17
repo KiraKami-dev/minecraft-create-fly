@@ -49,7 +49,7 @@ public class SpringBlock extends WrenchableDirectionalBlock implements IBE<Sprin
 
     @Override
     public ItemStack getCloneItemStack(final LevelReader levelReader, final BlockPos blockPos, final BlockState blockState) {
-        return SimItems.SPRING.asStack();
+        return new ItemStack(SimItems.SPRING);
     }
 
     @Override
@@ -137,7 +137,7 @@ public class SpringBlock extends WrenchableDirectionalBlock implements IBE<Sprin
 
     @Override
     public BlockEntityType<? extends SpringBlockEntity> getBlockEntityType() {
-        return SimBlockEntityTypes.SPRING.get();
+        return SimBlockEntityTypes.SPRING;
     }
 
     @Override

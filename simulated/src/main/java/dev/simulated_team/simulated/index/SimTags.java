@@ -1,7 +1,7 @@
 package dev.simulated_team.simulated.index;
 
 import com.zurrtum.create.AllItems;
-import com.zurrtum.create.AllTags;
+import com.zurrtum.create.AllBlockTags;
 import com.zurrtum.create.foundation.data.TagGen;
 import com.tterrag.registrate.providers.ProviderType;
 import com.tterrag.registrate.providers.RegistrateTagsProvider;
@@ -57,10 +57,10 @@ public class SimTags {
 
             prov.tag(SimTags.Blocks.SUPER_LIGHT).addTag(SimTags.Blocks.NAMEPLATE_BLOCKS);
             prov.tag(SimTags.Blocks.SUPER_LIGHT).addTag(HANDLES);
-            prov.tag(AllTags.AllBlockTags.BRITTLE.tag).addTag(HANDLES);
+            prov.tag(AllBlockTags.BRITTLE).addTag(HANDLES);
             prov.tag(BlockTags.MINEABLE_WITH_PICKAXE).addTag(HANDLES);
 
-            prov.tag(AllTags.AllBlockTags.SAFE_NBT.tag)
+            prov.tag(AllBlockTags.SAFE_NBT)
                     .addTag(NAMEPLATE_BLOCKS);
         }
     }

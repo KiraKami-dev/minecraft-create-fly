@@ -12,14 +12,14 @@ import dev.simulated_team.simulated.index.SimStats;
 import dev.simulated_team.simulated.multiloader.inventory.ContainerSlot;
 import dev.simulated_team.simulated.multiloader.inventory.ItemInfoWrapper;
 import dev.simulated_team.simulated.service.SimItemService;
-import net.createmod.catnip.data.Couple;
+import com.zurrtum.create.catnip.data.Couple;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.Containers;
 import net.minecraft.world.InteractionHand;
-import net.minecraft.world.ItemInteractionResult;
+import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.DyeColor;
 import net.minecraft.world.item.ItemStack;
@@ -96,29 +96,29 @@ public class PortableEngineBlock extends HorizontalKineticBlock implements IBE<P
     }
 
     @Override
-    protected ItemInteractionResult useItemOn(final ItemStack heldItem, final BlockState blockState, final Level level, final BlockPos blockPos, final Player player, final InteractionHand interactionHand, final BlockHitResult blockHitResult) {
+    protected InteractionResult useItemOn(final ItemStack heldItem, final BlockState blockState, final Level level, final BlockPos blockPos, final Player player, final InteractionHand interactionHand, final BlockHitResult blockHitResult) {
         final PortableEngineBlockEntity be = (PortableEngineBlockEntity) level.getBlockEntity(blockPos);
 
         final PortableEngineInventory inventory = be.inventory;
         final ContainerSlot slot = inventory.slot;
         final ItemStack currentItemStack = slot.getStack().copy();
         if (currentItemStack.isEmpty() && heldItem.isEmpty()) {
-            return ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
+            return InteractionResult.TRY_WITH_EMPTY_HAND;
         }
 
         final DyeColor color = SimItemService.getDyeColor(heldItem);
         if (color != null) {
-            if (!level.isClientSide)
+            if (!level.isClientSide())
                 level.playSound(null, blockPos, SoundEvents.DYE_USE, SoundSource.BLOCKS, 1.0f, 1.1f - level.random.nextFloat() * .2f);
 
             final BlockState newState = BlockHelper.copyProperties(blockState, SimBlocks.PORTABLE_ENGINES.get(color).getDefaultState());
             level.setBlockAndUpdate(blockPos, newState);
 
-            return ItemInteractionResult.SUCCESS;
+            return InteractionResult.SUCCESS;
         }
 
-        if (AllItems.CREATIVE_BLAZE_CAKE.isIn(heldItem)) {
-            if (!level.isClientSide) {
+        if (heldItem.is(AllItems.CREATIVE_BLAZE_CAKE)) {
+            if (!level.isClientSide()) {
                 if (be.isCurrentFuelInfinite()) {
                     if (be.isSuperHeated()) {
                         be.setCurrentBurnTime(0);
@@ -132,7 +132,7 @@ public class PortableEngineBlock extends HorizontalKineticBlock implements IBE<P
             }
         } else {
             if ((!heldItem.isEmpty() && !inventory.canInsertItem(ItemInfoWrapper.generateFromStack(heldItem)))) {
-                return ItemInteractionResult.FAIL;
+                return InteractionResult.FAIL;
             }
 
             if (currentItemStack.isEmpty()) {
@@ -147,7 +147,7 @@ public class PortableEngineBlock extends HorizontalKineticBlock implements IBE<P
                 final int transferAmount = Math.min(targetAmount - currentItemStack.getCount(), heldItem.getCount());
 
                 if (transferAmount <= 0)
-                    return ItemInteractionResult.sidedSuccess(level.isClientSide);
+                    return InteractionResult.SUCCESS;
 
                 slot.shrink(-transferAmount);
                 heldItem.shrink(transferAmount);
@@ -170,7 +170,7 @@ public class PortableEngineBlock extends HorizontalKineticBlock implements IBE<P
 
         be.notifyUpdate();
 
-        return ItemInteractionResult.sidedSuccess(level.isClientSide);
+        return InteractionResult.SUCCESS;
     }
 
     @Override
@@ -216,6 +216,6 @@ public class PortableEngineBlock extends HorizontalKineticBlock implements IBE<P
 
     @Override
     public BlockEntityType<? extends PortableEngineBlockEntity> getBlockEntityType() {
-        return SimBlockEntityTypes.PORTABLE_ENGINE.get();
+        return SimBlockEntityTypes.PORTABLE_ENGINE;
     }
 }

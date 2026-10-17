@@ -21,17 +21,17 @@ import dev.simulated_team.simulated.index.SimBlocks;
 import dev.simulated_team.simulated.ponder.SceneScheduler;
 import dev.simulated_team.simulated.ponder.SmoothMovementUtils;
 import dev.simulated_team.simulated.ponder.instructions.*;
-import net.createmod.catnip.math.Pointing;
-import net.createmod.ponder.api.PonderPalette;
-import net.createmod.ponder.api.element.ElementLink;
-import net.createmod.ponder.api.element.ParrotElement;
-import net.createmod.ponder.api.element.ParrotPose;
-import net.createmod.ponder.api.element.WorldSectionElement;
-import net.createmod.ponder.api.scene.*;
-import net.createmod.ponder.foundation.element.ElementLinkImpl;
-import net.createmod.ponder.foundation.instruction.CreateParrotInstruction;
-import net.createmod.ponder.foundation.instruction.FadeOutOfSceneInstruction;
-import net.createmod.ponder.foundation.instruction.RotateSceneInstruction;
+import com.zurrtum.create.catnip.math.Pointing;
+import com.zurrtum.create.client.ponder.api.PonderPalette;
+import com.zurrtum.create.client.ponder.api.element.ElementLink;
+import com.zurrtum.create.client.ponder.api.element.ParrotElement;
+import com.zurrtum.create.client.ponder.api.element.ParrotPose;
+import com.zurrtum.create.client.ponder.api.element.WorldSectionElement;
+import com.zurrtum.create.client.ponder.api.scene.*;
+import com.zurrtum.create.client.ponder.foundation.element.ElementLinkImpl;
+import com.zurrtum.create.client.ponder.foundation.instruction.CreateParrotInstruction;
+import com.zurrtum.create.client.ponder.foundation.instruction.FadeOutOfSceneInstruction;
+import com.zurrtum.create.client.ponder.foundation.instruction.RotateSceneInstruction;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.GlobalPos;
@@ -173,7 +173,7 @@ public class SensorScenes {
         setAltitudeSensorRedstone(scene, nixieSelection, redstonePos, 4, true);
         scene.idle(30);
 
-        scene.overlay().showControls(util.vector().blockSurface(sensorPos, Direction.EAST), Pointing.RIGHT, 60).withItem(AllItems.GOGGLES.asStack());
+        scene.overlay().showControls(util.vector().blockSurface(sensorPos, Direction.EAST), Pointing.RIGHT, 60).withItem(new ItemStack(AllItems.GOGGLES));
         scene.overlay().showText(110)
                 .attachKeyFrame()
                 .text("When wearing Engineers' Goggles, information about air pressure and exact altitude can be seen")
@@ -186,7 +186,7 @@ public class SensorScenes {
                 .text("A Wrench can also be used to see more precise changes in elevation")
                 .placeNearTarget()
                 .pointAt(util.vector().blockSurface(sensorPos, Direction.WEST));
-        scene.overlay().showControls(util.vector().blockSurface(sensorPos, Direction.EAST), Pointing.RIGHT, 30).withItem(AllItems.WRENCH.asStack());
+        scene.overlay().showControls(util.vector().blockSurface(sensorPos, Direction.EAST), Pointing.RIGHT, 30).withItem(new ItemStack(AllItems.WRENCH));
         scene.idle(20);
         world.modifyBlock(sensorPos,
                 state -> state.setValue(AltitudeSensorBlock.DIAL, AltitudeSensorBlock.FaceType.RADIAL), true);
@@ -305,7 +305,7 @@ public class SensorScenes {
 
         world.replaceBlocks(util.select().position(3, 1, 1), Blocks.OAK_TRAPDOOR.defaultBlockState(), false);
 
-        world.replaceBlocks(util.select().position(3, 1, 3), SimBlocks.OPTICAL_SENSOR.getDefaultState(), false);
+        world.replaceBlocks(util.select().position(3, 1, 3), SimBlocks.OPTICAL_SENSOR.defaultBlockState(), false);
 
         world.toggleRedstonePower(util.select().position(3, 1, 3));
 
@@ -552,7 +552,7 @@ public class SensorScenes {
         scene.idle(50);
 
         scene.addKeyframe();
-        scene.overlay().showControls(util.vector().blockSurface(laserPointerPos, Direction.NORTH), Pointing.RIGHT, 20).withItem(AllItems.WRENCH.asStack());
+        scene.overlay().showControls(util.vector().blockSurface(laserPointerPos, Direction.NORTH), Pointing.RIGHT, 20).withItem(new ItemStack(AllItems.WRENCH));
         scene.idle(10);
         world.cycleBlockProperty(laserPointerPos, LaserPointerBlock.INVERTED);
         laserSetRedstone(9, world, laserNixiePos, laserRedstonePos);
@@ -760,7 +760,7 @@ public class SensorScenes {
         scene.addInstruction(CustomAnimateWorldSectionInstruction.rotate(platformSelection, new Vec3(-11, 0, 0), 30, SmoothMovementUtils.quadraticRiseInOut()));
         scene.idle(10);
 
-        world.replaceBlocks(redstoneLamps, AllBlocks.ANDESITE_SCAFFOLD.getDefaultState().setValue(ScaffoldingBlock.BOTTOM, true), false);
+        world.replaceBlocks(redstoneLamps, AllBlocks.ANDESITE_SCAFFOLD.defaultBlockState().setValue(ScaffoldingBlock.BOTTOM, true), false);
 
         redstoneLampSelection = world.showIndependentSection(redstoneLamps, Direction.DOWN);
         final ElementLink<WorldSectionElement> nixieTubesZSelection = world.showIndependentSection(nixieTubesZ, Direction.DOWN);

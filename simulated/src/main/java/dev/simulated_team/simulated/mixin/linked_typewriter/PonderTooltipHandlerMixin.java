@@ -1,6 +1,6 @@
 package dev.simulated_team.simulated.mixin.linked_typewriter;
 
-import net.createmod.ponder.foundation.PonderTooltipHandler;
+import com.zurrtum.create.client.ponder.foundation.PonderTooltipHandler;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.MutableComponent;
 import org.spongepowered.asm.mixin.Mixin;

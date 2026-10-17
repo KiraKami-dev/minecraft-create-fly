@@ -1,6 +1,7 @@
 package dev.simulated_team.simulated.mixin.handle;
 
 import dev.simulated_team.simulated.index.SimClickInteractions;
+import net.minecraft.world.InteractionResult;
 import net.minecraft.client.Minecraft;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;

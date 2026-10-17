@@ -47,6 +47,6 @@ public record GustParticleData(
 
     @Override
     public ParticleType<?> getType() {
-        return AeroParticleTypes.GUST.get();
+        return AeroParticleTypes.GUST;
     }
 }

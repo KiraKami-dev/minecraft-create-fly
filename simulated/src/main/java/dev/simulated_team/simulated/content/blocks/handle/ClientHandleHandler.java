@@ -140,7 +140,7 @@ public class ClientHandleHandler extends BlockHoldInteraction {
         if (player.isUsingItem()) {
             return;
         }
-        if (AllItems.WRENCH.isIn(player.getMainHandItem()) || AllItems.WRENCH.isIn(player.getOffhandItem())) {
+        if (player.getMainHandItem().is(AllItems.WRENCH) || player.getOffhandItem().is(AllItems.WRENCH)) {
             return;
         }
         if (!HandleBlock.canInteractWithHandle(player))

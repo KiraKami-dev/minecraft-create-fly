@@ -16,7 +16,7 @@ import dev.simulated_team.simulated.registrate.SimulatedRegistrate;
 import dev.simulated_team.simulated.service.SimModCompatibilityService;
 import dev.simulated_team.simulated.util.SimAssemblyHelper;
 import dev.simulated_team.simulated.util.SimColors;
-import net.createmod.catnip.lang.FontHelper;
+import com.zurrtum.create.client.catnip.lang.FontHelper;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.Rarity;

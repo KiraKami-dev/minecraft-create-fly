@@ -9,7 +9,7 @@ import dev.simulated_team.simulated.multiloader.inventory.ItemInfoWrapper;
 import dev.simulated_team.simulated.util.DirectionalAxisShaper;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.InteractionHand;
-import net.minecraft.world.ItemInteractionResult;
+import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.context.BlockPlaceContext;
@@ -41,15 +41,15 @@ public class MountedPotatoCannonBlock extends DirectionalAxisKineticBlock implem
 
 	@Override
 	public BlockEntityType<? extends MountedPotatoCannonBlockEntity> getBlockEntityType() {
-		return AeroBlockEntityTypes.MOUNTED_POTATO_CANNON.get();
+		return AeroBlockEntityTypes.MOUNTED_POTATO_CANNON;
 	}
 
 	@Override
-	protected ItemInteractionResult useItemOn(final ItemStack heldItem, final BlockState blockState, final Level level, final BlockPos blockPos, final Player player, final InteractionHand interactionHand, final BlockHitResult blockHitResult) {
+	protected InteractionResult useItemOn(final ItemStack heldItem, final BlockState blockState, final Level level, final BlockPos blockPos, final Player player, final InteractionHand interactionHand, final BlockHitResult blockHitResult) {
 		if (level.getBlockEntity(blockPos) instanceof final MountedPotatoCannonBlockEntity be) {
 			final ContainerSlot slot = be.getInventory().slot;
 			if (heldItem.isEmpty() && slot.isEmpty()) {
-				return ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
+				return InteractionResult.TRY_WITH_EMPTY_HAND;
 			}
 
 			//either we were able to add more to the current stack, or we added a new stack
@@ -57,14 +57,14 @@ public class MountedPotatoCannonBlock extends DirectionalAxisKineticBlock implem
 			if (slot.isEmpty() || slot.getType() == heldItem.getItem()) {
 				final long inserted = slot.insertStack(info, Math.min(heldItem.getCount(), 16), true);
 				if (inserted > 0) {
-					if (!level.isClientSide) {
+					if (!level.isClientSide()) {
 						slot.insertStack(info, Math.min(heldItem.getCount(), 16), false);
 					}
 
 					if (!player.hasInfiniteMaterials()) {
 						heldItem.shrink((int) inserted);
 					}
-					return ItemInteractionResult.sidedSuccess(level.isClientSide());
+					return InteractionResult.SUCCESS;
 				}
 			}
 
@@ -74,12 +74,12 @@ public class MountedPotatoCannonBlock extends DirectionalAxisKineticBlock implem
 				player.getInventory().placeItemBackInInventory(extracted);
 				slot.setStack(ItemStack.EMPTY);
 
-				if (!level.isClientSide) {
+				if (!level.isClientSide()) {
 					final long inserted = slot.insertStack(info, Math.min(heldItem.getCount(), 16), false);
 					heldItem.shrink((int) inserted);
 				}
 
-				return ItemInteractionResult.SUCCESS;
+				return InteractionResult.SUCCESS;
 			}
 		}
 
@@ -88,7 +88,7 @@ public class MountedPotatoCannonBlock extends DirectionalAxisKineticBlock implem
 
 	@Override
 	public void neighborChanged(final BlockState state, final Level level, final BlockPos pos, final Block block, final BlockPos fromPos, final boolean isMoving) {
-		if (level.isClientSide) {
+		if (level.isClientSide()) {
 			return;
 		}
 

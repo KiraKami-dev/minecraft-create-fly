@@ -7,10 +7,10 @@ import dev.ryanhcode.sable.sublevel.SubLevel;
 import dev.simulated_team.simulated.content.blocks.nav_table.navigation_target.NavigationTarget;
 import dev.simulated_team.simulated.data.advancements.SimAdvancements;
 import dev.simulated_team.simulated.util.SimMathUtils;
-import net.createmod.catnip.animation.LerpedFloat;
-import net.createmod.catnip.data.Iterate;
-import net.createmod.catnip.math.AngleHelper;
-import net.createmod.catnip.math.VecHelper;
+import com.zurrtum.create.catnip.animation.LerpedFloat;
+import com.zurrtum.create.catnip.data.Iterate;
+import com.zurrtum.create.catnip.math.AngleHelper;
+import com.zurrtum.create.catnip.math.VecHelper;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.HolderLookup;
@@ -72,7 +72,7 @@ public class NavTableBlockEntity extends SmartBlockEntity implements Clearable {
     public void tick() {
         super.tick();
 
-        if (this.level.isClientSide) {
+        if (this.level.isClientSide()) {
             this.lerpedAngleDegrees.tickChaser();
         }
 
@@ -83,7 +83,7 @@ public class NavTableBlockEntity extends SmartBlockEntity implements Clearable {
         this.subLevel = Sable.HELPER.getContaining(this);
 
         // Update the Nav-Table's current target
-        if (!this.level.isClientSide) {
+        if (!this.level.isClientSide()) {
             this.updateTarget();
             this.updateCurrentAngle();
 
@@ -135,7 +135,7 @@ public class NavTableBlockEntity extends SmartBlockEntity implements Clearable {
      * @return the lerped angle
      */
     public float getClientTargetAngle(final float partialTicks) {
-        if (this.level.isClientSide) {
+        if (this.level.isClientSide()) {
             return -AngleHelper.rad(this.lerpedAngleDegrees.getValue(partialTicks));
         } else {
             return 0;
@@ -155,7 +155,7 @@ public class NavTableBlockEntity extends SmartBlockEntity implements Clearable {
      * Updates the current angle of this Navigation Table on the server.
      */
     private void updateCurrentAngle() {
-        if (this.level.isClientSide || this.getTargetPosition(false) == null) {
+        if (this.level.isClientSide() || this.getTargetPosition(false) == null) {
             this.relativeAngle = 0;
             return;
         }
@@ -187,7 +187,7 @@ public class NavTableBlockEntity extends SmartBlockEntity implements Clearable {
     //TODO: make this map-ified
     public int getRedstoneStrength(final Direction direction) {
         // ponder rendering logic where only the visual arrow direction is cared about
-        if (this.level.isClientSide && this.isVirtual()) {
+        if (this.level.isClientSide() && this.isVirtual()) {
             final Direction facing = this.getBlockState().getValue(NavTableBlock.FACING);
             final Vec3i normal = facing.getNormal();
 
@@ -292,7 +292,7 @@ public class NavTableBlockEntity extends SmartBlockEntity implements Clearable {
     }
 
     private boolean selectivelyUpdateNeighbors() {
-        if (this.level == null || this.level.isClientSide) {
+        if (this.level == null || this.level.isClientSide()) {
             return false;
         }
 

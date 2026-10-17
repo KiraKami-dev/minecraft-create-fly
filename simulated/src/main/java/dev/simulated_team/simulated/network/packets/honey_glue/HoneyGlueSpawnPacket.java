@@ -8,7 +8,7 @@ import dev.simulated_team.simulated.index.SimEntityTypes;
 import dev.simulated_team.simulated.index.SimItems;
 import dev.simulated_team.simulated.index.SimSoundEvents;
 import dev.ryanhcode.sable.veillite.api.network.handler.PacketContext;
-import net.createmod.catnip.data.Pair;
+import com.zurrtum.create.catnip.data.Pair;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;

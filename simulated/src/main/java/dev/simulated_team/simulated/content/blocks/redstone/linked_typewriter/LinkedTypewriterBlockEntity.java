@@ -66,7 +66,7 @@ public class LinkedTypewriterBlockEntity extends SmartBlockEntity implements Men
         assert this.level != null;
         this.entryMap.updateNetworks(this.level);
 
-        if (!this.level.isClientSide) {
+        if (!this.level.isClientSide()) {
             if (this.getBlockState().getValue(LinkedTypewriterBlock.POWERED) != this.powered) {
                 this.level.setBlockAndUpdate(this.getBlockPos(), this.getBlockState().setValue(LinkedTypewriterBlock.POWERED, this.powered));
             }
@@ -113,7 +113,7 @@ public class LinkedTypewriterBlockEntity extends SmartBlockEntity implements Men
 
                 this.powered = true;
                 playerEx.simulated$setCurrentTypewriter(this.getBlockPos());
-                if (this.level.isClientSide) {
+                if (this.level.isClientSide()) {
                     LinkedTypewriterInteractionHandler.associateTypewriter(this);
                 } else {
                     this.level.playSound(null, this.worldPosition, AllSoundEvents.CONTROLLER_PUT.getMainEvent(), SoundSource.BLOCKS, 1.0F, 0.95F + 0.1F * this.level.getRandom().nextFloat());
@@ -149,7 +149,7 @@ public class LinkedTypewriterBlockEntity extends SmartBlockEntity implements Men
      * Disconnects the current user.
      */
     public void disconnectUser() {
-        if (!this.level.isClientSide) {
+        if (!this.level.isClientSide()) {
             this.pressedKeys.clear();
             this.entryMap.deactivateAll();
             this.setChanged();
@@ -284,7 +284,7 @@ public class LinkedTypewriterBlockEntity extends SmartBlockEntity implements Men
 
     @Override
     public Component getDisplayName() {
-        return SimBlocks.LINKED_TYPEWRITER.get().getName();
+        return SimBlocks.LINKED_TYPEWRITER.getName();
     }
 
     @Override

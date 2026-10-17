@@ -1,7 +1,7 @@
 package dev.simulated_team.simulated.content.blocks.redstone.linked_typewriter.screen.widgets;
 
 import com.zurrtum.create.client.foundation.gui.widget.IconButton;
-import net.createmod.catnip.gui.element.ScreenElement;
+import com.zurrtum.create.client.catnip.gui.element.ScreenElement;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.MutableComponent;

@@ -67,7 +67,7 @@ public class AugerIndicatorParticleData implements ParticleOptions, ICustomParti
 
     @Override
     public ParticleType<?> getType() {
-        return SimParticleTypes.AUGER_INDICATOR.get();
+        return SimParticleTypes.AUGER_INDICATOR;
     }
 
     @Override

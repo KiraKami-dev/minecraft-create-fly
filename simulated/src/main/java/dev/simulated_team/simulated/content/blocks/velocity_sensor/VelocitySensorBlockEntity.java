@@ -14,8 +14,8 @@ import dev.ryanhcode.sable.sublevel.SubLevel;
 import dev.ryanhcode.sable.companion.math.JOMLConversion;
 import dev.simulated_team.simulated.content.blocks.util.AbstractDirectionalAxisBlock;
 import dev.simulated_team.simulated.data.SimLang;
-import net.createmod.catnip.animation.LerpedFloat;
-import net.createmod.catnip.math.VecHelper;
+import com.zurrtum.create.catnip.animation.LerpedFloat;
+import com.zurrtum.create.catnip.math.VecHelper;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.HolderLookup;
@@ -84,7 +84,7 @@ public class VelocitySensorBlockEntity extends SmartBlockEntity implements IHave
 
         final SubLevel subLevel = this.subLevelReference.get();
         final int redstoneStrengthBefore = this.signedRedstoneStrength;
-        if (!this.level.isClientSide) {
+        if (!this.level.isClientSide()) {
             if (subLevel != null) {
                 final float dot = (float) this.getGlobalVelocity().dot(subLevel.logicalPose().transformNormal(this.currentNormal, new Vector3d()));
                 if (Math.abs(dot) > 0.05) {

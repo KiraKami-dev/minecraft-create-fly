@@ -17,9 +17,9 @@ import dev.eriksonn.aeronautics.content.particle.HotAirEmberParticleData;
 import dev.eriksonn.aeronautics.data.AeroLang;
 import dev.eriksonn.aeronautics.index.AeroLiftingGasTypes;
 import dev.eriksonn.aeronautics.util.AeroSoundDistUtil;
-import net.createmod.catnip.animation.LerpedFloat;
-import net.createmod.catnip.math.AngleHelper;
-import net.createmod.catnip.math.VecHelper;
+import com.zurrtum.create.catnip.animation.LerpedFloat;
+import com.zurrtum.create.catnip.math.AngleHelper;
+import com.zurrtum.create.catnip.math.VecHelper;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.HolderLookup;
@@ -125,7 +125,7 @@ public class HotAirBurnerBlockEntity extends SmartBlockEntity
             this.tickBalloonLogic();
         }
 
-        if (!this.level.isClientSide) {
+        if (!this.level.isClientSide()) {
             if (!this.isVirtual()) {
                 this.notifyUpdate();
             }
@@ -141,7 +141,7 @@ public class HotAirBurnerBlockEntity extends SmartBlockEntity
         super.tick();
 
         this.ticksSinceSync++;
-        if (!this.level.isClientSide) {
+        if (!this.level.isClientSide()) {
             return;
         }
 
@@ -206,7 +206,7 @@ public class HotAirBurnerBlockEntity extends SmartBlockEntity
     public void invalidate() {
         super.invalidate();
 
-        if (this.level.isClientSide) {
+        if (this.level.isClientSide()) {
             AeroSoundDistUtil.removePosHotAirBurnerSound(this.getBlockPos());
         } else {
             this.removeFromBalloon();

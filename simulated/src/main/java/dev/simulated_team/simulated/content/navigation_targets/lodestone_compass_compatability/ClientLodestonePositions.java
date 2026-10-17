@@ -1,6 +1,6 @@
 package dev.simulated_team.simulated.content.navigation_targets.lodestone_compass_compatability;
 
-import dev.engine_room.flywheel.lib.util.LevelAttached;
+import com.zurrtum.create.client.flywheel.lib.util.LevelAttached;
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
 import org.joml.Vector3d;
 

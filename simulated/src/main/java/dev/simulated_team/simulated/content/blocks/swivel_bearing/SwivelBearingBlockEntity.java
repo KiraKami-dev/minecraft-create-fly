@@ -43,9 +43,9 @@ import dev.simulated_team.simulated.util.SimLevelUtil;
 import dev.simulated_team.simulated.util.assembly.SimAssemblyException;
 import dev.simulated_team.simulated.util.extra_kinetics.ExtraBlockPos;
 import dev.simulated_team.simulated.util.extra_kinetics.ExtraKinetics;
-import net.createmod.catnip.lang.FontHelper;
-import net.createmod.catnip.math.AngleHelper;
-import net.createmod.catnip.math.VecHelper;
+import com.zurrtum.create.client.catnip.lang.FontHelper;
+import com.zurrtum.create.catnip.math.AngleHelper;
+import com.zurrtum.create.catnip.math.VecHelper;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.HolderLookup;
@@ -163,7 +163,7 @@ public class SwivelBearingBlockEntity extends KineticBlockEntity implements Extr
         super.tick();
         this.cogwheel.tick();
 
-        if (level.isClientSide) {
+        if (level.isClientSide()) {
             if (this.isTooFast()) {
                 this.playGrindingEffect();
             }
@@ -422,7 +422,7 @@ public class SwivelBearingBlockEntity extends KineticBlockEntity implements Extr
 
         final ServerSubLevel assembledSubLevel;
         final BlockPos assembleOffset;
-        final BlockState link = SimBlocks.SWIVEL_BEARING_LINK_BLOCK.getDefaultState()
+        final BlockState link = SimBlocks.SWIVEL_BEARING_LINK_BLOCK.defaultBlockState()
                 .setValue(SwivelBearingPlateBlock.FACING, this.getBlockState().getValue(SwivelBearingBlock.FACING));
 
         if (result != null) {
@@ -682,7 +682,7 @@ public class SwivelBearingBlockEntity extends KineticBlockEntity implements Extr
 
     @Override
     public void remove() {
-        if (!this.level.isClientSide && !this.assembling) {
+        if (!this.level.isClientSide() && !this.assembling) {
             // If we're actually removed and not just unloaded, let's break the plate as well
             this.destroyPlate();
         }
@@ -721,7 +721,7 @@ public class SwivelBearingBlockEntity extends KineticBlockEntity implements Extr
             if (this.subLevelID != null && subLevel == null) return;
 
             if (this.getLevel().getBlockState(platePos).is(SimBlocks.SWIVEL_BEARING_LINK_BLOCK)) {
-                SimBlocks.SWIVEL_BEARING_LINK_BLOCK.get().withBlockEntityDo(this.level, platePos, SwivelBearingPlateBlockEntity::beforeAssembly);
+                SimBlocks.SWIVEL_BEARING_LINK_BLOCK.withBlockEntityDo(this.level, platePos, SwivelBearingPlateBlockEntity::beforeAssembly);
                 this.getLevel().setBlock(platePos, Blocks.AIR.defaultBlockState(), 2);
             }
         }

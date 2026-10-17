@@ -1,6 +1,7 @@
 package dev.simulated_team.simulated.data.advancements;
 
 import com.google.common.collect.Sets;
+import net.minecraft.world.item.ItemStack;
 import dev.simulated_team.simulated.Simulated;
 import dev.simulated_team.simulated.index.SimBlocks;
 import dev.simulated_team.simulated.index.SimItems;
@@ -39,7 +40,7 @@ public class SimAdvancements implements DataProvider {
             .special(TaskType.SILENT)),
 
     APPLIED_KINEMATICS = create("applied_kinematics", b -> b
-            .icon(SimBlocks.PHYSICS_ASSEMBLER.asStack())
+            .icon(new ItemStack(SimBlocks.PHYSICS_ASSEMBLER))
             .title("Applied Kinematics")
             .description("Obtain a Physics Assembler, the heart of every Simulated Contraption")
             .special(TaskType.NOISY)

@@ -7,9 +7,9 @@ import com.zurrtum.create.content.kinetics.transmission.SplitShaftBlockEntity;
 import com.zurrtum.create.client.content.kinetics.transmission.SplitShaftRenderer;
 import dev.simulated_team.simulated.index.SimBlocks;
 import dev.simulated_team.simulated.index.SimPartialModels;
-import net.createmod.catnip.animation.AnimationTickHolder;
-import net.createmod.catnip.render.CachedBuffers;
-import net.createmod.catnip.render.SuperByteBuffer;
+import com.zurrtum.create.client.catnip.animation.AnimationTickHolder;
+import com.zurrtum.create.client.catnip.render.CachedBuffers;
+import com.zurrtum.create.client.catnip.render.SuperByteBuffer;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.rendertype.RenderType;
 import net.minecraft.client.renderer.blockentity.BlockEntityRendererProvider;
@@ -26,7 +26,7 @@ public class DirectionalGearshiftRenderer extends SplitShaftRenderer {
                               final int light, final int overlay) {
 
         final BlockState blockState = be.getBlockState();
-        final Direction.Axis axis = SimBlocks.DIRECTIONAL_GEARSHIFT.get().getRotationAxis(blockState);
+        final Direction.Axis axis = SimBlocks.DIRECTIONAL_GEARSHIFT.getRotationAxis(blockState);
 
         final float time = AnimationTickHolder.getRenderTime(be.getLevel());
         float angle = (time * be.getSpeed() * 3f / 10) % 360;

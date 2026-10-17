@@ -2,7 +2,7 @@ package dev.eriksonn.aeronautics.content.blocks.propeller.bearing.propeller_bear
 
 import com.zurrtum.create.AllBlocks;
 import com.zurrtum.create.AllSoundEvents;
-import com.zurrtum.create.AllTags;
+import com.zurrtum.create.AllBlockTags;
 import com.zurrtum.create.client.api.goggles.IHaveGoggleInformation;
 import com.zurrtum.create.api.stress.BlockStressValues;
 import com.zurrtum.create.content.contraptions.AssemblyException;
@@ -216,13 +216,13 @@ public class PropellerBearingBlockEntity extends MechanicalBearingBlockEntity im
     public void activeTick() {
         this.behavior.pushEntities();
 
-        if (this.level.isClientSide) {
+        if (this.level.isClientSide()) {
             this.behavior.spawnParticles();
         }
     }
 
     public void onDirectionChanged() {
-        if (!this.level.isClientSide && this.running) {
+        if (!this.level.isClientSide() && this.running) {
             this.updateGeneratedRotation();
         }
     }
@@ -279,7 +279,7 @@ public class PropellerBearingBlockEntity extends MechanicalBearingBlockEntity im
             speed = this.slowdownController.getSpeed(1);
         }
 
-        if (this.level.isClientSide) {
+        if (this.level.isClientSide()) {
             speed *= ServerSpeedProvider.get();
             speed += this.clientAngleDiff / 3f;
         }
@@ -305,7 +305,7 @@ public class PropellerBearingBlockEntity extends MechanicalBearingBlockEntity im
     }
 
     private void updateSlowdownSpeed() {
-        if (this.slowdownController.stepGoal() && !this.level.isClientSide) {
+        if (this.slowdownController.stepGoal() && !this.level.isClientSide()) {
             this.disassemble();
             return;
         }
@@ -319,7 +319,7 @@ public class PropellerBearingBlockEntity extends MechanicalBearingBlockEntity im
         super.attach(contraption);
         this.contraptionInitialize();
 
-        if (this.level.isClientSide) {
+        if (this.level.isClientSide()) {
             this.currentSoundInstance = AeroSoundDistUtil.tickPropellerSounds(this, this.currentSoundInstance);
         }
     }
@@ -403,7 +403,7 @@ public class PropellerBearingBlockEntity extends MechanicalBearingBlockEntity im
 
     public float getSailPower(final StructureTemplate.StructureBlockInfo info) {
         BlockState state = info.state();
-        if (AllBlocks.COPYCAT_PANEL.has(state)) {
+        if (state.is(AllBlocks.COPYCAT_PANEL)) {
             final BlockState newState = NbtUtils.readBlockState(this.blockHolderGetter(), info.nbt().getCompound("Material"));
             if (!newState.isAir()) {
                 state = newState;
@@ -412,7 +412,7 @@ public class PropellerBearingBlockEntity extends MechanicalBearingBlockEntity im
 
         float power = 0;
 
-        if (state.is(AllTags.AllBlockTags.WINDMILL_SAILS.tag)) {
+        if (state.is(AllBlockTags.WINDMILL_SAILS)) {
             power += 1;
         }
 

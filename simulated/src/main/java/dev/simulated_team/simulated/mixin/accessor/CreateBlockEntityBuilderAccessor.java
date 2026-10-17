@@ -2,7 +2,7 @@ package dev.simulated_team.simulated.mixin.accessor;
 
 import com.zurrtum.create.foundation.data.CreateBlockEntityBuilder;
 import com.tterrag.registrate.util.nullness.NonNullSupplier;
-import dev.engine_room.flywheel.lib.visualization.SimpleBlockEntityVisualizer;
+import com.zurrtum.create.client.flywheel.lib.visualization.SimpleBlockEntityVisualizer;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import org.jetbrains.annotations.NotNull;
 import org.spongepowered.asm.mixin.Mixin;

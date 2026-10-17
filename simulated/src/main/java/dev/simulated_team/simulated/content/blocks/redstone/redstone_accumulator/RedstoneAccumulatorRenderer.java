@@ -7,9 +7,9 @@ import com.zurrtum.create.client.foundation.blockEntity.renderer.SmartBlockEntit
 import dev.simulated_team.simulated.Simulated;
 import dev.simulated_team.simulated.index.SimPartialModels;
 import dev.ryanhcode.sable.veillite.api.client.render.VeilRenderBridge;
-import net.createmod.catnip.math.AngleHelper;
-import net.createmod.catnip.render.CachedBuffers;
-import net.createmod.catnip.render.SuperByteBuffer;
+import com.zurrtum.create.catnip.math.AngleHelper;
+import com.zurrtum.create.client.catnip.render.CachedBuffers;
+import com.zurrtum.create.client.catnip.render.SuperByteBuffer;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderStateShard;
 import net.minecraft.client.renderer.rendertype.RenderType;

@@ -9,7 +9,7 @@ import dev.simulated_team.simulated.data.SimLang;
 import dev.simulated_team.simulated.mixin_interface.extra_kinetics.KineticBlockEntityExtension;
 import dev.simulated_team.simulated.util.extra_kinetics.ExtraBlockPos;
 import dev.simulated_team.simulated.util.extra_kinetics.ExtraKinetics;
-import net.createmod.catnip.lang.FontHelper;
+import com.zurrtum.create.client.catnip.lang.FontHelper;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.HolderLookup;
@@ -60,7 +60,7 @@ public class AnalogTransmissionBlockEntity extends KineticBlockEntity implements
     public void tick() {
         final int bestNeighborSignal = this.getLevel().getBestNeighborSignal(this.getBlockPos());
 
-        if (!this.getLevel().isClientSide) {
+        if (!this.getLevel().isClientSide()) {
             if (bestNeighborSignal != this.signal) {
                 //detach our own network, and our ExtraKinetic's
                 this.detachKinetics();
@@ -147,7 +147,7 @@ public class AnalogTransmissionBlockEntity extends KineticBlockEntity implements
 
     @Override
     public boolean isOverStressed() {
-        if (this.level.isClientSide) {
+        if (this.level.isClientSide()) {
             return this.oversaturated || this.overStressed;
         }
 

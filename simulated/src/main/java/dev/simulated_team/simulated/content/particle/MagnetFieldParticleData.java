@@ -31,7 +31,7 @@ public class MagnetFieldParticleData implements ParticleOptions, ICustomParticle
     }
 
     public ParticleType<?> getType() {
-        return SimParticleTypes.MAGNET_FIELD.get();
+        return SimParticleTypes.MAGNET_FIELD;
     }
 
     public MapCodec<MagnetFieldParticleData> getCodec(final ParticleType<MagnetFieldParticleData> type) {

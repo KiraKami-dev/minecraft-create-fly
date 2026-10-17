@@ -1,6 +1,6 @@
 package dev.eriksonn.aeronautics.content.particle;
 
-import com.zurrtum.create.AllTags;
+import com.zurrtum.create.AllBlockTags;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.particle.*;
 import net.minecraft.client.renderer.LevelRenderer;
@@ -79,7 +79,7 @@ public class PropellerAirParticle extends SimpleAnimatedParticle {
                 this.stoppedByCollision = true;
             }
             if (this.hasPhysics && (pX != 0.0D || pY != 0.0D || pZ != 0.0D)) {
-                if (!this.level.getBlockState(new BlockPos((int) (Math.floor(this.x + pX)), (int) (Math.floor(this.y + pY)), (int) (Math.floor(this.z + pZ)))).is(AllTags.AllBlockTags.FAN_TRANSPARENT.tag)) {
+                if (!this.level.getBlockState(new BlockPos((int) (Math.floor(this.x + pX)), (int) (Math.floor(this.y + pY)), (int) (Math.floor(this.z + pZ)))).is(AllBlockTags.FAN_TRANSPARENT)) {
                     final Vec3 vec3 = Entity.collideBoundingBox(null, new Vec3(pX, pY, pZ), this.getBoundingBox(), this.level, List.of());
                     //Vec3 Vec3 = Entity.collideBoundingBox((Entity) null, new Vec3(pX, pY, pZ), this.getBoundingBox(), this.level, ISelectionContext.empty(), new ReuseableStream<>(Stream.empty()));
                     pX = vec3.x;

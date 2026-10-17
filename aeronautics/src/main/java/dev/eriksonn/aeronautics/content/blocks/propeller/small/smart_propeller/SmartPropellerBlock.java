@@ -84,6 +84,6 @@ public class SmartPropellerBlock extends HorizontalAxisKineticBlock implements I
 
     @Override
     public BlockEntityType<? extends SmartPropellerBlockEntity> getBlockEntityType() {
-        return AeroBlockEntityTypes.SMART_PROPELLER.get();
+        return AeroBlockEntityTypes.SMART_PROPELLER;
     }
 }

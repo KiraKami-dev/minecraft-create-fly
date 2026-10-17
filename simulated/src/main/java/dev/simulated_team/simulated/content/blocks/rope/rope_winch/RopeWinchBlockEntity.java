@@ -16,7 +16,7 @@ import dev.simulated_team.simulated.content.blocks.rope.strand.server.ServerRope
 import dev.simulated_team.simulated.data.SimLang;
 import dev.simulated_team.simulated.index.SimSoundEvents;
 import dev.simulated_team.simulated.service.SimConfigService;
-import net.createmod.catnip.animation.LerpedFloat;
+import com.zurrtum.create.catnip.animation.LerpedFloat;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
@@ -70,12 +70,12 @@ public class RopeWinchBlockEntity extends KineticBlockEntity implements RopeStra
         final ServerRopeStrand strand = this.ropeHolder.getOwnedStrand();
         final boolean hasRope = strand != null;
 
-        if (this.level.isClientSide) {
+        if (this.level.isClientSide()) {
             this.invalidateRenderBoundingBox();
             this.clientAngle.setValue(this.clientAngle.getValue() + this.getMovementSpeed());
         }
 
-        if (!this.level.isClientSide && hasRope && this.ropeHolder.ownsRope()) {
+        if (!this.level.isClientSide() && hasRope && this.ropeHolder.ownsRope()) {
             this.updateRopeStrandExtension(strand);
         }
 
