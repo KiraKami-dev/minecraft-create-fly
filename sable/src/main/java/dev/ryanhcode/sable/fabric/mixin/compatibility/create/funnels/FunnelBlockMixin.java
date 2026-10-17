@@ -19,8 +19,7 @@ public class FunnelBlockMixin {
 
     @Redirect(method = "entityInside",
             at = @At(value = "INVOKE",
-                    target = "Lcom/zurrtum/create/catnip/math/VecHelper;getCenterOf(Lnet/minecraft/core/Vec3i;)Lnet/minecraft/world/phys/Vec3;",
-                    remap = false))
+                    target = "Lcom/zurrtum/create/catnip/math/VecHelper;getCenterOf(Lnet/minecraft/core/Vec3i;)Lnet/minecraft/world/phys/Vec3;"))
     private Vec3 sable$projectFunnelPos(final Vec3i pos, @Local(argsOnly = true) final Level level) {
         return JOMLConversion.toMojang(Sable.HELPER.projectOutOfSubLevel(level, JOMLConversion.atCenterOf(pos)));
     }

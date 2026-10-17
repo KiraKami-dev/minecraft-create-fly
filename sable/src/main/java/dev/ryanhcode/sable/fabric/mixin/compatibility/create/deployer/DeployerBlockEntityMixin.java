@@ -34,7 +34,7 @@ public abstract class DeployerBlockEntityMixin extends SmartBlockEntity {
     }
 
 
-    @ModifyArg(method = "activate", at = @At(value = "INVOKE", target = "Lcom/zurrtum/create/content/kinetics/deployer/DeployerHandler;activate(Lcom/zurrtum/create/content/kinetics/deployer/DeployerPlayer;Lnet/minecraft/world/phys/Vec3;Lnet/minecraft/core/BlockPos;Lnet/minecraft/world/phys/Vec3;Lcom/zurrtum/create/content/kinetics/deployer/DeployerBlockEntity$Mode;)V"), index = 2, remap = false)
+    @ModifyArg(method = "activate", at = @At(value = "INVOKE", target = "Lcom/zurrtum/create/content/kinetics/deployer/DeployerHandler;activate(Lcom/zurrtum/create/content/kinetics/deployer/DeployerPlayer;Lnet/minecraft/world/phys/Vec3;Lnet/minecraft/core/BlockPos;Lnet/minecraft/world/phys/Vec3;Lcom/zurrtum/create/content/kinetics/deployer/DeployerBlockEntity$Mode;)V", remap = true), index = 2, remap = false)
     private BlockPos sable$checkPositions(final BlockPos pos) {
         final Vec3 centerPos = Vec3.atCenterOf(pos);
 

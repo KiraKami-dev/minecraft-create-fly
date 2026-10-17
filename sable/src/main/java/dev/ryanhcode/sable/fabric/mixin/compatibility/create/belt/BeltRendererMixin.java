@@ -20,7 +20,7 @@ import org.spongepowered.asm.mixin.injection.At;
 @Mixin(BeltRenderer.class)
 public class BeltRendererMixin {
 
-    @ModifyExpressionValue(method = "renderItem", at = @At(value = "FIELD", target = "Lcom/zurrtum/create/client/content/kinetics/belt/BeltRenderer$BeltRenderState;camera:Lnet/minecraft/world/phys/Vec3;", opcode = Opcodes.GETFIELD), remap = false)
+    @ModifyExpressionValue(method = "renderItem", at = @At(value = "FIELD", target = "Lcom/zurrtum/create/client/content/kinetics/belt/BeltRenderer$BeltRenderState;camera:Lnet/minecraft/world/phys/Vec3;", opcode = Opcodes.GETFIELD, remap = true), remap = false)
     private Vec3 sable$renderViewEntityPosition(final Vec3 original, @Local(argsOnly = true) final BeltRenderer.BeltRenderState state) {
         final ClientSubLevel subLevel = Sable.HELPER.getContainingClient(state.blockPos);
         if (subLevel != null) {
