@@ -1,5 +1,6 @@
 {
  "credit": "Made with Blockbench",
+ "render_type": "minecraft:cutout_mipped",
  "parent": "aeronautics:block/adjustable_burner/block_fire",
  "texture_size": [
   64,

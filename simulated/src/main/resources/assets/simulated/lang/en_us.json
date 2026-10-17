@@ -233,6 +233,7 @@
   "item.simulated.spring.tooltip.condition3": "When Shift R-Clicked with Spring",
   "item.simulated.spring.tooltip.summary": "Boing! _Connects_ two blocks with a _spring._",
   "itemGroup.simulated.group": "Create Simulated",
+  "key.category.simulated.simulated": "Create Simulated",
   "simulated.altitude_sensor.air_pressure": "Air Pressure: %s",
   "simulated.altitude_sensor.height": "Height: %s",
   "simulated.analog_transmission.too_fast": "Too Fast",

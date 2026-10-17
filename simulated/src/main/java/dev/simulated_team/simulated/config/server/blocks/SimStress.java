@@ -1,55 +1,54 @@
 package dev.simulated_team.simulated.config.server.blocks;
 
+import com.zurrtum.create.catnip.config.Builder;
 import com.zurrtum.create.infrastructure.config.CStress;
-import com.tterrag.registrate.builders.BlockBuilder;
-import com.tterrag.registrate.util.nullness.NonNullUnaryOperator;
 import dev.simulated_team.simulated.Simulated;
 import it.unimi.dsi.fastutil.objects.Object2DoubleMap;
 import it.unimi.dsi.fastutil.objects.Object2DoubleOpenHashMap;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.level.block.Block;
-import net.neoforged.neoforge.common.ModConfigSpec;
 
 public class SimStress extends CStress {
 
+    // IDs need to be used since configs load before registration
     private static final Object2DoubleMap<Identifier> DEFAULT_IMPACTS = new Object2DoubleOpenHashMap<>();
     private static final Object2DoubleMap<Identifier> DEFAULT_CAPACITIES = new Object2DoubleOpenHashMap<>();
 
     @Override
-    public void registerAll(final ModConfigSpec.Builder builder) {
-        builder.comment(new String[]{".", Comments.su, Comments.impact}).push("impact");
+    public void registerAll(final Builder builder) {
+        builder.comment(".", Comments.su, Comments.impact).push("impact");
         DEFAULT_IMPACTS.forEach((id, value) -> this.impacts.put(id, builder.define(id.getPath(), value)));
         builder.pop();
-        builder.comment(new String[]{".", Comments.su, Comments.capacity}).push("capacity");
+        builder.comment(".", Comments.su, Comments.capacity).push("capacity");
         DEFAULT_CAPACITIES.forEach((id, value) -> this.capacities.put(id, builder.define(id.getPath(), value)));
         builder.pop();
     }
 
-    public static <B extends Block, P> NonNullUnaryOperator<BlockBuilder<B, P>> setNoImpact() {
-        return setImpact(0.0F);
+    public static void setNoImpact(final Block block) {
+        setImpact(block, 0.0);
     }
 
-    public static <B extends Block, P> NonNullUnaryOperator<BlockBuilder<B, P>> setImpact(final double value) {
-        return (builder) -> {
-            assertFromSimulated(builder);
-            DEFAULT_IMPACTS.put(Simulated.path(builder.getName()), value);
-            return builder;
-        };
+    /**
+     * Registers the default stress impact of a Simulated block. Must be called before the server config is created.
+     */
+    public static void setImpact(final Block block, final double value) {
+        DEFAULT_IMPACTS.put(idOf(block), value);
     }
 
-    public static <B extends Block, P> NonNullUnaryOperator<BlockBuilder<B, P>> setCapacity(final double value) {
-        return (builder) -> {
-            assertFromSimulated(builder);
-            DEFAULT_CAPACITIES.put(Simulated.path(builder.getName()), value);
-            return builder;
-        };
+    /**
+     * Registers the default stress capacity of a Simulated block. Must be called before the server config is created.
+     */
+    public static void setCapacity(final Block block, final double value) {
+        DEFAULT_CAPACITIES.put(idOf(block), value);
     }
 
-
-    private static void assertFromSimulated(final BlockBuilder<?, ?> builder) {
-        if (!builder.getOwner().getModid().equals("simulated")) {
+    private static Identifier idOf(final Block block) {
+        final Identifier id = BuiltInRegistries.BLOCK.getKey(block);
+        if (!id.getNamespace().equals(Simulated.MOD_ID)) {
             throw new IllegalStateException("Non-Simulated blocks cannot be added to Simulated's config.");
         }
+        return id;
     }
 
     private static class Comments {

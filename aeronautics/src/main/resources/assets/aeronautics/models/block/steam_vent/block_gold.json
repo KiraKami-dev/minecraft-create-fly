@@ -1,5 +1,6 @@
 {
  "credit": "Made with Blockbench",
+ "render_type": "minecraft:cutout_mipped",
  "textures": {
   "0": "aeronautics:block/steam_vent/steam_vent_base",
   "2": "aeronautics:block/steam_vent/steam_vent_head_brass",
