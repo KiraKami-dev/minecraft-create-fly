@@ -1,8 +1,9 @@
 package dev.simulated_team.simulated.mixin.extra_kinetics.goggle_tooltips;
 
-import com.zurrtum.create.client.api.goggles.IHaveGoggleInformation;
+import com.zurrtum.create.client.foundation.blockEntity.behaviour.tooltip.GeneratingKineticTooltipBehaviour;
 import com.zurrtum.create.client.foundation.blockEntity.behaviour.tooltip.KineticTooltipBehaviour;
 import com.zurrtum.create.client.foundation.blockEntity.behaviour.tooltip.TooltipBehaviour;
+import com.zurrtum.create.content.kinetics.base.GeneratingKineticBlockEntity;
 import com.zurrtum.create.content.kinetics.base.KineticBlockEntity;
 import dev.simulated_team.simulated.data.SimLang;
 import dev.simulated_team.simulated.util.extra_kinetics.ExtraKinetics;
@@ -17,8 +18,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 // Create Fly moved KineticBlockEntity.addToGoggleTooltip into the client-side KineticTooltipBehaviour, attached per
-// block entity type through BlockEntityBehaviour.CLIENT_REGISTRY. The extra kinetics block entity's own tooltip
-// behaviour provides its lines (its type needs a KineticTooltipBehaviour registered like any kinetic type).
+// block entity type through BlockEntityBehaviour.CLIENT_REGISTRY. Extra kinetics block entities share their parent's
+// type (so its behaviours), and upstream used the extra block entity's own class implementation, so the matching
+// Create Fly tooltip behaviour is created for it here (generator stats for generating ones, as
+// GeneratingKineticBlockEntity#addToGoggleTooltip did).
 @Mixin(KineticTooltipBehaviour.class)
 public abstract class KineticTooltipBehaviourMixin<T extends KineticBlockEntity> extends TooltipBehaviour<T> {
 
@@ -30,8 +33,10 @@ public abstract class KineticTooltipBehaviourMixin<T extends KineticBlockEntity>
     public void simulated$addExtraKineticsInfo(final List<Component> tooltip, final boolean isPlayerSneaking, final CallbackInfoReturnable<Boolean> cir) {
         if (this.blockEntity instanceof final ExtraKinetics ek) {
             final KineticBlockEntity extraKinetics = ek.getExtraKinetics();
-            if (extraKinetics instanceof final ExtraKinetics.ExtraKineticsBlockEntity ekb
-                    && extraKinetics.getBehaviour(TooltipBehaviour.TYPE) instanceof final IHaveGoggleInformation extraTooltip) {
+            if (extraKinetics instanceof final ExtraKinetics.ExtraKineticsBlockEntity ekb) {
+                final KineticTooltipBehaviour<KineticBlockEntity> extraTooltip = extraKinetics instanceof GeneratingKineticBlockEntity
+                        ? new GeneratingKineticTooltipBehaviour<>(extraKinetics)
+                        : new KineticTooltipBehaviour<>(extraKinetics);
                 final ArrayList<Component> extraKineticsTooltips = new ArrayList<>();
                 final boolean applied = extraTooltip.addToGoggleTooltip(extraKineticsTooltips, isPlayerSneaking);
                 if (applied) {

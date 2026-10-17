@@ -106,7 +106,7 @@ module does not compile as a whole until every area is merged).
 | extra_kinetics.KineticNetworkMixin | `calculateCapacity/Stress` | verified |
 | extra_kinetics.RotationPropagatorMixin | `getRotationSpeedModifier` (isSmallCog 0-3, isLargeCog 0-2, hasShaftTowards 0-1, getRotationAxis 0-2), neighbour lists | verified, ordinals unchanged |
 | extra_kinetics.auto_orientation.FixAutoOrientation(Static)Mixin | `IRotate#hasShaftTowards` in kinetic base blocks | verified, remap fixed |
-| extra_kinetics.goggle_tooltips.KineticTooltipBehaviourMixin | client `KineticTooltipBehaviour#addToGoggleTooltip` RETURN | **retargeted** from `KineticBlockEntity`, client |
+| extra_kinetics.goggle_tooltips.KineticTooltipBehaviourMixin | client `KineticTooltipBehaviour#addToGoggleTooltip` RETURN | **retargeted** from `KineticBlockEntity`, client; extra BEs share the parent type, so their (Generating)KineticTooltipBehaviour is created per class |
 | flicker_tally_removal.RotationPropagatorMixin | `propagateNewSource` `getFlickerScore` | verified |
 | handle.ExtendoGripRenderHandlerMixin | client `ExtendoGripRenderHandler.tick(Minecraft)` PUTSTATIC `holding` (was `pose`) | retargeted |
 | handle.HumanoidModelMixin | `HumanoidModel#setupAnim(HumanoidRenderState)` RETURN | ported to render states (UUID from `SkyhookRenderState`) |
