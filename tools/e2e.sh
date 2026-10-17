@@ -1,11 +1,13 @@
 #!/bin/bash
-# End-to-end tests of the port (see e2e/). Usage: tools/e2e.sh [server|gametest [filter [verify]]|client|all|play]
+# End-to-end tests of the port (see e2e/). Usage: tools/e2e.sh [server|gametest [filter [verify]]|client|flight|all|play]
 #   server:   headless dedicated server — mixin audit + spawn sub-levels + stay alive 600 ticks
 #   gametest: headless GameTest server — runs the @GameTest suite (e2e/src/main/java/dev/mcf/e2e/gametest),
 #             prints one line per test and exits non-zero if a required test failed. The optional filter is a
 #             test selector, e.g. 'mcf_e2e:sable_physics_test_*'; "verify" after it runs every selected test
 #             100 times in each of the 4 rotations (flakiness check) and prints counts instead
 #   client:   real game window in a flat world — spawns sub-levels in view, screenshots, quits
+#   flight:   real game window: an airship (propeller bearing, burner, levitite) is built in view, assembled and
+#             flies up; screenshots e2e/run/client/screenshots/flight-*.png, quits
 #   play:     same scene as client, but the game stays open for manual testing
 #   all:      server, gametest, then client
 # Results: e2e/run/<side>/logs/latest.log, screenshots in e2e/run/client/screenshots/,
@@ -75,7 +77,7 @@ if [ "$MODE" = gametest ] || [ "$MODE" = all ]; then
   fi
 fi
 
-if [ "$MODE" = client ] || [ "$MODE" = all ] || [ "$MODE" = play ]; then
+if [ "$MODE" = client ] || [ "$MODE" = all ] || [ "$MODE" = play ] || [ "$MODE" = flight ]; then
   # Every run starts from a copy of a clean template world. The server run saves the sub-levels it
   # spawned (in sublevels/, data/ and the plot chunks), so its world can't be reused.
   TEMPLATE=e2e/run/template-world
@@ -96,8 +98,10 @@ if [ "$MODE" = client ] || [ "$MODE" = all ] || [ "$MODE" = play ]; then
     exit 0
   fi
   rm -rf "$CLI/screenshots"
-  $GRADLEW :e2e:runClient > "$CLI/gradle.log" 2>&1 \
+  SCENE=; [ "$MODE" = flight ] && SCENE=-Pe2eScene=flight
+  $GRADLEW :e2e:runClient $SCENE > "$CLI/gradle.log" 2>&1 \
     || { echo "client run failed, see $CLI/gradle.log"; exit 1; }
-  report "$CLI/logs/latest.log" client
+  report "$CLI/logs/latest.log" "$MODE"
+  [ "$MODE" = flight ] && grep -E "E2E: flight" "$CLI/logs/latest.log" | sed 's/^.*E2E:/  E2E:/' | head -40
   ls "$CLI/screenshots" 2>/dev/null | sed 's/^/  screenshot: /'
 fi
