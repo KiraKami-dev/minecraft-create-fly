@@ -339,6 +339,14 @@ Upstream Sable kept all of its Create compat in the NeoForge module
 
 - (verify in game) contraption-controls floor text on a contraption that sits on a sub-level: upstream also swapped the view projection; Create Fly renders it with the actor's model pose so it should already follow the sub-level.
 - (kept upstream quirk) sticker `sable$saveToContraption` saves once with the constraint suppressed and discards the result, then the original save still writes `SableConstraint` into the contraption NBT; `read` drops it again when the position changes.
-- (production only, not B1-specific) `@At` targets on Create-owned members whose descriptors contain MC types (`DeployerHandler.activate(...Vec3...BlockPos...)`, `BeltRenderState.camera:Vec3`) use `remap = false`; in an intermediary-mapped production runtime those descriptors would need refmap remapping. Dev runtime (named) is fine; verify the generated refmap if a production jar is ever built.
 - Untested in game: needs a client run with Create Fly on the classpath (contraption/BE visuals on a sub-level, light + sky scale, `/flywheel` backend instancing and indirect).
-- Production-jar note for the coordinator (applies to all forks): `remap = false` selectors whose descriptors contain MC types (here `relight(Lnet/minecraft/core/BlockPos;...)`, `createRaw(...BlockEntity...)`, `remove(...BlockEntity)`, and the `createVisual` @At) are only correct in the Mojang-named dev runtime; a remapped intermediary jar would need these descriptors remapped (remap = true lets Loom remap the descriptor). Dev/e2e unaffected.
+- Client mixins (57) are not runtime-audited yet: run the client e2e with Create Fly on the classpath (see Testing).
+- `stock_ticker.EntityHatsMixin` (priority 1100, TAIL of `LivingEntityRenderer.extractRenderState`) must run after Create
+  Fly's own hat inject; if the order flipped, the logistics hat just wouldn't show for players seated on a sub-level.
+- `flywheel.FlywheelBlockEntityMixin` and `sticker.StickerBlockEntityMixin` add a `write(ValueOutput, boolean)` override
+  because Create Fly's classes don't have one; if a later Create Fly adds its own, switch back to a TAIL inject.
+- `frogports.NameplateRenderStateMixin` adds a `@Unique` field to a record (`SmartBlockEntityRenderer.NameplateRenderState`);
+  compiles and applies, not exercised in game.
+- Upstream parity, not a regression: `AllHandle.onBlockEntityConfiguration` checks `pos.closerThan(player.blockPosition())`
+  with the raw plot position, so curved-track destroy / chain package packets for far-away plots are dropped before the
+  Sable-aware checks run (upstream Sable has the same limitation).
