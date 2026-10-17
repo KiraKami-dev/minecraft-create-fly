@@ -21,9 +21,11 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.BooleanProperty;
+import net.minecraft.world.level.redstone.Orientation;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.VoxelShape;
+import org.jetbrains.annotations.Nullable;
 
 public class MountedPotatoCannonBlock extends DirectionalAxisKineticBlock implements IBE<MountedPotatoCannonBlockEntity> {
 	public static final BooleanProperty POWERED = BlockStateProperties.POWERED;
@@ -87,7 +89,7 @@ public class MountedPotatoCannonBlock extends DirectionalAxisKineticBlock implem
 	}
 
 	@Override
-	public void neighborChanged(final BlockState state, final Level level, final BlockPos pos, final Block block, final BlockPos fromPos, final boolean isMoving) {
+	public void neighborChanged(final BlockState state, final Level level, final BlockPos pos, final Block block, @Nullable final Orientation orientation, final boolean isMoving) {
 		if (level.isClientSide()) {
 			return;
 		}
