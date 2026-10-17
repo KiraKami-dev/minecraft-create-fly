@@ -3,23 +3,18 @@ package dev.simulated_team.simulated.content.particle;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
-import com.zurrtum.create.foundation.particle.ICustomParticleDataWithSprite;
 import dev.simulated_team.simulated.index.SimParticleTypes;
 import io.netty.buffer.ByteBuf;
-import net.minecraft.client.particle.ParticleEngine;
 import net.minecraft.core.Direction;
 import net.minecraft.core.particles.ParticleOptions;
 import net.minecraft.core.particles.ParticleType;
-import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.api.distmarker.OnlyIn;
 
 /**
  * Stolen shamelessly from {@link com.zurrtum.create.infrastructure.particle.RotationIndicatorParticleData}
  */
-public class AugerIndicatorParticleData implements ParticleOptions, ICustomParticleDataWithSprite<AugerIndicatorParticleData> {
+public class AugerIndicatorParticleData implements ParticleOptions {
     public static final MapCodec<AugerIndicatorParticleData> CODEC = RecordCodecBuilder.mapCodec(i -> i
             .group(Codec.INT.fieldOf("color")
                             .forGetter(p -> p.color),
@@ -37,8 +32,15 @@ public class AugerIndicatorParticleData implements ParticleOptions, ICustomParti
                             .forGetter(p -> p.direction))
             .apply(i, AugerIndicatorParticleData::new));
 
-    // lazy way but its past the maximum number of fields for the composite constructor and i cant be bothered figuring out how to solve it
-    public static final StreamCodec<ByteBuf, AugerIndicatorParticleData> STREAM_CODEC = ByteBufCodecs.fromCodec(CODEC.codec());
+    public static final StreamCodec<ByteBuf, AugerIndicatorParticleData> STREAM_CODEC = StreamCodec.composite(
+            ByteBufCodecs.INT, p -> p.color,
+            ByteBufCodecs.FLOAT, p -> p.speed,
+            ByteBufCodecs.FLOAT, p -> p.radius1,
+            ByteBufCodecs.FLOAT, p -> p.radius2,
+            ByteBufCodecs.FLOAT, p -> p.angleOffset,
+            ByteBufCodecs.INT, p -> p.lifeSpan,
+            Direction.STREAM_CODEC, p -> p.direction,
+            AugerIndicatorParticleData::new);
 
     public final int color;
     public final float speed;
@@ -68,21 +70,5 @@ public class AugerIndicatorParticleData implements ParticleOptions, ICustomParti
     @Override
     public ParticleType<?> getType() {
         return SimParticleTypes.AUGER_INDICATOR;
-    }
-
-    @Override
-    public MapCodec<AugerIndicatorParticleData> getCodec(final ParticleType<AugerIndicatorParticleData> type) {
-        return CODEC;
-    }
-
-    @Override
-    public StreamCodec<? super RegistryFriendlyByteBuf, AugerIndicatorParticleData> getStreamCodec() {
-        return STREAM_CODEC;
-    }
-
-    @Override
-    @OnlyIn(Dist.CLIENT)
-    public ParticleEngine.SpriteParticleRegistration<AugerIndicatorParticleData> getMetaFactory() {
-        return AugerIndicatorParticle.Factory::new;
     }
 }
