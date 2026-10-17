@@ -1,6 +1,6 @@
 # Create Aeronautics on Fabric 1.21.11: roadmap and progress
 
-_Last updated: 2026-10-17 (S8a fixed). Keep this file current: update the status tables when you claim, finish or
+_Last updated: 2026-10-17 (S14 fixed). Keep this file current: update the status tables when you claim, finish or
 discover a task._
 
 ## Goal
@@ -91,7 +91,7 @@ Legend: ✅ done · 🔄 in progress · ⬜ todo · ⏸ deferred/gated
 | S11 | Sodium support (sub-levels currently not drawn under Sodium; Sable `breaks` Sodium) | ⬜ | | needs a Sodium 0.8 chunk-render integration |
 | S12 | Flywheel (inside Create Fly) block entities on sub-levels | ⬜ | | upstream support lived only in the NeoForge module; likely invisible today |
 | S13 | Sky-light shadows from sub-levels | ⏸ | | hard-off; needs a shadow-map pass + terrain pipeline variant (see `SableSkyLightShadows`) |
-| S14 | Dynamic directional shading of rotated sub-levels | ⬜ | | **visible in e2e:** a flipped sub-level keeps its original face shading (an upside-down platform shows a dark top). The render-core shader supports it; render-fx's mesh half is gated (`SUPPORTED=false`); check the Indigo renderer path. Priority for ships that tilt |
+| S14 | Dynamic directional shading of rotated sub-levels | ✅ | | 2026-10-17: Indigo replaces `SectionCompiler.compile`, so the `ModelBlockRenderer` mixins never ran. Fix: `RenderSectionRegionMixin` makes `getShade` return 1.0 while a sub-level section compiles, and `IndigoRenderContextMixin` gives shade-less quads the up normal so the shader re-shades them; `SUPPORTED=true`, config default on. Verified in client e2e with a platform flipped 180° overhead: ON shows a dark underside, OFF (`sub_level_dynamic_shading=false`) keeps the original bright top |
 | S15 | Water occlusion near-plane clipping (no `GL_DEPTH_CLAMP` in blaze3d) | ⏸ | | minor |
 | S16 | ImGui inspector windows | ⏸ | | Veil's ImGui overlay doesn't exist on 1.21.11 |
 | S17 | Review third-party compat mixins (sodium-extras, distant horizons, shoulder surfing, exposure, …) | ⬜ | | some were dropped or left uncompiled during the port; re-add those whose 1.21.11 versions exist |

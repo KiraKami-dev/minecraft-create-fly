@@ -12,7 +12,7 @@ flowchart LR
 ```
 
 ## Now
-- Phase 1 runtime: server + client e2e pass. Open: S10 manual playtest, S14 face shading of rotated sub-levels.
+- Phase 1 runtime: server + client e2e pass. Open: S10 manual playtest.
 
 ## Next
 - Phase 2: C1 (add `simulated`/`aeronautics` to the build) → C2 Registrate replacement.
@@ -21,6 +21,7 @@ flowchart LR
 - 2026-10-14: `:sable` compiles, server + client e2e pass, sub-levels render on 1.21.11.
 - 2026-10-15: S9a closed as not a bug (the sphere lands before the first screenshot); `tools/e2e.sh` now exits non-zero when Gradle fails instead of reporting the previous run's log.
 - 2026-10-17: S8a fixed: the server e2e force-loads the spawn area and logs loaded/moved sub-level counts (38/38 through 600 ticks).
+- 2026-10-17: S14 fixed: Indigo path now re-shades rotated sub-levels (`getShade` neutral + up normal on shade-less quads); verified with a flipped platform, shading on vs off.
 
 ## Blockers
 - None. Note: this shell's `JAVA_HOME` is JDK 17 and the build needs 21; `e2e.sh` only picks 21 when `JAVA_HOME` is unset.

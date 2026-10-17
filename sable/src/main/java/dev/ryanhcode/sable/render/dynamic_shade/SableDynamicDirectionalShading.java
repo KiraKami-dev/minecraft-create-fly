@@ -4,18 +4,13 @@ package dev.ryanhcode.sable.render.dynamic_shade;
  * Dynamic directional shading of rotated sub-levels: baked block-face shading is disabled in sub-level chunk meshes
  * (see {@link SubLevelVertexConsumer}), and a shader re-shades each vertex from its normal and the sub-level's rotation.
  * <p>
- * PORT-TODO(1.21.11): The shading half was a glslprocessor injection into the 1.21.1 {@code rendertype_*} chunk vertex
- * shaders (Veil's {@code light} include and {@code NormalMat}). 1.21.11 has no shader pre-processing; this needs a
- * dedicated sub-level terrain {@code RenderPipeline} with its own vertex shader taking the sub-level's rotation in a
- * uniform buffer, wired in by the sub-level section renderer. Until then this is hard-disabled regardless of
- * {@code sub_level_dynamic_shading}, because enabling only the mesh half would render sub-levels flat-lit.
+ * On 1.21.11 the shading half is in {@code sub_level_terrain.vsh} (rotation from the {@code SableSubLevel} uniform
+ * block). The mesh half covers both the vanilla block renderer and Fabric's Indigo renderer
+ * ({@code RenderSectionRegionMixin}, {@code IndigoRenderContextMixin}).
  */
 public class SableDynamicDirectionalShading {
 
-    /**
-     * Flip once the sub-level terrain pipeline applies the shading
-     */
-    private static final boolean SUPPORTED = false;
+    private static final boolean SUPPORTED = true;
 
     private static boolean isEnabled = false;
 
