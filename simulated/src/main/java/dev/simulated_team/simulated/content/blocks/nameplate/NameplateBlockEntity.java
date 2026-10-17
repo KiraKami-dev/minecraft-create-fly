@@ -9,22 +9,21 @@ import dev.simulated_team.simulated.data.advancements.SimAdvancements;
 import dev.simulated_team.simulated.index.SimStats;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.core.HolderLookup;
 import net.minecraft.core.Vec3i;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.NbtUtils;
-import net.minecraft.util.FastColor;
+import net.minecraft.util.ARGB;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.DyeColor;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
 import net.minecraft.world.phys.Vec3;
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 
 public class NameplateBlockEntity extends SmartBlockEntity implements ClipboardCloneable {
     protected boolean glowing;
@@ -109,7 +108,7 @@ public class NameplateBlockEntity extends SmartBlockEntity implements ClipboardC
      * this method is only called on the server. Data is synced to the client when data is sent afterwards
      */
     public void checkAndUpdateController(final DyeColor color, final Direction facing) {
-        final BlockPos leftPos = this.getBlockPos().offset(facing.getClockWise(Direction.Axis.Y).getNormal());
+        final BlockPos leftPos = this.getBlockPos().relative(facing.getClockWise(Direction.Axis.Y));
 
         final boolean wasController = this.controller;
         final BlockState leftState = this.getLevel().getBlockState(leftPos);
@@ -177,7 +176,7 @@ public class NameplateBlockEntity extends SmartBlockEntity implements ClipboardC
             return getClosestDistance(nbe.findController(), point);
         }
 
-        final Vec3i dir = nbe.getBlockState().getValue(NameplateBlock.FACING).getCounterClockWise().getNormal();
+        final Vec3i dir = nbe.getBlockState().getValue(NameplateBlock.FACING).getCounterClockWise().getUnitVec3i();
         Vec3 A = nbe.getBlockPos().getCenter();
         Vec3 B = A.add(dir.getX() * nbe.controllerWidth, dir.getY() * nbe.controllerWidth, dir.getZ() * nbe.controllerWidth);
         final SubLevel subLevel = Sable.HELPER.getContaining(nbe);
@@ -227,10 +226,10 @@ public class NameplateBlockEntity extends SmartBlockEntity implements ClipboardC
             return -988212;
         } else {
             final double d = 0.4;
-            final int j = (int) ((double) FastColor.ARGB32.red(i) * 0.4);
-            final int k = (int) ((double) FastColor.ARGB32.green(i) * 0.4);
-            final int l = (int) ((double) FastColor.ARGB32.blue(i) * 0.4);
-            return FastColor.ARGB32.color(0, j, k, l);
+            final int j = (int) ((double) ARGB.red(i) * 0.4);
+            final int k = (int) ((double) ARGB.green(i) * 0.4);
+            final int l = (int) ((double) ARGB.blue(i) * 0.4);
+            return ARGB.color(0, j, k, l);
         }
     }
 
@@ -313,41 +312,41 @@ public class NameplateBlockEntity extends SmartBlockEntity implements ClipboardC
     }
 
     @Override
-    protected void write(final CompoundTag tag, final HolderLookup.Provider registries, final boolean clientPacket) {
-        super.write(tag, registries, clientPacket);
+    protected void write(final ValueOutput view, final boolean clientPacket) {
+        super.write(view, clientPacket);
 
-        tag.putInt("TextColor", this.textColor.getId());
-        tag.putBoolean("Glow", this.glowing);
-        tag.putBoolean("Waxed", this.waxed);
+        view.putInt("TextColor", this.textColor.getId());
+        view.putBoolean("Glow", this.glowing);
+        view.putBoolean("Waxed", this.waxed);
         if (this.name != null) {
-            tag.putString("Name", this.name);
+            view.putString("Name", this.name);
         }
 
         if (this.controller) {
-            tag.putInt("Width", this.controllerWidth);
+            view.putInt("Width", this.controllerWidth);
         } else {
-            tag.put("ControllerPos", NbtUtils.writeBlockPos(this.controllerPos));
+            // an int array, as NbtUtils#writeBlockPos wrote it
+            view.store("ControllerPos", BlockPos.CODEC, this.controllerPos);
         }
     }
 
     @Override
-    protected void read(final CompoundTag tag, final HolderLookup.Provider registries, final boolean clientPacket) {
-        super.read(tag, registries, clientPacket);
+    protected void read(final ValueInput view, final boolean clientPacket) {
+        super.read(view, clientPacket);
 
-        this.textColor = DyeColor.byId(tag.getInt("TextColor"));
-        this.glowing = tag.getBoolean("Glow");
-        this.waxed = tag.getBoolean("Waxed");
-        if (tag.contains("Name")) {
-            this.name = tag.getString("Name");
-        }
+        this.textColor = DyeColor.byId(view.getIntOr("TextColor", 0));
+        this.glowing = view.getBooleanOr("Glow", false);
+        this.waxed = view.getBooleanOr("Waxed", false);
+        view.getString("Name").ifPresent(name -> this.name = name);
 
-        if (tag.contains("ControllerPos")) {
+        final Optional<BlockPos> controllerPos = view.read("ControllerPos", BlockPos.CODEC);
+        if (controllerPos.isPresent()) {
             this.controller = false;
-            this.controllerPos = NbtUtils.readBlockPos(tag, "ControllerPos").get();
+            this.controllerPos = controllerPos.get();
         } else {
             this.controller = true;
             this.controllerPos = this.getBlockPos();
-            this.controllerWidth = tag.getInt("Width");
+            this.controllerWidth = view.getIntOr("Width", 0);
         }
 
         if (clientPacket) {
@@ -362,7 +361,7 @@ public class NameplateBlockEntity extends SmartBlockEntity implements ClipboardC
         }
 
         final Direction facing = this.getBlockState().getValue(NameplateBlock.FACING);
-        final Vec3i off = facing.getCounterClockWise(Direction.Axis.Y).getNormal();
+        final Vec3i off = facing.getCounterClockWise(Direction.Axis.Y).getUnitVec3i();
 
         final AABB bounds = AABB.encapsulatingFullBlocks(this.getBlockPos(), this.getBlockPos().offset(off.multiply(this.controllerWidth - 1)));
         return bounds;
@@ -374,23 +373,24 @@ public class NameplateBlockEntity extends SmartBlockEntity implements ClipboardC
     }
 
     @Override
-    public boolean writeToClipboard(final HolderLookup.@NotNull Provider var1, final CompoundTag tag, final Direction var3) {
+    public boolean writeToClipboard(final ValueOutput view, final Direction var3) {
         final NameplateBlockEntity controller = this.findController();
 
-        tag.putString("StoredName", controller.getName());
-        tag.putInt("TextColor", controller.textColor.getId());
+        view.putString("StoredName", controller.getName());
+        view.putInt("TextColor", controller.textColor.getId());
 
         return true;
     }
 
     @Override
-    public boolean readFromClipboard(final HolderLookup.@NotNull Provider var1, final CompoundTag tag, final Player player, final Direction var4, final boolean simulate) {
+    public boolean readFromClipboard(final ValueInput view, final Player player, final Direction var4, final boolean simulate) {
         final NameplateBlockEntity controller = this.findController();
         if (!controller.allowsEditing()) {
             return false;
         }
 
-        if (!tag.contains("StoredName")) {
+        final Optional<String> storedName = view.getString("StoredName");
+        if (storedName.isEmpty()) {
             return false;
         }
 
@@ -398,15 +398,15 @@ public class NameplateBlockEntity extends SmartBlockEntity implements ClipboardC
             return true;
         }
 
-        controller.setName(tag.getString("StoredName"), true, player);
-        controller.textColor = DyeColor.byId(tag.getInt("TextColor"));
+        controller.setName(storedName.get(), true, player);
+        controller.textColor = DyeColor.byId(view.getIntOr("TextColor", 0));
         this.sendData();
 
         return true;
     }
 
     @Override
-    public void addBehaviours(final List<BlockEntityBehaviour> behaviours) {
+    public void addBehaviours(final List<BlockEntityBehaviour<?>> behaviours) {
 
     }
 }

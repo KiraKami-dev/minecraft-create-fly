@@ -4,13 +4,12 @@ import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import com.zurrtum.create.content.equipment.wrench.IWrenchable;
 import com.zurrtum.create.foundation.block.IBE;
-import com.tterrag.registrate.util.entry.BlockEntry;
+import com.zurrtum.create.foundation.block.NeighborUpdateListeningBlock;
 import dev.ryanhcode.sable.Sable;
 import dev.ryanhcode.sable.api.block.BlockSubLevelAssemblyListener;
 import dev.ryanhcode.sable.sublevel.SubLevel;
 import dev.simulated_team.simulated.index.SimBlockEntityTypes;
 import dev.simulated_team.simulated.index.SimBlockShapes;
-import dev.simulated_team.simulated.index.SimBlocks;
 import com.zurrtum.create.catnip.placement.IPlacementHelper;
 import com.zurrtum.create.catnip.placement.PlacementHelpers;
 import com.zurrtum.create.catnip.placement.PlacementOffset;
@@ -20,6 +19,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
+import net.minecraft.util.RandomSource;
 import net.minecraft.util.StringRepresentable;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
@@ -31,8 +31,8 @@ import net.minecraft.world.item.SignApplicator;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.LevelReader;
+import net.minecraft.world.level.ScheduledTickAccess;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.HorizontalDirectionalBlock;
@@ -53,7 +53,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.function.Predicate;
 
-public class NameplateBlock extends HorizontalDirectionalBlock implements IBE<NameplateBlockEntity>, IWrenchable, BlockSubLevelAssemblyListener {
+public class NameplateBlock extends HorizontalDirectionalBlock implements IBE<NameplateBlockEntity>, IWrenchable, BlockSubLevelAssemblyListener, NeighborUpdateListeningBlock {
 
     public static final EnumProperty<Position> POSITION = EnumProperty.create("position", Position.class);
     public static final MapCodec<NameplateBlock> CODEC = RecordCodecBuilder.mapCodec((instance) -> instance.group(propertiesCodec(), DyeColor.CODEC.fieldOf("DyeColor").forGetter(NameplateBlock::getColor)).apply(instance, NameplateBlock::new));
@@ -123,11 +123,11 @@ public class NameplateBlock extends HorizontalDirectionalBlock implements IBE<Na
         return SimBlockShapes.NAMEPLATE.get(pState.getValue(FACING));
     }
 
-    public Position getPositionState(final LevelAccessor level, final BlockPos pos, final Direction facing) {
+    public Position getPositionState(final BlockGetter level, final BlockPos pos, final Direction facing) {
         Position outPos = Position.SINGLE;
 
-        final BlockState leftState = level.getBlockState(pos.offset(facing.getClockWise(Direction.Axis.Y).getNormal()));
-        final BlockState rightState = level.getBlockState(pos.offset(facing.getCounterClockWise(Direction.Axis.Y).getNormal()));
+        final BlockState leftState = level.getBlockState(pos.relative(facing.getClockWise(Direction.Axis.Y)));
+        final BlockState rightState = level.getBlockState(pos.relative(facing.getCounterClockWise(Direction.Axis.Y)));
 
         final boolean left = leftState.getBlock() instanceof final NameplateBlock npb && npb.getColor() == this.getColor();
         final boolean right = rightState.getBlock() instanceof final NameplateBlock npb && npb.getColor() == this.getColor();
@@ -154,7 +154,7 @@ public class NameplateBlock extends HorizontalDirectionalBlock implements IBE<Na
             final IPlacementHelper placementHelper = PlacementHelpers.get(placementHelperId);
             if (itemStack.getItem() instanceof final BlockItem bi && blockState.is(bi.getBlock()) && placementHelper.matchesItem(itemStack)) {
                 final InteractionResult result = placementHelper.getOffset(player, level, blockState, blockPos, blockHitResult)
-                        .placeInWorld(level, (BlockItem) itemStack.getItem(), player, interactionHand, blockHitResult);
+                        .placeInWorld(level, (BlockItem) itemStack.getItem(), player, interactionHand);
                 if (result == InteractionResult.SUCCESS) {
                     return InteractionResult.SUCCESS;
                 }
@@ -211,8 +211,7 @@ public class NameplateBlock extends HorizontalDirectionalBlock implements IBE<Na
     }
 
     @Override
-    public void neighborChanged(final BlockState state, final Level level, final BlockPos selfPos, final Block neighborBlock, final BlockPos neighborPos, final boolean pMovedByPiston) {
-        super.neighborChanged(state, level, selfPos, neighborBlock, neighborPos, pMovedByPiston);
+    public void neighborUpdate(final BlockState state, final Level level, final BlockPos selfPos, final Block neighborBlock, final BlockPos neighborPos, final boolean pMovedByPiston) {
         if (level.getBlockEntity(selfPos) instanceof NameplateBlockEntity nbe) {
 
             if (neighborPos.equals(selfPos.relative(state.getValue(FACING).getClockWise(Direction.Axis.Y)))) {
@@ -228,9 +227,9 @@ public class NameplateBlock extends HorizontalDirectionalBlock implements IBE<Na
     }
 
     @Override
-    public BlockState updateShape(final BlockState pState, final Direction pDirection, final BlockState pNeighborState, final LevelAccessor pLevel, final BlockPos pPos, final BlockPos pNeighborPos) {
+    protected BlockState updateShape(final BlockState pState, final LevelReader pLevel, final ScheduledTickAccess tickAccess, final BlockPos pPos, final Direction pDirection, final BlockPos pNeighborPos, final BlockState pNeighborState, final RandomSource random) {
         final Position posState = this.getPositionState(pLevel, pPos, pState.getValue(FACING));
-        return super.updateShape(pState, pDirection, pNeighborState, pLevel, pPos, pNeighborPos).setValue(POSITION, posState);
+        return super.updateShape(pState, pLevel, tickAccess, pPos, pDirection, pNeighborPos, pNeighborState, random).setValue(POSITION, posState);
     }
 
     @Override
@@ -277,26 +276,12 @@ public class NameplateBlock extends HorizontalDirectionalBlock implements IBE<Na
     private static class PlacementHelper implements IPlacementHelper {
         @Override
         public Predicate<ItemStack> getItemPredicate() {
-            return stack -> {
-                for (final BlockEntry<NameplateBlock> nameplate : SimBlocks.NAMEPLATES) {
-                    if (nameplate.is(stack.getItem())) {
-                        return true;
-                    }
-                }
-                return false;
-            };
+            return stack -> stack.getItem() instanceof final BlockItem blockItem && blockItem.getBlock() instanceof NameplateBlock;
         }
 
         @Override
         public Predicate<BlockState> getStatePredicate() {
-            return state -> {
-                for (final BlockEntry<NameplateBlock> nameplate : SimBlocks.NAMEPLATES) {
-                    if (nameplate.has(state)) {
-                        return true;
-                    }
-                }
-                return false;
-            };
+            return state -> state.getBlock() instanceof NameplateBlock;
         }
 
         @Override
