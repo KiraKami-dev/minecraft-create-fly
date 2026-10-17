@@ -2,6 +2,7 @@ package dev.simulated_team.simulated.content.blocks;
 
 import com.zurrtum.create.api.behaviour.BlockEntityBehaviour;
 import com.zurrtum.create.client.AllExtensions;
+import com.zurrtum.create.client.catnip.render.SuperByteBufferCache;
 import com.zurrtum.create.client.foundation.blockEntity.behaviour.audio.KineticAudioBehaviour;
 import com.zurrtum.create.client.foundation.blockEntity.behaviour.scrollValue.RotationDirectionScrollBehaviour;
 import com.zurrtum.create.client.foundation.blockEntity.behaviour.tooltip.GeneratingKineticTooltipBehaviour;
@@ -12,6 +13,7 @@ import dev.simulated_team.simulated.content.blocks.auger_shaft.AugerShaftTooltip
 import dev.simulated_team.simulated.content.blocks.portable_engine.PortableEngineTooltipBehaviour;
 import dev.simulated_team.simulated.content.blocks.portable_engine.PortableEngineValueBoxTransform;
 import dev.simulated_team.simulated.content.blocks.steering_wheel.SteeringWheelAudioBehaviour;
+import dev.simulated_team.simulated.content.blocks.steering_wheel.SteeringWheelRenderer;
 import dev.simulated_team.simulated.content.blocks.steering_wheel.SteeringWheelScrollValueBehaviour;
 import dev.simulated_team.simulated.content.blocks.throttle_lever.ThrottleLeverTooltipBehaviour;
 import dev.simulated_team.simulated.content.blocks.torsion_spring.TorsionSpringScrollValueBehaviour;
@@ -24,7 +26,7 @@ import java.util.function.Function;
 /**
  * Client-only registrations of the kinetic/control blocks (steering wheel, torsion spring, auger shaft, analog
  * transmission, throttle lever, portable engine): value boxes, goggle tooltips and audio, which Create Fly attaches
- * as client behaviours, plus the steering wheel's big outline.
+ * as client behaviours, plus the steering wheel's big outline and its buffer cache compartment.
  * <p>
  * Call after the default kinetic client behaviours (SimBlockEntityBehaviours): for the steering wheel, portable engine,
  * auger shaft and analog transmission the audio/tooltip behaviours registered here replace the defaults (same
@@ -68,5 +70,8 @@ public class SimKineticBlocksClient {
 
         // was IHaveBigOutline: the wheel's interaction shape reaches outside the block
         AllExtensions.BIG_OUTLINE.add(SimBlocks.STEERING_WHEEL);
+
+        // the material-swapped wheel models (also registered by SimulatedClient upstream; registering twice is harmless)
+        SuperByteBufferCache.getInstance().registerCompartment(SteeringWheelRenderer.STEERING_WHEEL);
     }
 }
