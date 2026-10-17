@@ -9,6 +9,7 @@ import com.mojang.blaze3d.systems.RenderPass;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.textures.FilterMode;
 import com.mojang.blaze3d.textures.GpuSampler;
+import com.mojang.blaze3d.textures.GpuTextureView;
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.VertexFormat;
 import dev.ryanhcode.sable.Sable;
@@ -220,6 +221,20 @@ public class WaterOcclusionRenderer {
         final GpuSampler sampler = RenderSystem.getSamplerCache().getClampToEdge(FilterMode.NEAREST);
         renderPass.bindTexture(CLOSE_SAMPLER_NAME, this.closeTarget.getDepthTextureView(), sampler);
         renderPass.bindTexture(FAR_SAMPLER_NAME, this.farTarget.getDepthTextureView(), sampler);
+    }
+
+    /**
+     * @return the depth of the nearest front faces of the occlusion volumes, valid while {@link #isActive()}
+     */
+    public GpuTextureView getCloseDepthView() {
+        return this.closeTarget.getDepthTextureView();
+    }
+
+    /**
+     * @return the depth of the nearest back faces of the occlusion volumes (mirrored in x), valid while {@link #isActive()}
+     */
+    public GpuTextureView getFarDepthView() {
+        return this.farTarget.getDepthTextureView();
     }
 
     public void update() {

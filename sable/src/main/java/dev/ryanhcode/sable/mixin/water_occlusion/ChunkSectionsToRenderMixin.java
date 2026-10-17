@@ -11,6 +11,7 @@ import dev.ryanhcode.sable.render.water_occlusion.WaterOcclusionRenderer;
 import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.client.renderer.chunk.ChunkSectionLayerGroup;
 import net.minecraft.client.renderer.chunk.ChunkSectionsToRender;
+import dev.ryanhcode.sable.veillite.api.compat.SodiumCompat;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -25,6 +26,10 @@ public class ChunkSectionsToRenderMixin {
      */
     @Inject(method = "renderGroup", at = @At("HEAD"))
     private void sable$preRenderGroup(final ChunkSectionLayerGroup group, final GpuSampler sampler, final CallbackInfo ci) {
+        if (SodiumCompat.isLoaded()) {
+            return; // Sodium cancels renderGroup; its draw hook does this instead
+        }
+
         if (group == ChunkSectionLayerGroup.OPAQUE) {
             SableSkyLightShadows.renderShadowMap();
         } else if (group == ChunkSectionLayerGroup.TRANSLUCENT) {
