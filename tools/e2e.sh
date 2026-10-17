@@ -1,7 +1,8 @@
 #!/bin/bash
-# End-to-end smoke test of the port (see e2e/). Usage: tools/e2e.sh [server|client|all|play]
+# End-to-end smoke test of the port (see e2e/). Usage: tools/e2e.sh [server|client|all|play|playtest]
 #   server: headless dedicated server — mixin audit + spawn sub-levels + stay alive 600 ticks
 #   client: real game window in a flat world — spawns sub-levels in view, screenshots, quits
+#   playtest: client, scripted assemble/collide/stand-on/push/rotate checks with PASS/FAIL lines (no default scene)
 #   play:   same scene as client, but the game stays open for manual testing
 # Results: e2e/run/<side>/logs/latest.log, screenshots in e2e/run/client/screenshots/
 set -uo pipefail
@@ -13,7 +14,11 @@ SRV=e2e/run/server; CLI=e2e/run/client
 report() { # <log> <side>
   local log=$1
   echo "== $2 =="
-  grep -E "E2E:" "$log" | sed 's/^.*E2E:/  E2E:/' | sort -u | head -30
+  if [ "$MODE" = playtest ]; then # scripted, order matters
+    grep -E "E2E:" "$log" | sed 's/^.*E2E:/  E2E:/'
+  else
+    grep -E "E2E:" "$log" | sed 's/^.*E2E:/  E2E:/' | sort -u | head -30
+  fi
   local mixin_err; mixin_err=$(grep -cE "Mixin apply.*failed|InvalidInjectionException|InvalidMixinException|MixinTransformerError|Critical injection failure" "$log")
   local exc; exc=$(grep -cE "^\S*(Exception|Error)\b|Exception in|Caused by:" "$log")
   echo "  mixin errors: $mixin_err   exception lines: $exc"
@@ -29,7 +34,7 @@ if [ "$MODE" = server ] || [ "$MODE" = all ]; then
   report "$SRV/logs/latest.log" server
 fi
 
-if [ "$MODE" = client ] || [ "$MODE" = all ] || [ "$MODE" = play ]; then
+if [ "$MODE" = client ] || [ "$MODE" = all ] || [ "$MODE" = play ] || [ "$MODE" = playtest ]; then
   # Every run starts from a copy of a clean template world. The server run saves the sub-levels it
   # spawned (in sublevels/, data/ and the plot chunks), so its world can't be reused.
   TEMPLATE=e2e/run/template-world
@@ -50,7 +55,8 @@ if [ "$MODE" = client ] || [ "$MODE" = all ] || [ "$MODE" = play ]; then
     exit 0
   fi
   rm -rf "$CLI/screenshots"
-  ./gradlew :e2e:runClient --console=plain > "$CLI/gradle.log" 2>&1 \
+  SCENARIO=(); [ "$MODE" = playtest ] && SCENARIO=(-Pe2eScenario=playtest)
+  ./gradlew :e2e:runClient ${SCENARIO[@]+"${SCENARIO[@]}"} --console=plain > "$CLI/gradle.log" 2>&1 \
     || { echo "client run failed, see $CLI/gradle.log"; exit 1; }
   report "$CLI/logs/latest.log" client
   ls "$CLI/screenshots" 2>/dev/null | sed 's/^/  screenshot: /'
