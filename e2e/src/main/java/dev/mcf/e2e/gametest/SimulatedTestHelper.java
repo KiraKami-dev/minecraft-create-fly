@@ -35,8 +35,10 @@ import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 import java.util.UUID;
 import java.util.function.BiFunction;
 import java.util.function.BiPredicate;
@@ -212,6 +214,33 @@ public final class SimulatedTestHelper {
      */
     public static void useAssemblerAt(final GameTestHelper helper, final BlockPos localPos) {
         useAssembler(helper, helper.absolutePos(localPos));
+    }
+
+    /**
+     * Uses the physics assembler at a test-local position ({@link #useAssembler}) and returns the sub-level it
+     * created. The new sub-level is found by comparing the container's sub-levels before and after: its
+     * {@link SubLevel#boundingBox()} is only computed on its first tick, so {@link SableTestHelper#subLevelsInTest}
+     * cannot see it yet.
+     */
+    public static ServerSubLevel assembleWithAssembler(final GameTestHelper helper, final BlockPos localPos) {
+        final Set<SubLevel> before = new HashSet<>(container(helper).getAllSubLevels());
+        useAssemblerAt(helper, localPos);
+
+        final List<ServerSubLevel> created = new ArrayList<>();
+        for (final SubLevel subLevel : container(helper).getAllSubLevels()) {
+            if (!before.contains(subLevel)) {
+                created.add((ServerSubLevel) subLevel);
+            }
+        }
+
+        if (created.size() != 1) {
+            final BlockEntity be = helper.getLevel().getBlockEntity(helper.absolutePos(localPos));
+            final String assembler = be instanceof final PhysicsAssemblerBlockEntity pabe
+                    ? "still in the world, last assembly exception: " + (pabe.getLastAssemblyException() == null ? "none" : pabe.getLastAssemblyException().getMessage())
+                    : "no longer in the world";
+            throw helper.assertionException(Component.literal("Expected the assembler to create 1 sub-level, it created %d (assembler %s)".formatted(created.size(), assembler)));
+        }
+        return created.getFirst();
     }
 
     /**

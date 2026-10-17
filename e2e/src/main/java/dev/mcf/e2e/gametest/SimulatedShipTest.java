@@ -55,16 +55,7 @@ public final class SimulatedShipTest {
      */
     private static ServerSubLevel assembleHull(final GameTestHelper helper) {
         final int gluesBefore = gluesInTest(helper).size();
-        useAssemblerAt(helper, ASSEMBLER);
-
-        final List<ServerSubLevel> subLevels = subLevelsInTest(helper);
-        if (subLevels.size() != 1) {
-            final PhysicsAssemblerBlockEntity assembler = helper.getLevel().getBlockEntity(helper.absolutePos(ASSEMBLER)) instanceof final PhysicsAssemblerBlockEntity be ? be : null;
-            throw helper.assertionException(Component.literal("Expected the assembler to create 1 sub-level, found %d (assembler still in the world: %s, its last exception: %s)"
-                    .formatted(subLevels.size(), assembler != null, assembler == null ? "-" : assembler.getLastAssemblyException())));
-        }
-
-        final ServerSubLevel ship = subLevels.getFirst();
+        final ServerSubLevel ship = assembleWithAssembler(helper, ASSEMBLER);
         if (countBlocks(ship) != HULL_BLOCKS) {
             helper.fail("The ship holds %d blocks instead of the %d glued deck blocks + assembler: %s".formatted(countBlocks(ship), HULL_BLOCKS, describePlot(ship)));
         }
@@ -98,16 +89,16 @@ public final class SimulatedShipTest {
                     helper.assertTrue(Math.abs(probe[0].bottom() - 2.0) < 0.05, "assembled in place, bottom at y 2: " + probe[0]);
                 })
                 .thenExecuteAfter(5, () -> {
-                    if (probe[0].sample().displacement().y() > -0.05) {
+                    if (probe(helper, probe).sample().displacement().y() > -0.05) {
                         helper.fail("The assembled ship is not falling: " + probe[0]);
                     }
                 })
                 .thenWaitUntil(() -> {
-                    probe[0].sample();
+                    probe(helper, probe).sample();
                     probe[0].assertResting(10);
                 })
                 .thenExecute(() -> {
-                    if (Math.abs(probe[0].bottom() - 1.0) > 0.1) {
+                    if (Math.abs(probe(helper, probe).bottom() - 1.0) > 0.1) {
                         helper.fail("Came to rest with its bottom at y %.3f instead of on the floor (y 1): %s".formatted(probe[0].bottom(), probe[0]));
                     }
                     final double drift = Math.hypot(probe[0].displacement().x(), probe[0].displacement().z());
@@ -130,13 +121,14 @@ public final class SimulatedShipTest {
         final SubLevelProbe[] probe = new SubLevelProbe[1];
 
         helper.startSequence()
-                .thenExecuteAfter(1, () -> probe[0] = new SubLevelProbe(helper, assembleHull(helper)).sampleEveryTick())
+                // sampled by the wait below only: a probe sampling every tick fails the test once the ship is removed
+                .thenExecuteAfter(1, () -> probe[0] = new SubLevelProbe(helper, assembleHull(helper)))
                 .thenWaitUntil(() -> {
-                    probe[0].sample();
+                    probe(helper, probe).sample();
                     probe[0].assertResting(10);
                 })
                 .thenExecute(() -> {
-                    final ServerSubLevel ship = probe[0].subLevel();
+                    final ServerSubLevel ship = probe(helper, probe).subLevel();
                     final BlockPos plotAssembler = findOneInPlot(helper, ship, state -> state.is(SimBlocks.PHYSICS_ASSEMBLER), "physics assembler");
                     useAssembler(helper, plotAssembler);
                     final PhysicsAssemblerBlockEntity assembler = plotBlockEntity(ship, plotAssembler, PhysicsAssemblerBlockEntity.class);
@@ -144,10 +136,10 @@ public final class SimulatedShipTest {
                         helper.fail("Disassembly refused: %s (%s)".formatted(assembler.getLastAssemblyException().getMessage(), probe[0]));
                     }
                 })
-                // alignment takes a few ticks; the probe stops sampling a removed sub-level, so poll the test area
+                // alignment takes a few ticks (the probe fails a test whose sub-level is removed, so stop sampling)
                 .thenWaitUntil(() -> {
-                    if (!subLevelsInTest(helper).isEmpty()) {
-                        throw helper.assertionException(Component.literal("Ship not disassembled yet: " + subLevelsInTest(helper).size() + " sub-levels"));
+                    if (!probe[0].subLevel().isRemoved()) {
+                        throw helper.assertionException(Component.literal("Ship not disassembled yet: " + describe(helper, probe[0].subLevel())));
                     }
                 })
                 .thenExecute(() -> {
@@ -198,8 +190,7 @@ public final class SimulatedShipTest {
 
         helper.startSequence()
                 .thenExecuteAfter(1, () -> {
-                    useAssemblerAt(helper, assemblerPos);
-                    ship[0] = onlySubLevel(helper);
+                    ship[0] = assembleWithAssembler(helper, assemblerPos);
                     if (countBlocks(ship[0]) != machineBlocks) {
                         helper.fail("The ship holds %d blocks instead of %d: %s".formatted(countBlocks(ship[0]), machineBlocks, describePlot(ship[0])));
                     }
@@ -230,7 +221,21 @@ public final class SimulatedShipTest {
                 .thenSucceed();
     }
 
+    /**
+     * @return the probe set by an earlier step. A failed step does not stop the steps queued after it in the same
+     * tick, and anything but an assertion exception there crashes the GameTest server, hence no plain dereference.
+     */
+    private static SubLevelProbe probe(final GameTestHelper helper, final SubLevelProbe[] probe) {
+        if (probe[0] == null) {
+            throw helper.assertionException(Component.literal("No ship (assembly failed)"));
+        }
+        return probe[0];
+    }
+
     private static TorsionSpringBlockEntity springOn(final GameTestHelper helper, final ServerSubLevel ship, final BlockPos plotPos) {
+        if (ship == null || plotPos == null) {
+            throw helper.assertionException(Component.literal("No ship (assembly failed)"));
+        }
         final TorsionSpringBlockEntity be = plotBlockEntity(ship, plotPos, TorsionSpringBlockEntity.class);
         if (be == null) {
             throw helper.assertionException(Component.literal("No torsion spring block entity on the ship at " + plotPos.toShortString()));
