@@ -453,6 +453,8 @@ public class SimpleSubLevelGroupRenderer {
 
                 // Sable moves and rotates entities on sub-levels while extracting / submitting
                 final EntityRenderState state = dispatcher.extractEntity(entity, partialTick);
+                // glowing outlines go to the level's outline target, not this one
+                state.outlineColor = 0;
                 dispatcher.submit(state, cameraState, state.x - cameraPos.x, state.y - cameraPos.y, state.z - cameraPos.z, poseStack, collector);
             }
         }
