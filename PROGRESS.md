@@ -32,6 +32,7 @@ flowchart LR
 - 2026-10-17: S16 merged: ImGui inspector (bundled imguimc, `/sableinspector`, `tools/e2e.sh client inspector`). S11 merged: sub-levels render under Sodium 0.8 (`E2E_SODIUM=1`). S13 merged: sub-levels cast sky-light shadows (`tools/e2e.sh client shadows`). Full suite on integration: server 38/38, gametest 22 + 1 optional fail (gravity), playtest, flight (y=121), shadows, Sodium client all pass.
 - 2026-10-17: S6 water occlusion verified (fixed a render-pass crash), S15 near-plane fixed with GL_DEPTH_CLAMP, S3 verified (`tools/e2e.sh client water`). S11 follow-ups: Flywheel visuals and S14 shading work under Sodium, Sodium skips plot sections, shadow pass is off under Sodium.
 - 2026-10-17: Sodium water occlusion + sky-light shadows (patched Sodium chunk shaders). Full suite with and without Sodium passes (server, gametest 22+1 optional, playtest, flight, water, shadows, client).
+- 2026-10-17: release jars verified in a real Fabric 1.21.11 install (server: 53 mods, 38 sub-levels simulate; offline client joins and renders). Fixed Sable UDP on macOS clients (EISCONN). Zip: `~/Documents/Projects/minecraft-create-fly-release/create-aeronautics-1.21.11-fabric.zip` (3 jars + INSTALL.txt; Fabric API 0.141.6+1.21.11 and Create Fly 1.21.11-6.0.9-5 installed separately).
 
 ## Blockers
 - None. Note: this shell's `JAVA_HOME` is JDK 17 and the build needs 21; `e2e.sh` picks 21 itself; for Gradle use `JAVA_HOME=$(/usr/libexec/java_home -v 21)`.
