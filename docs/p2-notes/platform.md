@@ -116,6 +116,16 @@ platform code under `simulated/.../fabric/` (services, transfer wrappers, events
   `EXPLORERS_COMPASS_ITEM`; JEI 27 `jei_mod_plugin` (mod aliases now cover Simulated + mods depending on it).
 - AW (`# platform`): `Entity#levelCallback` (was in the NeoForge AT, missing from the widener).
 
+## Waiting on other areas (the only compile errors left in these files)
+- `fabric/menu/LinkedTypewriterMenuImpl`: needs `LinkedTypewriterMenuCommon(MenuType<LinkedTypewriterBlockEntity>, int,
+  Inventory, LinkedTypewriterBlockEntity)` with Create Fly's `MenuType` (like `GhostItemMenu`); register the type as
+  `LinkedTypewriterMenuCommon::create` and the screen with `AllMenuScreens.register`.
+- `compat/.../TorsionSpringPeripheral`, `network/packets/SteeringWheelPacket`: `angleInput` must become a
+  `ServerScrollValueBehaviour` (has `setValue/getValue`).
+- `mixin_interface/diagram/VisualManagerExtension`: Sable's Flywheel `SubLevelEmbedding` isn't ported.
+- `SimpleSubLevelGroupRenderer.renderChain/renderGroup` take a vanilla `RenderTarget` (callers: `DiagramScreen`,
+  `EndSeaShadowRenderer`).
+
 ## PORT-TODOs
 - `fabric/service/FabricSimInventoryService#registerBattery`: no Fabric energy API (Team Reborn Energy would be the
   equivalent, needs a compileOnly dep).
