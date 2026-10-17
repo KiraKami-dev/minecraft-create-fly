@@ -10,11 +10,10 @@ import org.spongepowered.asm.mixin.injection.ModifyVariable;
 @Mixin(SessionSearchTrees.class)
 public class SessionSearchTreesMixin {
     // method_60369 is the reload lambda of updateCreativeTooltips (lambdas keep their intermediary names under Mojang
-    // mappings, in dev and in production). Minecraft jars carry no local variable table, so the local's type is the
-    // inferred one: TooltipFlag.Default (the return type of asCreative()).
+    // mappings, in dev and in production); its only TooltipFlag local is NORMAL.asCreative().
     @ModifyVariable(method = "method_60369", at = @At(value = "STORE"))
-    private TooltipFlag.Default markAsCreativeSearch(final TooltipFlag.Default value) {
-        ((TooltipFlagExtension) (Object) value).simulated$setCreativeSearch(true);
+    private TooltipFlag markAsCreativeSearch(final TooltipFlag value) {
+        ((TooltipFlagExtension) value).simulated$setCreativeSearch(true);
         return value;
     }
 }

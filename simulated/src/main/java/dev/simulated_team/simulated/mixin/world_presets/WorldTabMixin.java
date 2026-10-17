@@ -18,8 +18,8 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(targets = "net.minecraft.client.gui.screens.worldselection.CreateWorldScreen$WorldTab")
 public class WorldTabMixin {
 
-	// Captured by type: Minecraft's jar has no local variable table, and 1.21.11 added locals after the world type
-	// button, which the old positional LocalCapture relied on.
+	// Captured by its declared type (the only CycleButton local) instead of the old positional LocalCapture; Minecraft's
+	// local names are obfuscated in production, so they are never used.
 	@Inject(method = "<init>", at = @At("TAIL"))
 	private void simulated$init(final CreateWorldScreen createWorldScreen, final CallbackInfo ci, @Local final CycleButton<WorldCreationUiState.WorldTypeEntry> cycleButton) {
 		createWorldScreen.getUiState()

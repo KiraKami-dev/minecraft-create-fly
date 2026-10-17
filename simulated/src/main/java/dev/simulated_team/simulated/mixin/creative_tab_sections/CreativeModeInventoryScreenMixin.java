@@ -14,7 +14,6 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-import java.util.ArrayList;
 import java.util.List;
 
 // The section banners are drawn from AbstractContainerScreenMixin (renderContents TAIL), so that they stay below the
@@ -22,15 +21,15 @@ import java.util.List;
 @Mixin(CreativeModeInventoryScreen.class)
 public class CreativeModeInventoryScreenMixin {
 
-	// Minecraft jars have no local variable table, so locals are matched by their inferred types: the copied tooltip
-	// list is an ArrayList (Lists.newArrayList). The tab-name insertion index is always 1 right before the tabs() loop.
+	// Minecraft's local variable table keeps the declared types (names are obfuscated in production, so never capture
+	// by name): the copied tooltip list is the second List local, and i the only int (the flags are booleans).
 	@Inject(method = "getTooltipFromContainerItem", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/item/CreativeModeTabs;tabs()Ljava/util/List;"))
-	private void simulated$getTooltipFromContainerItem(final ItemStack stack, final CallbackInfoReturnable<List<Component>> cir, @Local final ArrayList<Component> list1) {
+	private void simulated$getTooltipFromContainerItem(final ItemStack stack, final CallbackInfoReturnable<List<Component>> cir, @Local(ordinal = 1) final List<Component> list1, @Local final int i) {
 		final Identifier id = SimulatedRegistrate.sectionOf(stack.getItem());
 		if(id != null) {
 			final SimulatedSection section = SimResourceManagers.SIMULATED_SECTION.get(id);
 			if(section != null) {
-				list1.add(1, section.title().text().copy().withStyle(ChatFormatting.BLUE));
+				list1.add(i, section.title().text().copy().withStyle(ChatFormatting.BLUE));
 			}
 		}
 	}

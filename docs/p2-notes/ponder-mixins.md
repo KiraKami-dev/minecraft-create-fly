@@ -8,10 +8,12 @@ enough occurrences for the ordinal, `@Shadow`/`@Accessor`/`@Invoker` members. No
 module does not compile as a whole until every area is merged).
 
 ## Mixin rules that bit (read before writing new mixins)
-- **Minecraft jars have no local variable table** (Loom/Mojang mappings): `@Local(name = ...)` never works on MC
-  classes, and type-based locals see the *inferred* type: booleans are `int`, `list2 = Lists.newArrayList(..)` is an
-  `ArrayList`, `TooltipFlag.Default.NORMAL.asCreative()` is a `TooltipFlag.Default`. Capture by inferred type or use
-  `argsOnly`, `ModifyExpressionValue`, `WrapOperation` args instead. Create Fly's jar *has* an LVT (names work there).
+- **Minecraft local names are obfuscated in production**: Mojang's jar ships a local variable table with the
+  *declared* types but names `$$0`, `$$1`, ... (Loom renames them to `bl`, `list2`, ... in dev only), so
+  `@Local(name = ...)` on Minecraft code works in dev and breaks in a real install. Capture by declared type + ordinal
+  (booleans are `Z`, not `int`; `List<..> list2 = Lists.newArrayList(..)` is a `List`), `argsOnly`, or use
+  `ModifyExpressionValue`/`WrapOperation` arguments. Check with `javap -p -l` on the Loom merged jar. Create Fly's jar
+  keeps real names (name capture is fine there).
 - **Lambdas keep intermediary names** under Mojang mappings, in dev and prod: `lambda$updateCreativeTooltips$15` ->
   `method_60369` (find them with `javap -p` on the Loom merged jar).
 - **remap** (no mixin AP here: Loom remaps mixins with tiny-remapper at `remapJar`; `remap = false` means "leave this
@@ -91,7 +93,7 @@ module does not compile as a whole until every area is merged).
 | conditional_display_target.DisplayLinkScreenMixin | `initGathererOptions` `DisplayTarget#getLineOptionText` | retargeted; label colour gets alpha |
 | create_assembly.* (4) | `disassemble()` of clockwork/elevator/actuator/bearing BEs | verified |
 | creative_tab_sections.AbstractContainerScreenMixin | `AbstractContainerScreen#renderContents` TAIL | **new**: banners (was `render` TAIL + depth test; carried item is a later GUI stratum now) |
-| creative_tab_sections.CreativeModeInventoryScreenMixin | `getTooltipFromContainerItem` before `CreativeModeTabs.tabs()` | locals by inferred type (`ArrayList`), index 1 |
+| creative_tab_sections.CreativeModeInventoryScreenMixin | `getTooltipFromContainerItem` before `CreativeModeTabs.tabs()` | verified (locals by declared type/ordinal) |
 | creative_tab_sections.CreativeModeTabMixin | `CreativeModeTab#buildContents` (WrapMethod) | verified |
 | creative_tab_sections.ItemPickerMenuMixin | `ItemPickerMenu#scrollTo` | verified (+`@Final` shadow) |
 | creative_tab_sections.SpriteContentsMixin | `SpriteContents#createAnimationState` RETURN | retargeted from `createTicker` |
@@ -140,7 +142,7 @@ module does not compile as a whole until every area is merged).
 | sounds.SoundEngineMixin / SoundManagerMixin | `instanceToChannel`, `soundEngine` | verified |
 | spring_item_bounce.EntityMixin | `Entity#move` `updateEntityMovementAfterFallOn`, `checkFallDamage` | retargeted |
 | throttle_lever.GameRendererMixin | `GameRenderer#pick(F)` TAIL | verified |
-| tooltip_flag.SessionSearchTreesMixin | `method_60369` STORE `TooltipFlag$Default` | retargeted (lambda name + inferred type) |
+| tooltip_flag.SessionSearchTreesMixin | `method_60369` STORE `TooltipFlag` | retargeted (lambda keeps its intermediary name) |
 | tooltip_flag.TooltipFlagDefaultMixin | `TooltipFlag$Default` | verified |
 | torsion_spring.MechanicalBearingBlockEntityMixin | `onSpeedChanged` `ControlledContraptionEntity#isStalled` | retargeted |
 | torsion_spring.ComparatorBlockMixin | `ComparatorBlock#getInputSignal` | **removed**: blocks override the new directional `getAnalogOutputSignal` (blocks-kinetic) |
