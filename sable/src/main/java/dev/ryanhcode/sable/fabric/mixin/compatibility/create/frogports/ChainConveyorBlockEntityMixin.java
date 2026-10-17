@@ -36,7 +36,7 @@ public abstract class ChainConveyorBlockEntityMixin extends SmartBlockEntity {
         return original.call(instance) || Sable.HELPER.distanceSquaredWithSubLevels(instance.getLevel(), packagePos, frogPos) > maxRange * maxRange;
     }
 
-    @WrapOperation(method = "tick", at = @At(value = "INVOKE", target = "Lcom/zurrtum/create/content/kinetics/chainConveyor/ChainConveyorBlockEntity;notifyPortToAnticipate(Lnet/minecraft/core/BlockPos;)V"), remap = false)
+    @WrapOperation(method = "tick", at = @At(value = "INVOKE", target = "Lcom/zurrtum/create/content/kinetics/chainConveyor/ChainConveyorBlockEntity;notifyPortToAnticipate(Lnet/minecraft/core/BlockPos;)V", remap = true), remap = false)
     public void sable$testSublevelDistance1(final ChainConveyorBlockEntity instance, final BlockPos blockPos, final Operation<Void> original, @Local final ChainConveyorPackage chainPackage) {
         final Vec3 packagePos = chainPackage.worldPosition;
         if (packagePos == null) {

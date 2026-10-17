@@ -32,7 +32,7 @@ public class ChainPackageInteractionPacketMixin {
         chainConveyorPackage.worldPosition = be.getPackagePosition(packet.chainPosition(), null);
     }
 
-    @Inject(method = "lambda$onChainPackageInteraction$16", at = @At(value = "INVOKE", target = "Lcom/zurrtum/create/content/kinetics/chainConveyor/ChainConveyorBlockEntity;addTravellingPackage(Lcom/zurrtum/create/content/kinetics/chainConveyor/ChainConveyorPackage;Lnet/minecraft/core/BlockPos;)Z"), remap = false)
+    @Inject(method = "lambda$onChainPackageInteraction$16", at = @At(value = "INVOKE", target = "Lcom/zurrtum/create/content/kinetics/chainConveyor/ChainConveyorBlockEntity;addTravellingPackage(Lcom/zurrtum/create/content/kinetics/chainConveyor/ChainConveyorPackage;Lnet/minecraft/core/BlockPos;)Z", remap = true), remap = false)
     private static void sable$initialiseTravellingWorldPosition(final ChainPackageInteractionPacket packet,
                                                                 final ServerPlayer player,
                                                                 final BlockEntity blockEntity,

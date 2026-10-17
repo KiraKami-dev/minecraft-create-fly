@@ -104,7 +104,7 @@ public class TrackBlockOutlineMixin {
         subLevel.set((ClientSubLevel) Sable.HELPER.getContaining(be));
     }
 
-    @Redirect(method = "pickCurves", at = @At(value = "INVOKE", target = "Lcom/zurrtum/create/content/trains/track/BezierConnection;getBounds()Lnet/minecraft/world/phys/AABB;"), remap = false)
+    @Redirect(method = "pickCurves", at = @At(value = "INVOKE", target = "Lcom/zurrtum/create/content/trains/track/BezierConnection;getBounds()Lnet/minecraft/world/phys/AABB;", remap = true), remap = false)
     private static AABB sable$getWorldSpaceBounds(final BezierConnection instance,
                                                   @Share("currentBlockEntitySubLevel") final LocalRef<ClientSubLevel> subLevel) {
         if (subLevel.get() == null) {

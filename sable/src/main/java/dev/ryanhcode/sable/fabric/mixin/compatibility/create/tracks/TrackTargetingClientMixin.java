@@ -35,7 +35,7 @@ import org.spongepowered.asm.mixin.injection.At;
 @Mixin(TrackTargetingClient.class)
 public class TrackTargetingClientMixin {
 
-    @WrapOperation(method = "render", at = @At(value = "INVOKE", target = "Lcom/zurrtum/create/client/content/trains/track/TrackBlockRenderer;getRenderState(Lnet/minecraft/world/level/Level;Lnet/minecraft/world/phys/Vec3;Lnet/minecraft/world/level/block/state/BlockState;Lnet/minecraft/core/BlockPos;Lnet/minecraft/core/Direction$AxisDirection;Lcom/zurrtum/create/infrastructure/component/BezierTrackPointLocation;Lcom/zurrtum/create/content/trains/track/TrackTargetingBehaviour$RenderedTrackOverlayType;F)Lcom/zurrtum/create/client/content/trains/track/TrackBlockRenderState;"), remap = false)
+    @WrapOperation(method = "render", at = @At(value = "INVOKE", target = "Lcom/zurrtum/create/client/content/trains/track/TrackBlockRenderer;getRenderState(Lnet/minecraft/world/level/Level;Lnet/minecraft/world/phys/Vec3;Lnet/minecraft/world/level/block/state/BlockState;Lnet/minecraft/core/BlockPos;Lnet/minecraft/core/Direction$AxisDirection;Lcom/zurrtum/create/infrastructure/component/BezierTrackPointLocation;Lcom/zurrtum/create/content/trains/track/TrackTargetingBehaviour$RenderedTrackOverlayType;F)Lcom/zurrtum/create/client/content/trains/track/TrackBlockRenderState;", remap = true), remap = false)
     private static TrackBlockRenderState sable$useLocalOffset(final TrackBlockRenderer renderer,
                                                               final Level level,
                                                               final Vec3 offset,
@@ -58,7 +58,7 @@ public class TrackTargetingClientMixin {
         return original.call(renderer, level, offset, state, pos, direction, bezier, type, scale);
     }
 
-    @WrapOperation(method = "render", at = @At(value = "INVOKE", target = "Lcom/zurrtum/create/client/content/trains/track/TrackBlockRenderState;render(Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/MultiBufferSource;)V"), remap = false)
+    @WrapOperation(method = "render", at = @At(value = "INVOKE", target = "Lcom/zurrtum/create/client/content/trains/track/TrackBlockRenderState;render(Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/MultiBufferSource;)V", remap = true), remap = false)
     private static void sable$manipulateMatrixStack(final TrackBlockRenderState instance,
                                                     final PoseStack ms,
                                                     final MultiBufferSource buffer,
