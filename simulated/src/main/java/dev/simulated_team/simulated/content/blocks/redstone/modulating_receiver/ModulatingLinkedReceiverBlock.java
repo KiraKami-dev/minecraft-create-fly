@@ -4,8 +4,9 @@ import com.mojang.serialization.MapCodec;
 import com.zurrtum.create.api.contraption.BlockMovementChecks;
 import com.zurrtum.create.content.equipment.wrench.IWrenchable;
 import com.zurrtum.create.foundation.block.IBE;
+import com.zurrtum.create.foundation.block.NeighborUpdateListeningBlock;
+import com.zurrtum.create.foundation.block.RedStoneConnectBlock;
 import com.zurrtum.create.foundation.block.WrenchableDirectionalBlock;
-import com.zurrtum.create.impl.contraption.BlockMovementChecksImpl;
 import dev.simulated_team.simulated.index.SimBlockEntityTypes;
 import dev.simulated_team.simulated.index.SimBlockShapes;
 import dev.simulated_team.simulated.index.SimBlocks;
@@ -30,13 +31,14 @@ import net.minecraft.world.level.block.state.properties.BooleanProperty;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.VoxelShape;
+import org.jetbrains.annotations.Nullable;
 
-public class ModulatingLinkedReceiverBlock extends WrenchableDirectionalBlock implements IBE<ModulatingLinkedReceiverBlockEntity>, IWrenchable, CommonRedstoneBlock {
+public class ModulatingLinkedReceiverBlock extends WrenchableDirectionalBlock implements IBE<ModulatingLinkedReceiverBlockEntity>, IWrenchable, CommonRedstoneBlock, RedStoneConnectBlock, NeighborUpdateListeningBlock {
     public static final MapCodec<ModulatingLinkedReceiverBlock> CODEC = simpleCodec(ModulatingLinkedReceiverBlock::new);
     public static final BooleanProperty POWERED = BlockStateProperties.POWERED;
 
     static {
-        BlockMovementChecksImpl.registerAttachedCheck((state, world, pos, direction) -> {
+        BlockMovementChecks.registerAttachedCheck((state, world, pos, direction) -> {
             final BlockState relativeState = world.getBlockState(pos.relative(direction));
             if (state.getBlock() instanceof ModulatingLinkedReceiverBlock && state.getValue(FACING) == direction.getOpposite()) {
                 return BlockMovementChecks.CheckResult.SUCCESS;
@@ -108,8 +110,8 @@ public class ModulatingLinkedReceiverBlock extends WrenchableDirectionalBlock im
     }
 
     @Override
-    public void neighborChanged(final BlockState state, final Level level, final BlockPos pos, final Block blockIn, final BlockPos fromPos,
-                                final boolean isMoving) {
+    public void neighborUpdate(final BlockState state, final Level level, final BlockPos pos, final Block blockIn, final BlockPos fromPos,
+                               final boolean isMoving) {
         if (level.isClientSide())
             return;
 
@@ -135,10 +137,15 @@ public class ModulatingLinkedReceiverBlock extends WrenchableDirectionalBlock im
     }
 
     @Override
+    public boolean canConnectRedstone(final BlockState state, @Nullable final Direction side) {
+        return this.commonConnectRedstone(state, null, null, side);
+    }
+
+    @Override
     protected InteractionResult useItemOn(final ItemStack itemStack, final BlockState blockState, final Level level, final BlockPos blockPos, final Player player, final InteractionHand interactionHand, final BlockHitResult blockHitResult) {
         if (!player.getMainHandItem().is(SimBlocks.LINKED_TYPEWRITER.asItem())) { //TODO: make this more generalized
 	        if (level.isClientSide()) {
-                this.withBlockEntityDo(level, blockPos, ModulatingLinkedReceiverScreen::open);
+                this.withBlockEntityDo(level, blockPos, be -> ModulatingLinkedReceiverScreen.open(be));
 	        }
 
 	        return InteractionResult.SUCCESS;

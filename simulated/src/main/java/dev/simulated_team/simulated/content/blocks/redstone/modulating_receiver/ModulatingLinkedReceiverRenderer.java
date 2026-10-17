@@ -2,64 +2,91 @@ package dev.simulated_team.simulated.content.blocks.redstone.modulating_receiver
 
 
 import com.mojang.blaze3d.vertex.PoseStack;
-import com.zurrtum.create.client.foundation.blockEntity.renderer.SmartBlockEntityRenderer;
-import com.zurrtum.create.client.flywheel.api.visualization.VisualizationManager;
-import dev.simulated_team.simulated.index.SimPartialModels;
-import com.zurrtum.create.catnip.data.Iterate;
+import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.zurrtum.create.catnip.math.AngleHelper;
 import com.zurrtum.create.client.catnip.render.CachedBuffers;
 import com.zurrtum.create.client.catnip.render.SuperByteBuffer;
-import net.minecraft.client.renderer.MultiBufferSource;
-import net.minecraft.client.renderer.rendertype.RenderType;
+import com.zurrtum.create.client.flywheel.api.visualization.VisualizationManager;
+import com.zurrtum.create.client.foundation.blockEntity.renderer.SmartBlockEntityRenderer;
+import dev.simulated_team.simulated.index.SimPartialModels;
+import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.client.renderer.blockentity.BlockEntityRendererProvider;
+import net.minecraft.client.renderer.feature.ModelFeatureRenderer;
+import net.minecraft.client.renderer.rendertype.RenderTypes;
+import net.minecraft.client.renderer.state.CameraRenderState;
 import net.minecraft.core.Direction;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.phys.Vec3;
+import org.jetbrains.annotations.Nullable;
 
 import static dev.simulated_team.simulated.content.blocks.redstone.modulating_receiver.ModulatingLinkVisual.MAX_DISTANCE;
 import static dev.simulated_team.simulated.content.blocks.redstone.modulating_receiver.ModulatingLinkVisual.SMOOTHING;
 
 
-public class ModulatingLinkedReceiverRenderer extends SmartBlockEntityRenderer<ModulatingLinkedReceiverBlockEntity> {
+public class ModulatingLinkedReceiverRenderer extends SmartBlockEntityRenderer<ModulatingLinkedReceiverBlockEntity, ModulatingLinkedReceiverRenderer.ModulatingLinkRenderState> {
 
     public ModulatingLinkedReceiverRenderer(final BlockEntityRendererProvider.Context context) {
         super(context);
     }
 
     @Override
-    protected void renderSafe(final ModulatingLinkedReceiverBlockEntity be, final float partialTicks, final PoseStack ms, final MultiBufferSource bufferSource, final int light, final int overlay) {
-        super.renderSafe(be, partialTicks, ms, bufferSource, light, overlay);
+    public ModulatingLinkRenderState createRenderState() {
+        return new ModulatingLinkRenderState();
+    }
 
+    @Override
+    public void extractRenderState(final ModulatingLinkedReceiverBlockEntity be, final ModulatingLinkRenderState state, final float tickProgress,
+                                   final Vec3 cameraPos, @Nullable final ModelFeatureRenderer.CrumblingOverlay crumblingOverlay) {
+        super.extractRenderState(be, state, tickProgress, cameraPos, crumblingOverlay);
+
+        state.plate = null;
         if (VisualizationManager.supportsVisualization(be.getLevel())) {
             return;
         }
 
-        super.renderSafe(be, partialTicks, ms, bufferSource, light, overlay);
-        final Direction facing = be.getBlockState()
-                .getValue(BlockStateProperties.FACING);
+        state.facing = state.blockState.getValue(BlockStateProperties.FACING);
+        state.minPos = 5.5f * ((be.minRange - 1) * (SMOOTHING + MAX_DISTANCE - 1)) / ((MAX_DISTANCE - 1) * (SMOOTHING + be.minRange - 1));
+        state.maxPos = 5.5f * ((be.maxRange - 1) * (SMOOTHING + MAX_DISTANCE - 1)) / ((MAX_DISTANCE - 1) * (SMOOTHING + be.maxRange - 1));
+        state.plate = CachedBuffers.partial(SimPartialModels.MODULATING_RECEIVER_PLATE, state.blockState);
+    }
 
-        final Vec3 pixelNormal = new Vec3(facing.step()).scale(1 / 16.0);
+    @Override
+    public void submit(final ModulatingLinkRenderState state, final PoseStack ms, final SubmitNodeCollector queue, final CameraRenderState cameraState) {
+        super.submit(state, ms, queue, cameraState);
 
-        final float minPos = 5.5f * ((be.minRange - 1) * (SMOOTHING + MAX_DISTANCE - 1)) / ((MAX_DISTANCE - 1) * (SMOOTHING + be.minRange - 1));
-        final float maxPos = 5.5f * ((be.maxRange - 1) * (SMOOTHING + MAX_DISTANCE - 1)) / ((MAX_DISTANCE - 1) * (SMOOTHING + be.maxRange - 1));
+        if (state.plate != null) {
+            queue.submitCustomGeometry(ms, RenderTypes.solidMovingBlock(), state);
+        }
+    }
 
-        for (final boolean bottom : Iterate.trueAndFalse) {
-            final SuperByteBuffer superBuffer = CachedBuffers.partial(SimPartialModels.MODULATING_RECEIVER_PLATE, be.getBlockState());
+    public static class ModulatingLinkRenderState extends SmartRenderState implements SubmitNodeCollector.CustomGeometryRenderer {
+        public SuperByteBuffer plate;
+        public Direction facing;
+        public float minPos;
+        public float maxPos;
 
-            if (bottom) {
-                superBuffer.translate(pixelNormal.scale(minPos));
-            } else {
-                superBuffer.translate(pixelNormal.scale(0.5 + maxPos));
+        @Override
+        public void render(final PoseStack.Pose pose, final VertexConsumer vertexConsumer) {
+            final Vec3 pixelNormal = new Vec3(this.facing.step()).scale(1 / 16.0);
+
+            // bottom plate, then top plate
+            for (int i = 0; i < 2; i++) {
+                final boolean bottom = i == 0;
+                if (bottom) {
+                    this.plate.translate(pixelNormal.scale(this.minPos));
+                } else {
+                    this.plate.translate(pixelNormal.scale(0.5 + this.maxPos));
+                }
+
+                if (this.facing.getAxis().isHorizontal()) {
+                    this.plate.rotateCentered(AngleHelper.rad(AngleHelper.horizontalAngle(this.facing.getOpposite())), Direction.UP);
+                }
+
+                this.plate.rotateCentered(AngleHelper.rad(-90 - AngleHelper.verticalAngle(this.facing)), Direction.EAST);
+
+                this.plate.light(this.lightCoords);
+                this.plate.renderInto(pose, vertexConsumer);
             }
-
-            if (facing.getAxis().isHorizontal()) {
-                superBuffer.rotateCentered(AngleHelper.rad(AngleHelper.horizontalAngle(facing.getOpposite())), Direction.UP);
-            }
-
-            superBuffer.rotateCentered(AngleHelper.rad(-90 - AngleHelper.verticalAngle(facing)), Direction.EAST);
-
-            superBuffer.light(light);
-            superBuffer.renderInto(ms, bufferSource.getBuffer(RenderType.solid()));
         }
     }
 }

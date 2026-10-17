@@ -1,30 +1,25 @@
 package dev.simulated_team.simulated.content.blocks.redstone;
 
 import com.zurrtum.create.Create;
+import com.zurrtum.create.api.behaviour.BlockEntityBehaviour;
+import com.zurrtum.create.catnip.data.Couple;
 import com.zurrtum.create.content.redstone.link.IRedstoneLinkable;
-import com.zurrtum.create.client.content.redstone.link.LinkBehaviour;
 import com.zurrtum.create.content.redstone.link.RedstoneLinkBlock;
 import com.zurrtum.create.content.redstone.link.RedstoneLinkNetworkHandler;
+import com.zurrtum.create.content.redstone.link.ServerLinkBehaviour;
 import com.zurrtum.create.foundation.blockEntity.SmartBlockEntity;
-import com.zurrtum.create.api.behaviour.BlockEntityBehaviour;
-import com.zurrtum.create.client.foundation.blockEntity.behaviour.ValueBoxTransform;
 import dev.ryanhcode.sable.Sable;
-import dev.ryanhcode.sable.api.SubLevelHelper;
 import dev.ryanhcode.sable.companion.math.JOMLConversion;
 import dev.ryanhcode.sable.sublevel.SubLevel;
-import com.zurrtum.create.catnip.data.Couple;
-import com.zurrtum.create.catnip.math.VecHelper;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.core.HolderLookup;
-import net.minecraft.nbt.CompoundTag;
 import net.minecraft.util.Tuple;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
 import net.minecraft.world.phys.Vec3;
-import org.apache.commons.lang3.tuple.Pair;
 import org.joml.Vector3d;
-import org.joml.Vector3dc;
 
 import java.util.List;
 import java.util.Map;
@@ -32,7 +27,7 @@ import java.util.Set;
 
 public abstract class AbstractLinkedReceiverBlockEntity extends SmartBlockEntity {
 
-    protected LinkBehaviour link;
+    protected ServerLinkBehaviour link;
     protected int lastCheckedStatus;
     public int receivedSignal;
     public double rawSignalValue;
@@ -43,15 +38,14 @@ public abstract class AbstractLinkedReceiverBlockEntity extends SmartBlockEntity
     }
 
     @Override
-    public void addBehaviours(final List<BlockEntityBehaviour> behaviours) {
+    public void addBehaviours(final List<BlockEntityBehaviour<?>> behaviours) {
         this.createLink();
         behaviours.add(this.link);
     }
 
     protected void createLink() {
-        final Pair<ValueBoxTransform, ValueBoxTransform> slots =
-                ValueBoxTransform.Dual.makeSlots(LinkedReceiverFrequencySlot::new);
-        this.link = LinkBehaviour.receiver(this, slots, (signal) -> {});
+        // the frequency slots (client) are attached through LinkedReceiverLinkBehaviour
+        this.link = ServerLinkBehaviour.receiver(this, (signal) -> {});
     }
 
     public void setSignal(final int power, final double rawValue) {
@@ -86,9 +80,9 @@ public abstract class AbstractLinkedReceiverBlockEntity extends SmartBlockEntity
             final Direction attachedFace = blockState.getValue(RedstoneLinkBlock.FACING)
                     .getOpposite();
             final BlockPos attachedPos = this.worldPosition.relative(attachedFace);
-            this.level.blockUpdated(this.worldPosition, this.level.getBlockState(this.worldPosition)
+            this.level.updateNeighborsAt(this.worldPosition, this.level.getBlockState(this.worldPosition)
                     .getBlock());
-            this.level.blockUpdated(attachedPos, this.level.getBlockState(attachedPos)
+            this.level.updateNeighborsAt(attachedPos, this.level.getBlockState(attachedPos)
                     .getBlock());
             this.receivedSignalChanged = false;
             //sendData();
@@ -104,7 +98,7 @@ public abstract class AbstractLinkedReceiverBlockEntity extends SmartBlockEntity
         final Couple<RedstoneLinkNetworkHandler.Frequency> freq = this.link.getNetworkKey();
         final Set<IRedstoneLinkable> set = map.get(freq);
         if (set != null && !set.isEmpty()) {
-            Vector3d currentPos = JOMLConversion.atCenterOf(this.getBlockPos());
+            final Vector3d currentPos = JOMLConversion.atCenterOf(this.getBlockPos());
 
             final SubLevel subLevel = Sable.HELPER.getContaining(this);
             if (subLevel != null) {
@@ -113,14 +107,14 @@ public abstract class AbstractLinkedReceiverBlockEntity extends SmartBlockEntity
 
             for (final IRedstoneLinkable link : set)
                 if (link.getTransmittedStrength() > 0) {
-                    Vector3d targetPos = JOMLConversion.atCenterOf(link.getLocation());
+                    final Vector3d targetPos = JOMLConversion.atCenterOf(link.getLocation());
 
                     final SubLevel targetWs = Sable.HELPER.getContaining(this.level, link.getLocation());
                     if (targetWs != null) {
                         targetWs.logicalPose().transformPosition(targetPos);
                     }
 
-                    Vector3d relativePos = targetPos.sub(currentPos);
+                    final Vector3d relativePos = targetPos.sub(currentPos);
                     if(subLevel != null) {
                         subLevel.logicalPose().transformNormalInverse(relativePos);
                     }
@@ -136,19 +130,19 @@ public abstract class AbstractLinkedReceiverBlockEntity extends SmartBlockEntity
     }
 
     @Override
-    public void write(final CompoundTag compound, final HolderLookup.Provider registries, final boolean clientPacket) {
-        compound.putInt("Receive", this.getReceivedSignal());
-        compound.putDouble("ReceivedValue", this.rawSignalValue);
-        compound.putBoolean("ReceivedChanged", this.receivedSignalChanged);
-        super.write(compound, registries, clientPacket);
+    public void write(final ValueOutput view, final boolean clientPacket) {
+        view.putInt("Receive", this.getReceivedSignal());
+        view.putDouble("ReceivedValue", this.rawSignalValue);
+        view.putBoolean("ReceivedChanged", this.receivedSignalChanged);
+        super.write(view, clientPacket);
     }
 
     @Override
-    protected void read(final CompoundTag compound, final HolderLookup.Provider registries, final boolean clientPacket) {
-        super.read(compound, registries, clientPacket);
-        this.receivedSignal = compound.getInt("Receive");
-        this.rawSignalValue = compound.getDouble("ReceivedValue");
-        this.receivedSignalChanged = compound.getBoolean("ReceivedChanged");
+    protected void read(final ValueInput view, final boolean clientPacket) {
+        super.read(view, clientPacket);
+        this.receivedSignal = view.getIntOr("Receive", 0);
+        this.rawSignalValue = view.getDoubleOr("ReceivedValue", 0);
+        this.receivedSignalChanged = view.getBooleanOr("ReceivedChanged", false);
     }
 
     public int getReceivedSignal() {
@@ -168,9 +162,9 @@ public abstract class AbstractLinkedReceiverBlockEntity extends SmartBlockEntity
         final Direction attachedFace = this.getBlockState().getValue(RedstoneLinkBlock.FACING)
                 .getOpposite();
         final BlockPos attachedPos = this.worldPosition.relative(attachedFace);
-        this.level.blockUpdated(this.worldPosition, this.level.getBlockState(this.worldPosition)
+        this.level.updateNeighborsAt(this.worldPosition, this.level.getBlockState(this.worldPosition)
                 .getBlock());
-        this.level.blockUpdated(attachedPos, this.level.getBlockState(attachedPos)
+        this.level.updateNeighborsAt(attachedPos, this.level.getBlockState(attachedPos)
                 .getBlock());
     }
 }

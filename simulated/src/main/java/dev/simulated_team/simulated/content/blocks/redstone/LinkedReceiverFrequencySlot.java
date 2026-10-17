@@ -1,14 +1,12 @@
 package dev.simulated_team.simulated.content.blocks.redstone;
 
 import com.mojang.blaze3d.vertex.PoseStack;
-import com.zurrtum.create.content.redstone.link.RedstoneLinkBlock;
-import com.zurrtum.create.client.foundation.blockEntity.behaviour.ValueBoxTransform;
-import com.zurrtum.create.client.flywheel.lib.transform.TransformStack;
 import com.zurrtum.create.catnip.math.AngleHelper;
 import com.zurrtum.create.catnip.math.VecHelper;
-import net.minecraft.core.BlockPos;
+import com.zurrtum.create.client.flywheel.lib.transform.TransformStack;
+import com.zurrtum.create.client.foundation.blockEntity.behaviour.ValueBoxTransform;
+import com.zurrtum.create.content.redstone.link.RedstoneLinkBlock;
 import net.minecraft.core.Direction;
-import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
 
@@ -21,7 +19,7 @@ public class LinkedReceiverFrequencySlot extends ValueBoxTransform.Dual{
     Vec3 vertical = VecHelper.voxelSpace(11f, 2.5f, 3f);
 
     @Override
-    public Vec3 getLocalOffset(final LevelAccessor levelAccessor, final BlockPos blockPos, final BlockState state) {
+    public Vec3 getLocalOffset(final BlockState state) {
         final Direction facing = state.getValue(RedstoneLinkBlock.FACING);
         Vec3 location = this.vertical;
 
@@ -40,7 +38,7 @@ public class LinkedReceiverFrequencySlot extends ValueBoxTransform.Dual{
     }
 
     @Override
-    public void rotate(final LevelAccessor levelAccessor, final BlockPos blockPos, final BlockState state, final PoseStack poseStack) {
+    public void rotate(final BlockState state, final PoseStack poseStack) {
         final Direction facing = state.getValue(RedstoneLinkBlock.FACING);
         final float yRot = facing.getAxis()
                 .isVertical() ? 0 : AngleHelper.horizontalAngle(facing) + 180;
