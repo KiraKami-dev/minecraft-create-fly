@@ -4,7 +4,6 @@ import com.zurrtum.create.AllSoundEvents;
 import dev.ryanhcode.sable.veillite.platform.registry.RegistrationProvider;
 import dev.ryanhcode.sable.veillite.platform.registry.RegistryObject;
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.data.PackOutput;
 import net.minecraft.resources.Identifier;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundSource;
@@ -35,10 +34,6 @@ public class SoundEventRegistry {
 		return this.create(name, SoundSource.BLOCKS, operator);
 	}
 
-
-	public SoundsProvider getProvider(final PackOutput output) {
-		return new SoundsProvider(this.modId, output, this.definitions);
-	}
 
 	private Identifier path(final String path) {
 		return Identifier.fromNamespaceAndPath(this.modId, path);
@@ -95,7 +90,7 @@ public class SoundEventRegistry {
 		}
 
 		public DefinitionBuilder addEventVariant(final SoundEvent event, final UnaryOperator<SoundBuilder> operator) {
-			final SoundBuilder builder = SoundEventRegistry.this.new SoundBuilder(event.getLocation())
+			final SoundBuilder builder = SoundEventRegistry.this.new SoundBuilder(event.location())
 					.setType(SoundFile.Type.EVENT);
 			operator.apply(builder);
 			this.sounds.add(builder.build());
@@ -111,7 +106,7 @@ public class SoundEventRegistry {
 		}
 
 		public DefinitionBuilder addEventVariant(final AllSoundEvents.SoundEntry soundEntry, final UnaryOperator<SoundBuilder> operator) {
-			final SoundBuilder builder = SoundEventRegistry.this.new SoundBuilder(soundEntry.getId())
+			final SoundBuilder builder = SoundEventRegistry.this.new SoundBuilder(soundEntry.getMainEvent().location())
 					.setType(SoundFile.Type.EVENT);
 			operator.apply(builder);
 			this.sounds.add(builder.build());

@@ -6,6 +6,9 @@ accessible class net/minecraft/world/item/CreativeModeTab$TabVisibility
 accessible field net/minecraft/server/level/ServerLevel entityManager Lnet/minecraft/world/level/entity/PersistentEntitySectionManager;
 accessible field net/minecraft/world/level/entity/PersistentEntitySectionManager sectionStorage Lnet/minecraft/world/level/entity/EntitySectionStorage;
 
+# platform
+accessible field net/minecraft/world/entity/Entity levelCallback Lnet/minecraft/world/level/entity/EntityInLevelCallback;
+
 # Laser Render Type
 accessible class net/minecraft/client/renderer/rendertype/RenderType$CompositeState
 accessible class net/minecraft/client/renderer/RenderStateShard$TextureStateShard
@@ -27,9 +30,6 @@ accessible field net/minecraft/world/inventory/Slot y I
 accessible field net/minecraft/world/inventory/AbstractContainerMenu lastSlots Lnet/minecraft/core/NonNullList;
 accessible field net/minecraft/world/inventory/AbstractContainerMenu remoteSlots Lnet/minecraft/core/NonNullList;
 
-# Particles
-accessible class net/minecraft/client/particle/ParticleEngine$SpriteParticleRegistration
-
 # End Sea
 accessible field net/minecraft/client/renderer/RenderStateShard name Ljava/lang/String;
 
@@ -46,7 +46,12 @@ accessible field net/minecraft/server/network/ServerGamePacketListenerImpl above
 # Physics Staff
 accessible method net/minecraft/client/renderer/GameRenderer getFov (Lnet/minecraft/client/Camera;FZ)D
 
+# items-misc
+# plunger launcher item renderer: hand projection FOV
+accessible method net/minecraft/client/renderer/GameRenderer getFov (Lnet/minecraft/client/Camera;FZ)F
+
 # entities-render
 accessible method net/minecraft/client/renderer/GameRenderer getFov (Lnet/minecraft/client/Camera;FZ)F
 accessible field net/minecraft/client/Camera eyeHeight F
 accessible field net/minecraft/client/Camera eyeHeightOld F
+extendable method net/minecraft/world/entity/Entity moveOrInterpolateTo (Lnet/minecraft/world/phys/Vec3;FF)V

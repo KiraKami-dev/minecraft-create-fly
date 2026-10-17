@@ -1,6 +1,5 @@
 {
   "model": {
-    "type": "minecraft:model",
-    "model": "simulated:item/plunger_launcher"
+    "type": "simulated:model/plunger_launcher"
   }
 }

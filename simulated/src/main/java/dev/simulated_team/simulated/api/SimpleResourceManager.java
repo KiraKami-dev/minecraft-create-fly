@@ -2,13 +2,13 @@ package dev.simulated_team.simulated.api;
 
 import com.mojang.serialization.Codec;
 import dev.simulated_team.simulated.service.ServiceUtil;
-import dev.ryanhcode.sable.veillite.api.CodecReloadListener;
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import net.minecraft.resources.FileToIdConverter;
 import net.minecraft.resources.Identifier;
 import net.minecraft.server.packs.resources.PreparableReloadListener;
 import net.minecraft.server.packs.resources.ResourceManager;
+import net.minecraft.server.packs.resources.SimpleJsonResourceReloadListener;
 import net.minecraft.util.profiling.ProfilerFiller;
 
 import java.util.Collection;
@@ -16,7 +16,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-public class SimpleResourceManager<T> extends CodecReloadListener<T> {
+/**
+ * Loads the codec-decoded JSON files under {@code assets/<namespace>/<path>/} (client resources).
+ * Was Veil's {@code CodecReloadListener}; vanilla's {@link SimpleJsonResourceReloadListener} does the same since 1.21.2.
+ */
+public class SimpleResourceManager<T> extends SimpleJsonResourceReloadListener<T> {
 	private static final Registry REGISTRY = ServiceUtil.load(Registry.class);
 
 	private final Map<Identifier, T> entries = new Object2ObjectOpenHashMap<>();
@@ -26,7 +30,7 @@ public class SimpleResourceManager<T> extends CodecReloadListener<T> {
 
 	public static <T> SimpleResourceManager<T> create(final Codec<T> codec, final Identifier path) {
 		final SimpleResourceManager<T> manager = new SimpleResourceManager<>(codec, path.getNamespace() + "/" + path.getPath());
-		REGISTRY.registerListener(manager);
+		REGISTRY.registerListener(path, manager);
 		return manager;
 	}
 
@@ -73,7 +77,13 @@ public class SimpleResourceManager<T> extends CodecReloadListener<T> {
 	}
 
 	public interface Registry {
-		void registerListener(PreparableReloadListener listener);
+		/**
+		 * Registers a client resource reload listener.
+		 *
+		 * @param id       Unique id of the listener (Fabric orders reload listeners by id)
+		 * @param listener The listener
+		 */
+		void registerListener(Identifier id, PreparableReloadListener listener);
 	}
 
 }

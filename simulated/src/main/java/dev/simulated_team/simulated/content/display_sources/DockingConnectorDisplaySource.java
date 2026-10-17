@@ -3,9 +3,7 @@ package dev.simulated_team.simulated.content.display_sources;
 import com.zurrtum.create.content.redstone.displayLink.DisplayLinkContext;
 import com.zurrtum.create.content.redstone.displayLink.source.SingleLineDisplaySource;
 import com.zurrtum.create.content.redstone.displayLink.target.DisplayTargetStats;
-import com.zurrtum.create.client.foundation.gui.ModularGuiLineBuilder;
 import dev.ryanhcode.sable.Sable;
-import dev.ryanhcode.sable.api.SubLevelHelper;
 import dev.ryanhcode.sable.sublevel.SubLevel;
 import dev.simulated_team.simulated.content.blocks.docking_connector.DockingConnectorBlockEntity;
 import net.minecraft.network.chat.Component;
@@ -32,10 +30,7 @@ public class DockingConnectorDisplaySource extends SingleLineDisplaySource {
         return EMPTY_LINE.copy();
     }
 
-    @Override
-    public void initConfigurationWidgets(final DisplayLinkContext context, final ModularGuiLineBuilder builder, final boolean isFirstLine) {
-        super.initConfigurationWidgets(context, builder, isFirstLine);
-    }
+    // configuration widgets (label only): SimDisplaySourceRenders (client)
 
     @Override
     protected String getTranslationKey() {
@@ -43,7 +38,7 @@ public class DockingConnectorDisplaySource extends SingleLineDisplaySource {
     }
 
     @Override
-    protected boolean allowsLabeling(final DisplayLinkContext context) {
+    public boolean allowsLabeling(final DisplayLinkContext context) {
         return true;
     }
 }

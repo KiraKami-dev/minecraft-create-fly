@@ -27,7 +27,7 @@ public class RopeConnectorBlockEntity extends SmartBlockEntity implements RopeSt
     }
 
     @Override
-    public void addBehaviours(final List<BlockEntityBehaviour> behaviours) {
+    public void addBehaviours(final List<BlockEntityBehaviour<?>> behaviours) {
         behaviours.add(this.ropeHolder = new RopeStrandHolderBehavior(this));
     }
 

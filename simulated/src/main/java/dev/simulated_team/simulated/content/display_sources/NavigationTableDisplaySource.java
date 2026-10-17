@@ -3,10 +3,8 @@ package dev.simulated_team.simulated.content.display_sources;
 import com.zurrtum.create.content.redstone.displayLink.DisplayLinkContext;
 import com.zurrtum.create.content.redstone.displayLink.source.SingleLineDisplaySource;
 import com.zurrtum.create.content.redstone.displayLink.target.DisplayTargetStats;
-import com.zurrtum.create.client.foundation.gui.ModularGuiLineBuilder;
 import dev.simulated_team.simulated.content.blocks.nav_table.NavTableBlockEntity;
 import dev.simulated_team.simulated.content.blocks.nav_table.navigation_target.NavigationTarget;
-import dev.simulated_team.simulated.data.SimLang;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 
@@ -19,7 +17,7 @@ public class NavigationTableDisplaySource extends SingleLineDisplaySource {
 			return EMPTY_LINE.copy();
 		}
 
-		switch (context.sourceConfig().getInt("NavTableSelection")) {
+		switch (context.sourceConfig().getIntOr("NavTableSelection", 0)) {
 			case 0 -> {
 				final NavigationTarget navigationTarget = be.getNavTableItem();
 				if(navigationTarget == null) return EMPTY_LINE.copy();
@@ -52,18 +50,7 @@ public class NavigationTableDisplaySource extends SingleLineDisplaySource {
 		return EMPTY_LINE.copy();
 	}
 
-	@Override
-	public void initConfigurationWidgets(final DisplayLinkContext context, final ModularGuiLineBuilder builder, final boolean isFirstLine) {
-		super.initConfigurationWidgets(context, builder, isFirstLine);
-		if (isFirstLine) {
-			return;
-		}
-
-		builder.addSelectionScrollInput(0, 95, (selectionScrollInput, label) -> {
-			selectionScrollInput.forOptions(SimLang.translatedOptions("display_source.navigation_table",
-					"distance", "eta_real"));
-		}, "NavTableSelection");
-	}
+	// configuration widgets: SimDisplaySourceRenders (client)
 
 	@Override
 	protected String getTranslationKey() {
@@ -71,7 +58,7 @@ public class NavigationTableDisplaySource extends SingleLineDisplaySource {
 	}
 
 	@Override
-	protected boolean allowsLabeling(final DisplayLinkContext context) {
+	public boolean allowsLabeling(final DisplayLinkContext context) {
 		return true;
 	}
 }

@@ -1,9 +1,11 @@
+
 package dev.simulated_team.simulated.content.particle;
 
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.particle.*;
 import net.minecraft.client.renderer.LevelRenderer;
 import net.minecraft.core.BlockPos;
+import net.minecraft.util.RandomSource;
 import net.minecraft.world.phys.Vec3;
 
 public class MagnetFieldParticle extends SimpleAnimatedParticle {
@@ -29,8 +31,9 @@ public class MagnetFieldParticle extends SimpleAnimatedParticle {
             this.setColor(1,0.7f,0.7f);
     }
 
-    public ParticleRenderType getRenderType() {
-        return ParticleRenderType.PARTICLE_SHEET_TRANSLUCENT;
+    @Override
+    public SingleQuadParticle.Layer getLayer() {
+        return SingleQuadParticle.Layer.TRANSLUCENT;
     }
 
     private void dissipate() {
@@ -56,6 +59,7 @@ public class MagnetFieldParticle extends SimpleAnimatedParticle {
 
     }
 
+    @Override
     public int getLightColor(final float partialTick) {
         final BlockPos blockpos = new BlockPos((int) this.x, (int) this.y, (int) this.z);
         return this.level.isLoaded(blockpos) ? LevelRenderer.getLightColor(this.level, blockpos) : 0;
@@ -72,10 +76,10 @@ public class MagnetFieldParticle extends SimpleAnimatedParticle {
             this.spriteSet = animatedSprite;
         }
 
+        @Override
         public Particle createParticle(final MagnetFieldParticleData data, final ClientLevel level, final double x, final double y, final double z,
-                                       final double xSpeed, final double ySpeed, final double zSpeed) {
+                                       final double xSpeed, final double ySpeed, final double zSpeed, final RandomSource random) {
             return new MagnetFieldParticle(level, x, y, z, xSpeed, ySpeed, zSpeed, this.spriteSet, data.isNegative());
         }
     }
 }
-

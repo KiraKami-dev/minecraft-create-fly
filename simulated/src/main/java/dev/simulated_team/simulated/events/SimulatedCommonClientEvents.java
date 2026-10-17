@@ -9,6 +9,7 @@ import dev.simulated_team.simulated.content.blocks.throttle_lever.ThrottleLeverC
 import dev.simulated_team.simulated.content.end_sea.EndSeaRenderer;
 import dev.simulated_team.simulated.content.items.rope.RopeItem.ClientRopeItemHandler;
 import dev.simulated_team.simulated.content.physics_staff.PhysicsStaffRenderHandler;
+import dev.simulated_team.simulated.fabric.events.SimFabricClientEvents;
 import dev.simulated_team.simulated.index.SimClickInteractions;
 import dev.simulated_team.simulated.index.SimKeys;
 import dev.simulated_team.simulated.service.SimConfigService;
@@ -42,6 +43,14 @@ import org.joml.Matrix4fc;
 import java.util.List;
 
 public class SimulatedCommonClientEvents {
+
+    /**
+     * Registers the client event listeners (Fabric API events and the hooks fired from Simulated's client mixins).
+     * Called from the client entrypoint.
+     */
+    public static void register() {
+        SimFabricClientEvents.register();
+    }
 
     /**
      * Called from loader specific implementation of events. Used to call separate onInput inside of client handlers. Can not be cancelled.

@@ -25,18 +25,22 @@ import com.zurrtum.create.catnip.animation.LerpedFloat;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.HolderLookup;
+import net.minecraft.core.RegistryAccess;
+import net.minecraft.core.UUIDUtil;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.NbtUtils;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.Mth;
 import net.minecraft.world.Clearable;
+import net.minecraft.world.Containers;
 import net.minecraft.world.entity.monster.Shulker;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.ShulkerBoxBlock;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.NotNull;
@@ -88,7 +92,7 @@ public class DockingConnectorBlockEntity extends SmartBlockEntity implements Sim
     }
 
     @Override
-    public void addBehaviours(final List<BlockEntityBehaviour> behaviours) {
+    public void addBehaviours(final List<BlockEntityBehaviour<?>> behaviours) {
         this.magnetBehaviour = new MagnetBehaviour(this, MAGNET_CONTROLLER);
         behaviours.add(this.magnetBehaviour);
     }
@@ -273,7 +277,7 @@ public class DockingConnectorBlockEntity extends SmartBlockEntity implements Sim
         }
 
         // connection in the same block grid
-        final BlockPos sameGridConnection = this.getBlockPos().offset(direction.getNormal().multiply(3));
+        final BlockPos sameGridConnection = this.getBlockPos().offset(direction.getUnitVec3i().multiply(3));
 
         if (this.isExtended() && this.level.getBlockEntity(sameGridConnection) instanceof final DockingConnectorBlockEntity other) {
             if (other.getBlockState().getValue(BlockStateProperties.FACING).getOpposite() == direction && other.isExtended()) {
@@ -436,51 +440,56 @@ public class DockingConnectorBlockEntity extends SmartBlockEntity implements Sim
     }
 
     @Override
-    protected void write(final CompoundTag tag, final HolderLookup.Provider registries, final boolean clientPacket) {
-        tag.putBoolean("IsPowered", this.powered);
-        tag.putFloat("Extension", this.extension.getValue());
-        tag.putFloat("Target", this.extension.getChaseTarget());
-        tag.putFloat("Feet", this.feet.getValue());
+    protected void write(final ValueOutput view, final boolean clientPacket) {
+        view.putBoolean("IsPowered", this.powered);
+        view.putFloat("Extension", this.extension.getValue());
+        view.putFloat("Target", this.extension.getChaseTarget());
+        view.putFloat("Feet", this.feet.getValue());
 
         if (this.otherConnectorPosition != null) {
-            tag.put("OtherConnector", NbtUtils.writeBlockPos(this.otherConnectorPosition));
+            view.store("OtherConnector", BlockPos.CODEC, this.otherConnectorPosition);
         }
 
         if (this.otherConnectorSubLevelId != null) {
-            tag.putUUID("OtherConnectorSubLevelId", this.otherConnectorSubLevelId);
+            view.store("OtherConnectorSubLevelId", UUIDUtil.CODEC, this.otherConnectorSubLevelId);
         }
 
-        tag.put("Inventory", this.inventory.write(registries));
-        tag.put("Tank", this.tank.write());
-        tag.put("Battery", this.battery.write());
-        super.write(tag, registries, clientPacket);
+        // the multiloader containers still serialize to CompoundTag; ValueOutput has no registry lookup of its own
+        final HolderLookup.Provider registries = this.level != null ? this.level.registryAccess() : RegistryAccess.EMPTY;
+        view.store("Inventory", CompoundTag.CODEC, this.inventory.write(registries));
+        view.store("Tank", CompoundTag.CODEC, this.tank.write());
+        view.store("Battery", CompoundTag.CODEC, this.battery.write());
+        super.write(view, clientPacket);
     }
 
     @Override
-    protected void read(final CompoundTag tag, final HolderLookup.Provider registries, final boolean clientPacket) {
-        this.powered = tag.getBoolean("IsPowered");
-        this.extension.setValue(tag.getFloat("Extension"));
-        this.extension.updateChaseTarget(tag.getFloat("Target"));
-        this.feet.setValue(tag.getFloat("Feet"));
+    protected void read(final ValueInput view, final boolean clientPacket) {
+        this.powered = view.getBooleanOr("IsPowered", false);
+        this.extension.setValue(view.getFloatOr("Extension", 0));
+        this.extension.updateChaseTarget(view.getFloatOr("Target", 0));
+        this.feet.setValue(view.getFloatOr("Feet", 0));
 
         // ensure current = old value for visual lerping
         this.extension.setValue(this.extension.getValue());
         this.feet.setValue(this.feet.getValue());
 
-        if (tag.contains("OtherConnector")) {
-            this.otherConnectorPosition = NbtUtils.readBlockPos(tag, "OtherConnector").orElse(null);
-        } else {
-            this.otherConnectorPosition = null;
-        }
+        this.otherConnectorPosition = view.read("OtherConnector", BlockPos.CODEC).orElse(null);
 
-        if (tag.contains("OtherConnectorSubLevelId")) {
-            this.otherConnectorSubLevelId = tag.getUUID("OtherConnectorSubLevelId");
-        }
+        view.read("OtherConnectorSubLevelId", UUIDUtil.CODEC).ifPresent(id -> this.otherConnectorSubLevelId = id);
 
-        this.inventory.read(registries, tag.getCompound("Inventory"));
-        this.tank.read(tag.getCompound("Tank"));
-        this.battery.read(tag.getCompound("Battery"));
-        super.read(tag, registries, clientPacket);
+        this.inventory.read(view.lookup(), view.read("Inventory", CompoundTag.CODEC).orElseGet(CompoundTag::new));
+        this.tank.read(view.read("Tank", CompoundTag.CODEC).orElseGet(CompoundTag::new));
+        this.battery.read(view.read("Battery", CompoundTag.CODEC).orElseGet(CompoundTag::new));
+        super.read(view, clientPacket);
+    }
+
+    @Override
+    public void preRemoveSideEffects(final BlockPos pos, final BlockState oldState) {
+        super.preRemoveSideEffects(pos, oldState);
+        // upstream: DockingConnectorBlock.onRemove when the block changed
+        if (this.level != null) {
+            Containers.dropContents(this.level, pos, this.inventory);
+        }
     }
 
     @Override
@@ -514,18 +523,18 @@ public class DockingConnectorBlockEntity extends SmartBlockEntity implements Sim
 
     @Override
     public Vector3d setMagneticMoment(final Vector3d v) {
-        v.set(JOMLConversion.toJOML(Vec3.atLowerCornerOf(this.getBlockState().getValue(DockingConnectorBlock.FACING).getNormal())));
+        v.set(JOMLConversion.toJOML(Vec3.atLowerCornerOf(this.getBlockState().getValue(DockingConnectorBlock.FACING).getUnitVec3i())));
         v.mul(Math.sqrt(SimConfigService.INSTANCE.server().physics.dockingConnectorStrength.get()));
         return v;
     }
 
     @Override
     public Vec3 getMagnetPosition() {
-        return Vec3.atCenterOf(this.getBlockPos()).add(Vec3.atLowerCornerOf(this.getBlockState().getValue(RedstoneMagnetBlock.FACING).getNormal()).scale(1.4));
+        return Vec3.atCenterOf(this.getBlockPos()).add(Vec3.atLowerCornerOf(this.getBlockState().getValue(RedstoneMagnetBlock.FACING).getUnitVec3i()).scale(1.4));
     }
 
     public Vec3 getTipPosition() {
-        return Vec3.atCenterOf(this.getBlockPos()).add(Vec3.atLowerCornerOf(this.getBlockState().getValue(RedstoneMagnetBlock.FACING).getNormal()).scale(1.5));
+        return Vec3.atCenterOf(this.getBlockPos()).add(Vec3.atLowerCornerOf(this.getBlockState().getValue(RedstoneMagnetBlock.FACING).getUnitVec3i()).scale(1.5));
     }
 
     @Override
@@ -534,7 +543,8 @@ public class DockingConnectorBlockEntity extends SmartBlockEntity implements Sim
     }
 
     public AABB getBoundingBox(final BlockState state) {
-        return Shulker.getProgressAabb(1, state.getValue(ShulkerBoxBlock.FACING), this.getExtensionDistance(1.0F));
+        // 1.21.11 builds the box around (0, 0, 0) and moves it by the last argument; (0.5, 0, 0.5) gives the old 0..1 box
+        return Shulker.getProgressAabb(1, state.getValue(ShulkerBoxBlock.FACING), this.getExtensionDistance(1.0F), new Vec3(0.5, 0.0, 0.5));
     }
 
     @Override

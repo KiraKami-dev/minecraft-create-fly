@@ -12,13 +12,16 @@ import dev.simulated_team.simulated.index.SimBlockEntityTypes;
 import dev.simulated_team.simulated.index.SimClickInteractions;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.resources.Identifier;
+import net.minecraft.tags.TagKey;
 import net.minecraft.util.StringRepresentable;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.DyeColor;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.crafting.Ingredient;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelReader;
@@ -26,10 +29,10 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.DirectionalBlock;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.redstone.Orientation;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.VoxelShape;
-import net.neoforged.neoforge.common.Tags;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Locale;
@@ -102,16 +105,15 @@ public class HandleBlock extends AbstractDirectionalAxisBlock implements IBE<Han
     }
 
     @Override
-    public void neighborChanged(final BlockState state, final Level worldIn, final BlockPos pos, final Block blockIn, final BlockPos fromPos,
+    public void neighborChanged(final BlockState state, final Level worldIn, final BlockPos pos, final Block blockIn, @Nullable final Orientation orientation,
                                 final boolean isMoving) {
         if (worldIn.isClientSide())
             return;
 
-        final Direction blockFacing = state.getValue(FACING);
-        if (fromPos.equals(pos.relative(blockFacing.getOpposite()))) {
-            if (!this.canSurvive(state, worldIn, pos)) {
-                worldIn.destroyBlock(pos, true);
-            }
+        // 1.21.11 no longer passes the neighbour position (upstream only checked when the block behind changed);
+        // survival only depends on that block, so checking on every neighbour update is equivalent
+        if (!this.canSurvive(state, worldIn, pos)) {
+            worldIn.destroyBlock(pos, true);
         }
     }
 
@@ -126,7 +128,7 @@ public class HandleBlock extends AbstractDirectionalAxisBlock implements IBE<Han
     }
 
     @Override
-    protected int getAnalogOutputSignal(final BlockState state, final Level level, final BlockPos pos) {
+    protected int getAnalogOutputSignal(final BlockState state, final Level level, final BlockPos pos, final Direction direction) {
         if (level.getBlockEntity(pos) instanceof final HandleBlockEntity be) {
             return be.hasPlayer() ? 15 : 0;
         }
@@ -162,14 +164,19 @@ public class HandleBlock extends AbstractDirectionalAxisBlock implements IBE<Han
 
 
     public enum Variant implements StringRepresentable {
-        IRON(Ingredient.of(Tags.Items.NUGGETS_IRON)),
-        COPPER(Ingredient.of(AllTags.commonItemTag("nuggets/copper"))),
+        // Was an Ingredient (datagen recipes only); 1.21.11 ingredients need a registry lookup, so keep the tag
+        IRON(commonItemTag("nuggets/iron")),
+        COPPER(commonItemTag("nuggets/copper")),
         DYED(null);
 
-        @Nullable final Ingredient ingredient;
+        @Nullable final TagKey<Item> ingredient;
 
-        Variant(@Nullable final Ingredient ingredient) {
+        Variant(@Nullable final TagKey<Item> ingredient) {
             this.ingredient = ingredient;
+        }
+
+        private static TagKey<Item> commonItemTag(final String path) {
+            return TagKey.create(Registries.ITEM, Identifier.fromNamespaceAndPath("c", path));
         }
 
         @Override
@@ -177,7 +184,7 @@ public class HandleBlock extends AbstractDirectionalAxisBlock implements IBE<Han
             return this.name().toLowerCase(Locale.ROOT);
         }
 
-        public @Nullable Ingredient getIngredient() {
+        public @Nullable TagKey<Item> getIngredientTag() {
             return this.ingredient;
         }
     }
