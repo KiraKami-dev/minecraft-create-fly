@@ -16,7 +16,7 @@ import org.jetbrains.annotations.NotNull;
 import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
 
-public class LaserBehaviour extends BlockEntityBehaviour {
+public class LaserBehaviour extends BlockEntityBehaviour<SmartBlockEntity> {
     private static final BehaviourType<LaserBehaviour> TYPE = new BehaviourType<>();
 
     /**
@@ -105,8 +105,8 @@ public class LaserBehaviour extends BlockEntityBehaviour {
                 this.entityHitResult = null;
             }
 
-            if (this.entityHitResult != null && Sable.HELPER.distanceSquaredWithSubLevels(this.getWorld(), positions.getFirst(), this.entityHitResult.getLocation())
-                    < Sable.HELPER.distanceSquaredWithSubLevels(this.getWorld(), positions.getFirst(), this.blockHitResult.getLocation())) {
+            if (this.entityHitResult != null && Sable.HELPER.distanceSquaredWithSubLevels(this.getLevel(), positions.getFirst(), this.entityHitResult.getLocation())
+                    < Sable.HELPER.distanceSquaredWithSubLevels(this.getLevel(), positions.getFirst(), this.blockHitResult.getLocation())) {
                 this.closestHitResult = this.entityHitResult;
             } else {
                 this.closestHitResult = this.blockHitResult;

@@ -2,6 +2,7 @@ package dev.simulated_team.simulated.content.blocks.lasers.optical_sensor;
 
 import com.zurrtum.create.content.redstone.DirectedDirectionalBlock;
 import com.zurrtum.create.foundation.block.IBE;
+import com.zurrtum.create.foundation.block.RedStoneConnectBlock;
 import dev.simulated_team.simulated.index.SimBlockEntityTypes;
 import dev.simulated_team.simulated.multiloader.CommonRedstoneBlock;
 import net.minecraft.core.BlockPos;
@@ -25,8 +26,9 @@ import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.BooleanProperty;
 import net.minecraft.world.phys.BlockHitResult;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
-public class OpticalSensorBlock extends DirectedDirectionalBlock implements IBE<OpticalSensorBlockEntity>, CommonRedstoneBlock  {
+public class OpticalSensorBlock extends DirectedDirectionalBlock implements IBE<OpticalSensorBlockEntity>, CommonRedstoneBlock, RedStoneConnectBlock {
 
     public static final BooleanProperty POWERED = BlockStateProperties.POWERED;
 
@@ -76,11 +78,8 @@ public class OpticalSensorBlock extends DirectedDirectionalBlock implements IBE<
     }
 
     @Override
-    public void onRemove(final BlockState state, final @NotNull Level level, final @NotNull BlockPos pos, final @NotNull BlockState newState, final boolean isMoving) {
-        if (state.hasBlockEntity() && state.getBlock() != newState.getBlock()) {
-            IBE.onRemove(state, level, pos, newState);
-            level.removeBlockEntity(pos);
-        }
+    public boolean canConnectRedstone(final BlockState state, @Nullable final Direction side) {
+        return this.commonConnectRedstone(state, null, null, side);
     }
 
     @Override
