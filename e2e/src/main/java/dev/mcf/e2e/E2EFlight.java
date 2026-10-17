@@ -27,7 +27,8 @@ import static dev.mcf.e2e.gametest.SimulatedTestHelper.plotBlockEntity;
 /**
  * The {@code flight} client scene ({@code -De2e.scene=flight}): the propeller-bearing airship of
  * {@code AeronauticsPropellerTest} built 9 blocks in front of the camera, assembled with its physics assembler and
- * started at 256 RPM a second later (reversed if it has not climbed after 3 s). Server side; {@link E2EClient} takes the
+ * started at 256 RPM a second later (reversed if it has not climbed after 3 s; with
+ * this build -256 RPM is the lifting direction, as upstream: see docs/p2-notes/aero-propeller.md). Server side; {@link E2EClient} takes the
  * screenshots. Aeronautics blocks are looked up by id so this compiles without the aero source set.
  */
 final class E2EFlight {

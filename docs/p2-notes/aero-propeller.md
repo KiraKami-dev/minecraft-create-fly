@@ -102,3 +102,13 @@ the gyroscopic bearing's tilt, and whose renderer lerps `entity.angle` instead o
 - Test now asserts 11 plot blocks + 9 blocks in `getMovedContraption().getContraption().getBlocks()`, adds a
   20-tick no-power control (|dy| <= 0.2 at 0 RPM) before starting the motor, and still requires > 1 block lift.
 - Test made required; passed 5/5 runs.
+
+## Thrust sign (thrust-check): +RPM pushes down on an up-facing bearing = upstream behaviour
+- Force: `BlockEntitySubLevelPropellerActor.applyForces` (sable/.../api/block/propeller/, l.29-38) applies
+  `facing * getScaledThrust()`; `BlockEntityPropeller.getScaledThrust` (l.40-41) is `-getThrust() * airflowScaling *
+  pressure`. Both identical to `reference/sable-1.21.1/common/...` (only `getNormal`->`getUnitVec3i`).
+- `PropellerBearingBlockEntity.getThrust/getDirectionIndependentSpeed` (l.150-167): `facingStep * clampedRotationRate *
+  10/3 * (option==LEFT_HANDED ? -1 : 1)`; rotation rate = `convertToAngular(getSpeed())`. Line-identical to upstream.
+- Creative motor facing UP at +256 -> bearing (facing UP) speed +256 (coaxial, no flip; Create Fly = Create 6) ->
+  getThrust > 0 -> force = UP * (-thrust) = down. Default option RIGHT_HANDED ("pull_when_clockwise").
+  So -256 RPM (or wrenching the bearing to LEFT_HANDED) lifts, in upstream too. No mod change.

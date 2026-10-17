@@ -20,8 +20,9 @@ import static dev.mcf.e2e.gametest.SimulatedTestHelper.*;
  * Propeller thrust (ROADMAP T2, Aeronautics): a propeller bearing with sails ("blades") driven by a creative motor on
  * an assembled ship lifts it. Built only with {@code -Pe2eAero} (see e2e/build.gradle).
  *
- * <p>The thrust direction of this build was never observed on the port, so the test does not assume it: if the rotor
- * pushes the ship into the floor at +256 RPM, it reverses the motor and then requires the lift.
+ * <p>With the bearing facing up and the default thrust option (pull_when_clockwise), +256 RPM pushes the ship down
+ * and -256 RPM lifts it. That is upstream behaviour, not a port bug (Sable's {@code getScaledThrust} negates the
+ * thrust; see docs/p2-notes/aero-propeller.md). The test still tries +256 first and reverses if the ship sinks.
  */
 public final class AeronauticsPropellerTest {
 
