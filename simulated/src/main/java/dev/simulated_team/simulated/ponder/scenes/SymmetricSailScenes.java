@@ -654,7 +654,7 @@ public class SymmetricSailScenes {
                 .withItem(new ItemStack(Items.BLUE_DYE));
         scene.idle(7);
         scene.world().setBlock(util.grid().at(2, 3, 3), SimBlocks.DYED_SYMMETRIC_SAILS.get(DyeColor.BLUE)
-                .getDefaultState()
+                .defaultBlockState()
                 .setValue(SymmetricSailBlock.AXIS, Direction.Axis.X), false);
         scene.idle(10);
         scene.overlay().showText(40)
@@ -668,7 +668,7 @@ public class SymmetricSailScenes {
                 .withItem(new ItemStack(Items.BLUE_DYE));
         scene.idle(7);
         scene.world().replaceBlocks(util.select().fromTo(2, 2, 3, 2, 4, 3), SimBlocks.DYED_SYMMETRIC_SAILS.get(DyeColor.BLUE)
-                .getDefaultState()
+                .defaultBlockState()
                 .setValue(SymmetricSailBlock.AXIS, Direction.Axis.X), false);
 
         scene.idle(20);
