@@ -20,6 +20,7 @@ split), then finished the potato cannon and the client registration. 0 compile e
 
 ## Renderers / visuals (registration: aero-core)
 All renderer ctors are `(BlockEntityRendererProvider.Context)`; BE ctors stay `(BlockEntityType, BlockPos, BlockState)`.
+
 | BE / entity | renderer | visual | BER with Flywheel on? |
 |---|---|---|---|
 | `PROPELLER_BEARING` | `PropellerBearingRenderer` | `PropellerBearingVisual::new` | either (BER draws nothing then) |
