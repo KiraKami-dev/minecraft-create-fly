@@ -1,61 +1,42 @@
 package dev.simulated_team.simulated.content.blocks.torsion_spring;
 
-import com.google.common.collect.ImmutableList;
-import com.mojang.blaze3d.vertex.PoseStack;
+import com.zurrtum.create.api.behaviour.BlockEntityBehaviour;
 import com.zurrtum.create.content.kinetics.base.GeneratingKineticBlockEntity;
 import com.zurrtum.create.content.kinetics.base.IRotate;
 import com.zurrtum.create.content.kinetics.base.KineticBlockEntity;
 import com.zurrtum.create.content.kinetics.transmission.sequencer.SequencedGearshiftBlockEntity;
 import com.zurrtum.create.content.kinetics.transmission.sequencer.SequencerInstructions;
-import com.zurrtum.create.foundation.blockEntity.SmartBlockEntity;
-import com.zurrtum.create.api.behaviour.BlockEntityBehaviour;
-import com.zurrtum.create.client.foundation.blockEntity.behaviour.ValueBoxTransform;
-import com.zurrtum.create.client.foundation.blockEntity.ValueSettingsBoard;
-import com.zurrtum.create.client.foundation.blockEntity.ValueSettingsFormatter;
-import com.zurrtum.create.client.foundation.blockEntity.behaviour.scrollValue.ScrollValueBehaviour;
-import com.zurrtum.create.client.foundation.utility.CreateLang;
+import com.zurrtum.create.foundation.blockEntity.behaviour.scrollValue.ServerScrollValueBehaviour;
 import com.zurrtum.create.infrastructure.config.AllConfigs;
-import com.zurrtum.create.client.flywheel.lib.transform.TransformStack;
-import dev.simulated_team.simulated.data.SimLang;
 import dev.simulated_team.simulated.data.advancements.SimAdvancements;
 import dev.simulated_team.simulated.mixin_interface.extra_kinetics.KineticBlockEntityExtension;
 import dev.simulated_team.simulated.util.extra_kinetics.ExtraBlockPos;
 import dev.simulated_team.simulated.util.extra_kinetics.ExtraKinetics;
-import com.zurrtum.create.catnip.math.AngleHelper;
-import com.zurrtum.create.catnip.math.VecHelper;
-import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.core.HolderLookup;
-import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.util.Mth;
-import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.LevelReader;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.phys.BlockHitResult;
-import net.minecraft.world.phys.Vec3;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
 
 import java.util.List;
 
+/**
+ * The angle limit value box (client half) is {@link TorsionSpringScrollValueBehaviour}.
+ */
 public class TorsionSpringBlockEntity extends KineticBlockEntity implements ExtraKinetics {
     private final Output springOutput;
-    public ScrollValueBehaviour angleInput;
+    public ServerScrollValueBehaviour angleInput;
     protected double sequencedAngleLimit;
 
     public TorsionSpringBlockEntity(final BlockEntityType<?> blockEntityType, final BlockPos blockPos, final BlockState blockState) {
         super(blockEntityType, blockPos, blockState);
         this.springOutput = new Output(blockEntityType, new ExtraBlockPos(blockPos), blockState, this);
         this.sequencedAngleLimit = -1;
-    }
-
-    @Override
-    public boolean addToGoggleTooltip(final List<Component> tooltip, final boolean isPlayerSneaking) {
-        return super.addToGoggleTooltip(tooltip, isPlayerSneaking);
     }
 
     public boolean isSpringStatic() {
@@ -79,13 +60,16 @@ public class TorsionSpringBlockEntity extends KineticBlockEntity implements Extr
     }
 
     @Override
-    public void addBehaviours(final List<BlockEntityBehaviour> behaviours) {
+    public void addBehaviours(final List<BlockEntityBehaviour<?>> behaviours) {
         super.addBehaviours(behaviours);
-        behaviours.add(this.angleInput = new TorsionSpringScrollValueBehaviour(this).between(1, 360));
-        this.angleInput.onlyActiveWhen(this::showValue);
+        this.angleInput = new ServerScrollValueBehaviour(this).between(1, 360);
+        behaviours.add(this.angleInput);
         this.angleInput.setValue(90);
     }
 
+    /**
+     * Whether the angle limit value box is shown (client side, {@link TorsionSpringScrollValueBehaviour})
+     */
     public boolean showValue() {
         return true;
     }
@@ -133,17 +117,17 @@ public class TorsionSpringBlockEntity extends KineticBlockEntity implements Extr
     }
 
     @Override
-    protected void write(final CompoundTag compound, final HolderLookup.Provider registries, final boolean clientPacket) {
-        super.write(compound, registries, clientPacket);
+    protected void write(final ValueOutput view, final boolean clientPacket) {
+        super.write(view, clientPacket);
 
         if (this.sequencedAngleLimit >= 0)
-            compound.putDouble("SequencedAngleLimit", this.sequencedAngleLimit);
+            view.putDouble("SequencedAngleLimit", this.sequencedAngleLimit);
     }
 
     @Override
-    protected void read(final CompoundTag compound, final HolderLookup.Provider registries, final boolean clientPacket) {
-        super.read(compound, registries, clientPacket);
-        this.sequencedAngleLimit = compound.contains("SequencedAngleLimit") ? compound.getDouble("SequencedAngleLimit") : -1;
+    protected void read(final ValueInput view, final boolean clientPacket) {
+        super.read(view, clientPacket);
+        this.sequencedAngleLimit = view.getDoubleOr("SequencedAngleLimit", -1);
     }
 
     public static class Output extends GeneratingKineticBlockEntity implements ExtraKineticsBlockEntity {
@@ -186,7 +170,8 @@ public class TorsionSpringBlockEntity extends KineticBlockEntity implements Extr
 
         @Override
         public Component getKey() {
-            return SimLang.translate("extra_kinetics.torsion_output").component();
+            // SimLang (catnip LangBuilder) is client-only on Create Fly
+            return Component.translatable("simulated.extra_kinetics.torsion_output");
         }
 
         @Override
@@ -351,37 +336,36 @@ public class TorsionSpringBlockEntity extends KineticBlockEntity implements Extr
         }
 
         @Override
-        protected void write(final CompoundTag compound, final HolderLookup.Provider registries, final boolean clientPacket) {
-            super.write(compound, registries, clientPacket);
-            compound.putDouble("OldAngle", this.oldAngle);
-            compound.putDouble("Angle", this.angle);
-            compound.putDouble("TargetAngle", this.targetAngle);
-            compound.putFloat("LastSpringSpeed", this.lastSpringSpeed);
-            compound.putInt("CurrentState", this.currentState.ordinal());
-            compound.putInt("RotationProgressTicks", this.rotationProgressTicks);
-            compound.putInt("RotationDurationTicks", this.rotationDurationTicks);
-            compound.putFloat("GeneratedSpeed", this.generatedSpeed);
-            compound.putFloat("QueuedSpeed", this.queuedSpeed);
+        protected void write(final ValueOutput view, final boolean clientPacket) {
+            super.write(view, clientPacket);
+            view.putDouble("OldAngle", this.oldAngle);
+            view.putDouble("Angle", this.angle);
+            view.putDouble("TargetAngle", this.targetAngle);
+            view.putFloat("LastSpringSpeed", this.lastSpringSpeed);
+            view.putInt("CurrentState", this.currentState.ordinal());
+            view.putInt("RotationProgressTicks", this.rotationProgressTicks);
+            view.putInt("RotationDurationTicks", this.rotationDurationTicks);
+            view.putFloat("GeneratedSpeed", this.generatedSpeed);
+            view.putFloat("QueuedSpeed", this.queuedSpeed);
 
             if (this.sequencedAngleLimit >= 0)
-                compound.putDouble("SequencedAngleLimit", this.sequencedAngleLimit);
+                view.putDouble("SequencedAngleLimit", this.sequencedAngleLimit);
         }
 
         @Override
-        protected void read(final CompoundTag compound, final HolderLookup.Provider registries, final boolean clientPacket) {
-            super.read(compound, registries, clientPacket);
-            this.oldAngle = compound.getDouble("OldAngle");
-            this.angle = compound.getDouble("Angle");
-            this.targetAngle = compound.getDouble("TargetAngle");
-            this.lastSpringSpeed = compound.getFloat("LastSpringSpeed");
-            this.sequencedAngleLimit = compound.contains("SequencedAngleLimit") ? compound.getDouble("SequencedAngleLimit") : -1;
-            this.rotationProgressTicks = compound.getInt("RotationProgressTicks");
-            this.rotationDurationTicks = compound.getInt("RotationDurationTicks");
-            this.generatedSpeed = compound.getFloat("GeneratedSpeed");
-            this.queuedSpeed = compound.getFloat("QueuedSpeed");
+        protected void read(final ValueInput view, final boolean clientPacket) {
+            super.read(view, clientPacket);
+            this.oldAngle = view.getDoubleOr("OldAngle", 0);
+            this.angle = view.getDoubleOr("Angle", 0);
+            this.targetAngle = view.getDoubleOr("TargetAngle", 0);
+            this.lastSpringSpeed = view.getFloatOr("LastSpringSpeed", 0);
+            this.sequencedAngleLimit = view.getDoubleOr("SequencedAngleLimit", -1);
+            this.rotationProgressTicks = view.getIntOr("RotationProgressTicks", 0);
+            this.rotationDurationTicks = view.getIntOr("RotationDurationTicks", 0);
+            this.generatedSpeed = view.getFloatOr("GeneratedSpeed", 0);
+            this.queuedSpeed = view.getFloatOr("QueuedSpeed", 0);
 
-            if (compound.contains("CurrentState"))
-                this.currentState = State.values()[compound.getInt("CurrentState")];
+            view.getInt("CurrentState").ifPresent(state -> this.currentState = State.values()[state]);
         }
 
         @Override
@@ -392,62 +376,6 @@ public class TorsionSpringBlockEntity extends KineticBlockEntity implements Extr
         private enum State {
             STOPPED,
             TURNING
-        }
-    }
-
-    public static class TorsionSpringScrollValueBehaviour extends ScrollValueBehaviour {
-
-        public TorsionSpringScrollValueBehaviour(final SmartBlockEntity be) {
-            super(SimLang.translate("torsion_spring.angle_limit").component(), be, new TorsionSpringValueBox());
-            this.withFormatter(v -> Math.max(1, v) + CreateLang.translateDirect("generic.unit.degrees")
-                    .getString());
-        }
-
-        @Override
-        public ValueSettingsBoard createBoard(final Player player, final BlockHitResult hitResult) {
-            return new ValueSettingsBoard(this.label, 360, 45, ImmutableList.of(Component.literal("\u27f3").withStyle(ChatFormatting.BOLD)), new ValueSettingsFormatter(this::formatValue));
-        }
-
-        public MutableComponent formatValue(final ValueSettings settings) {
-            return SimLang.number(Math.max(1, settings.value()))
-                    .add(CreateLang.translateDirect("generic.unit.degrees"))
-                    .component();
-        }
-    }
-
-    public static class TorsionSpringValueBox extends ValueBoxTransform.Sided {
-        @Override
-        protected Vec3 getSouthLocation() {
-            return VecHelper.voxelSpace(8, 8, 15.5);
-        }
-
-        @Override
-        public Vec3 getLocalOffset(final LevelAccessor level, final BlockPos pos, final BlockState state) {
-            return super.getLocalOffset(level, pos, state)
-                    .add(Vec3.atLowerCornerOf(state.getValue(TorsionSpringBlock.FACING).getNormal()).scale(-5 / 16f));
-        }
-
-        @Override
-        public void rotate(final LevelAccessor level, final BlockPos pos, final BlockState state, final PoseStack ms) {
-            if (!this.getSide().getAxis().isHorizontal()) {
-                TransformStack.of(ms)
-                        .rotateY((AngleHelper.horizontalAngle(state.getValue(TorsionSpringBlock.FACING)) + 180) * (float) Math.PI / 180);
-            }
-            super.rotate(level, pos, state, ms);
-        }
-
-        @Override
-        public boolean testHit(final LevelAccessor level, final BlockPos pos, final BlockState state, final Vec3 localHit) {
-            final Vec3 offset = this.getLocalOffset(level, pos, state);
-            if (offset == null) {
-                return false;
-            }
-            return localHit.distanceTo(offset) < this.scale / 1.5f;
-        }
-
-        @Override
-        protected boolean isSideActive(final BlockState state, final Direction direction) {
-            return direction.getAxis() != state.getValue(TorsionSpringBlock.FACING).getAxis();
         }
     }
 }

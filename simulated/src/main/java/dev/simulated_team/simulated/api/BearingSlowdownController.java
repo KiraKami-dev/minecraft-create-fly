@@ -6,6 +6,8 @@ import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
 
 import java.util.Map;
 
@@ -203,11 +205,24 @@ public class BearingSlowdownController {
     }
 
     public void deserializeFromNBT(final CompoundTag nbt) {
-        this.countdown = nbt.getFloat("CurrentTime");
-        this.maxTime = nbt.getFloat("DisassemblyTimerTotal");
-        this.symmetry = ContraptionSymmetry.values()[nbt.getInt("Symmetry")];
-        this.initialAngle = nbt.getFloat("InitialSlowdownAngle");
-        this.initialVelocity = nbt.getFloat("InitialSlowdownVelocity");
+        this.countdown = nbt.getFloatOr("CurrentTime", 0);
+        this.maxTime = nbt.getFloatOr("DisassemblyTimerTotal", 0);
+        this.symmetry = ContraptionSymmetry.values()[nbt.getIntOr("Symmetry", 0)];
+        this.initialAngle = nbt.getFloatOr("InitialSlowdownAngle", 0);
+        this.initialVelocity = nbt.getFloatOr("InitialSlowdownVelocity", 0);
+        this.generateConstants();
+        this.applyVelocityClamping();
+    }
+
+    /**
+     * Same keys as {@link #deserializeFromNBT(CompoundTag)}, for block entities loading through {@link ValueInput}.
+     */
+    public void deserialize(final ValueInput view) {
+        this.countdown = view.getFloatOr("CurrentTime", 0);
+        this.maxTime = view.getFloatOr("DisassemblyTimerTotal", 0);
+        this.symmetry = ContraptionSymmetry.values()[view.getIntOr("Symmetry", 0)];
+        this.initialAngle = view.getFloatOr("InitialSlowdownAngle", 0);
+        this.initialVelocity = view.getFloatOr("InitialSlowdownVelocity", 0);
         this.generateConstants();
         this.applyVelocityClamping();
     }
@@ -218,6 +233,17 @@ public class BearingSlowdownController {
         nbt.putInt("Symmetry", this.symmetry.ordinal());
         nbt.putFloat("InitialSlowdownAngle", this.initialAngle);
         nbt.putFloat("InitialSlowdownVelocity", this.getInitialVelocity());
+    }
+
+    /**
+     * Same keys as {@link #serializeIntoNBT(CompoundTag)}, for block entities saving through {@link ValueOutput}.
+     */
+    public void serialize(final ValueOutput view) {
+        view.putFloat("CurrentTime", this.countdown);
+        view.putFloat("DisassemblyTimerTotal", this.getMaxTime());
+        view.putInt("Symmetry", this.symmetry.ordinal());
+        view.putFloat("InitialSlowdownAngle", this.initialAngle);
+        view.putFloat("InitialSlowdownVelocity", this.getInitialVelocity());
     }
 
     public float getMaxTime() {

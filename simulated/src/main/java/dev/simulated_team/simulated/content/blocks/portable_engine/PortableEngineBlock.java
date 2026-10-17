@@ -1,6 +1,7 @@
 package dev.simulated_team.simulated.content.blocks.portable_engine;
 
 import com.zurrtum.create.AllItems;
+import com.zurrtum.create.catnip.data.Couple;
 import com.zurrtum.create.content.kinetics.base.HorizontalKineticBlock;
 import com.zurrtum.create.foundation.block.IBE;
 import com.zurrtum.create.foundation.utility.BlockHelper;
@@ -12,12 +13,10 @@ import dev.simulated_team.simulated.index.SimStats;
 import dev.simulated_team.simulated.multiloader.inventory.ContainerSlot;
 import dev.simulated_team.simulated.multiloader.inventory.ItemInfoWrapper;
 import dev.simulated_team.simulated.service.SimItemService;
-import com.zurrtum.create.catnip.data.Couple;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
-import net.minecraft.world.Containers;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
@@ -61,16 +60,13 @@ public class PortableEngineBlock extends HorizontalKineticBlock implements IBE<P
         super.createBlockStateDefinition(builder);
     }
 
+    /**
+     * Upstream onRemove kept the block entity when the engine was dyed into another portable engine. The fuel drop
+     * when it is really removed is {@link PortableEngineBlockEntity#preRemoveSideEffects}.
+     */
     @Override
-    public void onRemove(final BlockState state, final Level level, final BlockPos pos, final BlockState newState, final boolean isMoving) {
-        if (state.hasBlockEntity() && !SimBlocks.PORTABLE_ENGINES.contains(newState.getBlock())) {
-            final PortableEngineBlockEntity be = (PortableEngineBlockEntity) level.getBlockEntity(pos);
-
-            if (be != null && !be.inventory.isEmpty())
-                Containers.dropItemStack(level, pos.getX(), pos.getY(), pos.getZ(), be.inventory.getItem(0));
-
-            level.removeBlockEntity(pos);
-        }
+    protected boolean shouldChangedStateKeepBlockEntity(final BlockState oldState) {
+        return SimBlockEntityTypes.PORTABLE_ENGINE.isValid(oldState);
     }
 
     @Override
@@ -111,7 +107,7 @@ public class PortableEngineBlock extends HorizontalKineticBlock implements IBE<P
             if (!level.isClientSide())
                 level.playSound(null, blockPos, SoundEvents.DYE_USE, SoundSource.BLOCKS, 1.0f, 1.1f - level.random.nextFloat() * .2f);
 
-            final BlockState newState = BlockHelper.copyProperties(blockState, SimBlocks.PORTABLE_ENGINES.get(color).getDefaultState());
+            final BlockState newState = BlockHelper.copyProperties(blockState, SimBlocks.PORTABLE_ENGINES.get(color).defaultBlockState());
             level.setBlockAndUpdate(blockPos, newState);
 
             return InteractionResult.SUCCESS;
@@ -186,7 +182,7 @@ public class PortableEngineBlock extends HorizontalKineticBlock implements IBE<P
     }
 
     @Override
-    public int getAnalogOutputSignal(final BlockState pState, final Level pLevel, final BlockPos pPos) {
+    public int getAnalogOutputSignal(final BlockState pState, final Level pLevel, final BlockPos pPos, final Direction direction) {
         final PortableEngineBlockEntity be = this.getBlockEntity(pLevel, pPos);
         final int power = 0;
 

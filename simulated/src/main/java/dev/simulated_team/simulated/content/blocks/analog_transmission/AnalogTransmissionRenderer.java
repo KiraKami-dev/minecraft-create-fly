@@ -2,50 +2,72 @@ package dev.simulated_team.simulated.content.blocks.analog_transmission;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
-import com.zurrtum.create.content.kinetics.base.IRotate;
-import com.zurrtum.create.client.content.kinetics.base.KineticBlockEntityRenderer;
-import com.zurrtum.create.client.flywheel.api.visualization.VisualizationManager;
-import dev.simulated_team.simulated.index.SimPartialModels;
+import com.zurrtum.create.catnip.theme.Color;
 import com.zurrtum.create.client.catnip.render.CachedBuffers;
 import com.zurrtum.create.client.catnip.render.SuperByteBuffer;
-import net.minecraft.client.renderer.MultiBufferSource;
-import net.minecraft.client.renderer.rendertype.RenderType;
+import com.zurrtum.create.client.content.kinetics.base.KineticBlockEntityRenderer;
+import com.zurrtum.create.content.kinetics.base.KineticBlockEntity;
+import dev.simulated_team.simulated.index.SimPartialModels;
 import net.minecraft.client.renderer.blockentity.BlockEntityRendererProvider;
+import net.minecraft.client.renderer.feature.ModelFeatureRenderer;
+import net.minecraft.client.renderer.rendertype.RenderType;
+import net.minecraft.client.renderer.rendertype.RenderTypes;
 import net.minecraft.core.Direction;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.Vec3;
+import org.jetbrains.annotations.Nullable;
 
-public class AnalogTransmissionRenderer extends KineticBlockEntityRenderer<AnalogTransmissionBlockEntity> {
+public class AnalogTransmissionRenderer extends KineticBlockEntityRenderer<AnalogTransmissionBlockEntity, AnalogTransmissionRenderer.AnalogTransmissionRenderState> {
 
     public AnalogTransmissionRenderer(final BlockEntityRendererProvider.Context context) {
         super(context);
     }
 
     @Override
-    protected void renderSafe(final AnalogTransmissionBlockEntity be, final float partialTicks, final PoseStack ms, final MultiBufferSource buffer, final int light, final int overlay) {
-        if (VisualizationManager.supportsVisualization(be.getLevel())) {
+    public AnalogTransmissionRenderState createRenderState() {
+        return new AnalogTransmissionRenderState();
+    }
+
+    @Override
+    public void extractRenderState(final AnalogTransmissionBlockEntity be, final AnalogTransmissionRenderState state, final float partialTicks,
+                                   final Vec3 cameraPos, @Nullable final ModelFeatureRenderer.CrumblingOverlay crumblingOverlay) {
+        // the shaft (rotating with the transmission itself) is the base kinetic model
+        super.extractRenderState(be, state, partialTicks, cameraPos, crumblingOverlay);
+        if (state.support) {
             return;
         }
 
-        super.renderSafe(be, partialTicks, ms, buffer, light, overlay);
+        final BlockState blockState = be.getBlockState();
+        final KineticBlockEntity cogwheel = be.getExtraKinetics();
 
-        final BlockState state = be.getBlockState();
-        final Direction.Axis axis = ((IRotate) state.getBlock()).getRotationAxis(state);
+        state.cog = CachedBuffers.partialFacingVertical(SimPartialModels.ANALOG_TRANSMISSION_COG, blockState, Direction.fromAxisAndDirection(blockState.getValue(AnalogTransmissionBlock.AXIS), Direction.AxisDirection.POSITIVE));
+        state.cogAngle = getAngleForBe(cogwheel, state.blockPos, state.axis);
+        state.cogColor = getColor(cogwheel);
+    }
 
-        final SuperByteBuffer cogwheel = kineticRotationTransform(
-                CachedBuffers.partialFacingVertical(SimPartialModels.ANALOG_TRANSMISSION_COG, state, Direction.fromAxisAndDirection(state.getValue(AnalogTransmissionBlock.AXIS), Direction.AxisDirection.POSITIVE)),
-                be.getExtraKinetics(),
-                axis,
-                getAngleForBe(be.getExtraKinetics(), be.getBlockPos(), axis),
-                light);
-
-        cogwheel.renderInto(ms, buffer.getBuffer(RenderType.solid()));
-
-        final VertexConsumer vb = buffer.getBuffer(RenderType.solid());
-        KineticBlockEntityRenderer.renderRotatingKineticBlock(be, shaft(getRotationAxisOf(be)), ms, vb, light);
+    @Override
+    protected RenderType getRenderType(final AnalogTransmissionBlockEntity be, final BlockState state) {
+        return RenderTypes.solidMovingBlock();
     }
 
     @Override
     protected BlockState getRenderedBlockState(final AnalogTransmissionBlockEntity be) {
         return shaft(getRotationAxisOf(be));
+    }
+
+    public static class AnalogTransmissionRenderState extends KineticRenderState {
+        public SuperByteBuffer cog;
+        public float cogAngle;
+        public Color cogColor;
+
+        @Override
+        public void render(final PoseStack.Pose matricesEntry, final VertexConsumer vertexConsumer) {
+            super.render(matricesEntry, vertexConsumer);
+
+            this.cog.light(this.lightCoords);
+            this.cog.rotateCentered(this.cogAngle, this.direction);
+            this.cog.color(this.cogColor);
+            this.cog.renderInto(matricesEntry, vertexConsumer);
+        }
     }
 }

@@ -3,6 +3,9 @@ package dev.simulated_team.simulated.util.click_interactions;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.Options;
+import net.minecraft.client.input.KeyEvent;
+import net.minecraft.client.input.MouseButtonEvent;
+import net.minecraft.client.input.MouseButtonInfo;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.world.level.Level;
 import org.jetbrains.annotations.NotNull;
@@ -94,9 +97,9 @@ public interface InteractCallback {
 
         public boolean matches(final KeyMapping mapping) {
             if (this.mouse) {
-                return mapping.matchesMouse(this.key);
+                return mapping.matchesMouse(new MouseButtonEvent(0, 0, new MouseButtonInfo(this.key, 0)));
             } else {
-                return mapping.matches(this.key, this.scanCode);
+                return mapping.matches(new KeyEvent(this.key, this.scanCode, 0));
             }
         }
     }

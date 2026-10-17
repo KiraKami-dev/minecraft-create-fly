@@ -3,6 +3,8 @@ package dev.simulated_team.simulated.multiloader.tanks;
 import dev.simulated_team.simulated.service.SimFluidService;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.util.Tuple;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -55,7 +57,8 @@ public class SingleTank {
      */
     public long insert(final CFluidType insertedType, final long maxAmount, final boolean simulate, @Nullable final Runnable beforeApply) {
         final long v = calculateInsert(this, insertedType, maxAmount);
-        if (!simulate) {
+        // nothing to apply: applyInsert would otherwise retype a non-empty tank to the rejected fluid
+        if (!simulate && v > 0) {
             if (beforeApply != null)
                 beforeApply.run();
             applyInsert(this, insertedType, v);
@@ -77,7 +80,7 @@ public class SingleTank {
      */
     public long extract(final CFluidType extractedType, final long maxAmount, final boolean simulate, @Nullable final Runnable beforeApply) {
         final long v = calculateExtract(this, extractedType, maxAmount);
-        if (!simulate) {
+        if (!simulate && v > 0) {
             if (beforeApply != null)
                 beforeApply.run();
             applyExtract(this, v);
@@ -90,8 +93,24 @@ public class SingleTank {
     }
 
     public void read(final CompoundTag tag) {
-        this.amount = tag.getInt("Amount");
-        this.type = CFluidType.read(tag.getCompound("Variant"));
+        this.amount = tag.getLongOr("Amount", 0);
+        this.type = CFluidType.read(tag.getCompoundOrEmpty("Variant"));
+    }
+
+    /**
+     * Same layout as {@link #read(CompoundTag)}, for block entities loading through {@link ValueInput}.
+     */
+    public void read(final ValueInput view) {
+        this.amount = view.getLongOr("Amount", 0);
+        this.type = view.read("Variant", CFluidType.CODEC).orElse(CFluidType.BLANK);
+    }
+
+    /**
+     * Same layout as {@link #write()}, for block entities saving through {@link ValueOutput}.
+     */
+    public void write(final ValueOutput view) {
+        view.putLong("Amount", this.amount);
+        view.store("Variant", CFluidType.CODEC, this.type);
     }
 
     public CompoundTag write() {

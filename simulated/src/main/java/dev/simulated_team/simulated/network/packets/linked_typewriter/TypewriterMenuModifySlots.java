@@ -23,8 +23,8 @@ public record TypewriterMenuModifySlots(ItemStack first, ItemStack second) imple
         final ServerPlayer player = context.player();
 
         if (player.containerMenu instanceof final LinkedTypewriterMenuCommon menu) {
-            menu.ghostInventory.setStackInSlot(0, this.first);
-            menu.ghostInventory.setStackInSlot(1, this.second);
+            menu.ghostInventory.setItem(0, this.first);
+            menu.ghostInventory.setItem(1, this.second);
         }
     }
 
