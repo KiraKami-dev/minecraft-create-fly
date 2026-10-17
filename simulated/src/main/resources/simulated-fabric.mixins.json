@@ -13,8 +13,7 @@
     "harvesters.BlockBreakingKineticBlockEntityMixin",
     "harvesters.HarvesterBlockEntityMixin",
     "harvesters.SawBlockEntityMixin",
-    "self_mixins.HoneyGlueEntityMixin",
-    "self_mixins.PlungerLauncherItemMixin"
+    "self_mixins.HoneyGlueEntityMixin"
   ],
   "injectors": {
     "defaultRequire": 1
