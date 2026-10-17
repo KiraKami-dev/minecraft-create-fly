@@ -4,8 +4,17 @@
   "compatibilityLevel": "JAVA_21",
   "minVersion": "0.8",
   "client": [
+    "client.ItemStackMixin",
+    "client.KeyboardHandlerMixin",
+    "client.MinecraftMixin",
+    "client.MultiPlayerGameModeMixin"
   ],
   "mixins": [
+    "harvesters.BlockBreakingKineticBlockEntityMixin",
+    "harvesters.HarvesterBlockEntityMixin",
+    "harvesters.SawBlockEntityMixin",
+    "self_mixins.HoneyGlueEntityMixin",
+    "self_mixins.PlungerLauncherItemMixin"
   ],
   "injectors": {
     "defaultRequire": 1
