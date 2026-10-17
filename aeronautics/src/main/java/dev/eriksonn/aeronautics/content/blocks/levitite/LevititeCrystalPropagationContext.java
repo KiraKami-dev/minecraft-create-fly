@@ -69,9 +69,9 @@ public class LevititeCrystalPropagationContext implements CrystalPropagationCont
         final int sum = Arrays.stream(weights).sum();
         if (sum == 0) return self;
         if (weights[0] > 0 && (weights[1] == 0 || level.getRandom().nextInt(sum) < weights[0])) {
-            return AeroLevititeBlendPropagationContexts.STANDARD_CONTEXT.get();
+            return AeroLevititeBlendPropagationContexts.STANDARD_CONTEXT;
         } else {
-            return AeroLevititeBlendPropagationContexts.SOUL_CONTEXT.get();
+            return AeroLevititeBlendPropagationContexts.SOUL_CONTEXT;
         }
     }
 

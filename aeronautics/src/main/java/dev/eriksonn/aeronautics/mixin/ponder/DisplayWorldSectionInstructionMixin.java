@@ -21,13 +21,13 @@ import java.util.function.Supplier;
 
 @Mixin(DisplayWorldSectionInstruction.class)
 public abstract class DisplayWorldSectionInstructionMixin extends FadeIntoSceneInstruction<WorldSectionElement> {
-    @Shadow @Final @Nullable private Supplier<WorldSectionElement> mergeOnto;
+    @Shadow(remap = false) @Final @Nullable private Supplier<WorldSectionElement> mergeOnto;
 
     public DisplayWorldSectionInstructionMixin(int fadeInTicks, Direction fadeInFrom, WorldSectionElement element) {
         super(fadeInTicks, fadeInFrom, element);
     }
 
-    @Inject(method = "firstTick",at = @At(value = "INVOKE",target = "Ljava/util/Optional;ofNullable(Ljava/lang/Object;)Ljava/util/Optional;"))
+    @Inject(method = "firstTick",at = @At(value = "INVOKE",target = "Ljava/util/Optional;ofNullable(Ljava/lang/Object;)Ljava/util/Optional;"), remap = false)
     public void firstTick(PonderScene scene, CallbackInfo ci)
     {
         Optional.ofNullable(mergeOnto).ifPresent(wse -> {

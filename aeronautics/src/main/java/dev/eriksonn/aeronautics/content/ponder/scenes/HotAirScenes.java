@@ -11,7 +11,6 @@ import dev.simulated_team.simulated.ponder.SmoothMovementUtils;
 import dev.simulated_team.simulated.ponder.instructions.ChaseAABBWithLinkInstruction;
 import dev.simulated_team.simulated.ponder.instructions.CustomAnimateWorldSectionInstruction;
 import dev.simulated_team.simulated.ponder.instructions.PullTheAssemblerKronkInstruction;
-import com.tterrag.registrate.util.entry.BlockEntry;
 import dev.eriksonn.aeronautics.content.blocks.hot_air.envelope.EnvelopeEncasedShaftBlock;
 import dev.eriksonn.aeronautics.content.blocks.hot_air.hot_air_burner.HotAirBurnerBlock;
 import dev.eriksonn.aeronautics.content.blocks.hot_air.steam_vent.SteamVentBlock;
@@ -451,13 +450,13 @@ public class HotAirScenes {
 
         scene.idle(10);
 
-        final BlockEntry<EnvelopeEncasedShaftBlock> envelopeEncased = AeroBlocks.ENVELOPE_ENCASED_SHAFTS.get(DyeColor.WHITE);
+        final EnvelopeEncasedShaftBlock envelopeEncased = AeroBlocks.ENVELOPE_ENCASED_SHAFTS.get(DyeColor.WHITE);
         final ItemStack envelopeItem = new ItemStack(AeroBlocks.WHITE_ENVELOPE_BLOCK);
 
         scene.overlay().showControls(util.vector().topOf(shaftPos), Pointing.DOWN, 20).rightClick()
                 .withItem(envelopeItem);
         scene.idle(7);
-        scene.world().setBlocks(util.select().position(shaftPos), envelopeEncased.getDefaultState()
+        scene.world().setBlocks(util.select().position(shaftPos), envelopeEncased.defaultBlockState()
                 .setValue(EncasedShaftBlock.AXIS, Direction.Axis.X), true);
         final CreateSceneBuilder createScene = new CreateSceneBuilder(scene.getScene().builder());
         createScene.world().setKineticSpeed(util.select().position(shaftPos), 32);
@@ -494,7 +493,7 @@ public class HotAirScenes {
         scene.overlay().showControls(util.vector().blockSurface(util.grid().at(4, 7, 2), Direction.NORTH), Pointing.RIGHT, 30)
                 .withItem(new ItemStack(Items.BLUE_DYE));
         scene.idle(7);
-        scene.world().setBlock(new BlockPos(4, 6, 2), AeroBlocks.DYED_ENVELOPE_BLOCKS.get(DyeColor.BLUE).getDefaultState(), false);
+        scene.world().setBlock(new BlockPos(4, 6, 2), AeroBlocks.DYED_ENVELOPE_BLOCKS.get(DyeColor.BLUE).defaultBlockState(), false);
         scene.idle(10);
         scene.overlay().showText(40)
                 .colored(PonderPalette.BLUE)
@@ -509,7 +508,7 @@ public class HotAirScenes {
         scene.idle(7);
         scene.world().setBlocks(
                 util.select().fromTo(5, 6, 2, 3, 6, 2).add(util.select().fromTo(4, 5, 2, 4, 7, 2)),
-                AeroBlocks.DYED_ENVELOPE_BLOCKS.get(DyeColor.BLUE).getDefaultState(), false
+                AeroBlocks.DYED_ENVELOPE_BLOCKS.get(DyeColor.BLUE).defaultBlockState(), false
         );
 
         scene.idle(20);
@@ -519,7 +518,7 @@ public class HotAirScenes {
         scene.world().modifyBlocks(util.select().layers(5, 4),
                 state -> {
                     if (state.is(AeroBlocks.WHITE_ENVELOPE_BLOCK)) {
-                        return AeroBlocks.DYED_ENVELOPE_BLOCKS.get(DyeColor.BLUE).getDefaultState();
+                        return AeroBlocks.DYED_ENVELOPE_BLOCKS.get(DyeColor.BLUE).defaultBlockState();
                     }
                     return state;
                 }, false);

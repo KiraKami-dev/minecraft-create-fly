@@ -60,13 +60,13 @@ public class CustomGyroBearingTiltInstruction extends TickingInstruction {
 	@Override
 	protected final void firstTick(final PonderScene scene) {
 		super.firstTick(scene);
-		final PonderLevel level = scene.getWorld();
+		final PonderLevel level = scene.getLevel();
 		if (this.link != null) {
 			this.element = Objects.requireNonNull(scene.resolve(this.link), "element");
 		}
 		if (level.getBlockState(this.location).hasProperty(BlockStateProperties.FACING)) {
 			final Quaternionf q = getBlockStateOrientation(level.getBlockState(this.location).getValue(BlockStateProperties.FACING));
-			this.blockNormal = Vec3.atLowerCornerOf(level.getBlockState(this.location).getValue(BlockStateProperties.FACING).getNormal());
+			this.blockNormal = Vec3.atLowerCornerOf(level.getBlockState(this.location).getValue(BlockStateProperties.FACING).getUnitVec3i());
 			this.blockRot = new Quaternionf(q);
 		}
 	}
@@ -75,7 +75,7 @@ public class CustomGyroBearingTiltInstruction extends TickingInstruction {
 	public void tick(final PonderScene scene) {
 		super.tick(scene);
 
-		final PonderLevel level = scene.getWorld();
+		final PonderLevel level = scene.getLevel();
 		final BlockEntity be = level.getBlockEntity(this.location);
 
 		if (be instanceof final GyroscopicPropellerBearingBlockEntity gbe) {

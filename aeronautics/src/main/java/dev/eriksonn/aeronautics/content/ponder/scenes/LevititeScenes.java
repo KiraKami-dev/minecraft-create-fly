@@ -1,7 +1,6 @@
 package dev.eriksonn.aeronautics.content.ponder.scenes;
 
 import com.zurrtum.create.AllItems;
-import com.zurrtum.create.Create;
 import com.zurrtum.create.client.foundation.ponder.CreateSceneBuilder;
 import dev.eriksonn.aeronautics.content.ponder.instructions.ChangePropellerRotateInstruction;
 import dev.eriksonn.aeronautics.content.ponder.instructions.PropellerRotateInstruction;
@@ -36,9 +35,13 @@ import net.minecraft.world.phys.Vec3;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 import java.util.function.Consumer;
 
 public class LevititeScenes {
+    // was Create.RANDOM (not in Create Fly)
+    private static final Random RANDOM = new Random();
+
     public static void levititeBlend(final SceneBuilder scene, final SceneBuildingUtil util) {
         scene.title("levitite_blend", "Crystallizing Levitite Blend into Levitite");
         scene.configureBasePlate(1, 1, 5);
@@ -275,7 +278,7 @@ public class LevititeScenes {
                                 || x < 4 && source[x + 1 + 5 * y] == -1
                                 || y > 0 && source[x + 5 * y - 5] == -1
                                 || y < 4 && source[x + 5 * y + 5] == -1) {
-                            target[i] = Create.RANDOM.nextInt(minDelay, maxDelay);
+                            target[i] = RANDOM.nextInt(minDelay, maxDelay);
                             scene.effects().emitParticles(new Vec3(1.5 + x, 1.5, 1.5 + y), withinBlockSpace(ParticleTypes.SMOKE, 1.5f), 10, 1);
                         }
                     }
@@ -288,7 +291,7 @@ public class LevititeScenes {
                     if((bit & clayIndex) > 0) {
                         boolean remove = true;
                         for (int i = 0; i < 4; i++) {
-                            Vec3i dir = Direction.from2DDataValue(i).getNormal();
+                            Vec3i dir = Direction.from2DDataValue(i).getUnitVec3i();
                             int x2 = x + dir.getX() - 1;
                             int y2 = y + dir.getZ() - 1;
                             if (x2 >= 0 && y2 >= 0 && x2 < 5 && y2 < 5 && source[x2 + y2 * 5] >= 0) {
@@ -321,9 +324,9 @@ public class LevititeScenes {
 
     public static <T extends ParticleOptions> ParticleEmitter withinBlockSpace(final T data, final float range) {
         return (w, x, y, z) -> w.addParticle(data,
-                Math.floor(x) + 0.5 + (Create.RANDOM.nextFloat() - 0.5) * range,
-                Math.floor(y) + 0.5 + (Create.RANDOM.nextFloat() - 0.5) * range,
-                Math.floor(z) + 0.5 + (Create.RANDOM.nextFloat() - 0.5) * range,
+                Math.floor(x) + 0.5 + (RANDOM.nextFloat() - 0.5) * range,
+                Math.floor(y) + 0.5 + (RANDOM.nextFloat() - 0.5) * range,
+                Math.floor(z) + 0.5 + (RANDOM.nextFloat() - 0.5) * range,
                 0, 0, 0);
     }
 

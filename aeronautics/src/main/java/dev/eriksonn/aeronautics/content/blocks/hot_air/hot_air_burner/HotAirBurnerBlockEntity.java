@@ -1,11 +1,7 @@
 package dev.eriksonn.aeronautics.content.blocks.hot_air.hot_air_burner;
 
-import com.zurrtum.create.client.api.goggles.IHaveGoggleInformation;
-import com.zurrtum.create.client.api.goggles.IHaveHoveringInformation;
 import com.zurrtum.create.foundation.blockEntity.SmartBlockEntity;
 import com.zurrtum.create.api.behaviour.BlockEntityBehaviour;
-import com.zurrtum.create.client.foundation.blockEntity.behaviour.ValueBoxTransform;
-import com.zurrtum.create.client.foundation.blockEntity.behaviour.scrollValue.ScrollValueBehaviour;
 import dev.eriksonn.aeronautics.config.AeroConfig;
 import dev.eriksonn.aeronautics.config.server.AeroBlockConfigs;
 import dev.eriksonn.aeronautics.content.blocks.hot_air.GasEmitterRenderHandler;
@@ -14,41 +10,35 @@ import dev.eriksonn.aeronautics.content.blocks.hot_air.balloon.ServerBalloon;
 import dev.eriksonn.aeronautics.content.blocks.hot_air.lifting_gas.LiftingGasType;
 import dev.eriksonn.aeronautics.content.blocks.hot_air.BlockEntityLiftingGasProvider;
 import dev.eriksonn.aeronautics.content.particle.HotAirEmberParticleData;
-import dev.eriksonn.aeronautics.data.AeroLang;
 import dev.eriksonn.aeronautics.index.AeroLiftingGasTypes;
 import dev.eriksonn.aeronautics.util.AeroSoundDistUtil;
 import com.zurrtum.create.catnip.animation.LerpedFloat;
-import com.zurrtum.create.catnip.math.AngleHelper;
-import com.zurrtum.create.catnip.math.VecHelper;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.Direction;
-import net.minecraft.core.HolderLookup;
 import net.minecraft.core.particles.ParticleTypes;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.RandomSource;
-import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 
+/**
+ * Client-only parts (hot air amount value box, goggle tooltip) are attached by {@code HotAirClient}.
+ */
 public class HotAirBurnerBlockEntity extends SmartBlockEntity
-        implements BlockEntityLiftingGasProvider, IHaveGoggleInformation, IHaveHoveringInformation {
-    private static final MutableComponent SCROLL_OPTION_TITLE = AeroLang.translate("scroll_option.hot_air_amount").component();
-    private static final String VALUE_FORMAT = "%s m³";
+        implements BlockEntityLiftingGasProvider {
 
     public GasEmitterRenderHandler renderHandler = new GasEmitterRenderHandler();
     protected ClientBalloonInfo clientBalloonInfo;
     protected boolean powered;
     protected int signalStrength;
-    protected ScrollValueBehaviour hotAirAmountBehaviour;
+    protected HotAirBurnerValueBehaviour hotAirAmountBehaviour;
     protected double lastRenderTime;
     protected double renderTime;
     protected LerpedFloat intensity = LerpedFloat.linear();
@@ -85,14 +75,12 @@ public class HotAirBurnerBlockEntity extends SmartBlockEntity
     }
 
     @Override
-    public void addBehaviours(final List<BlockEntityBehaviour> behaviours) {
+    public void addBehaviours(final List<BlockEntityBehaviour<?>> behaviours) {
         this.setMaxCapacity(AeroConfig.server().blocks.hotAirBurnerMaxHotAir.get());
 
-        this.hotAirAmountBehaviour = new HotAirBurnerValueBehaviour(SCROLL_OPTION_TITLE, this,
-                new HotAirBurnerValueBoxTransform())
-                .between(() -> 5, () -> AeroConfig.server().blocks.hotAirBurnerMaxHotAir.get())
-                .withFormatter(VALUE_FORMAT::formatted);
-        this.hotAirAmountBehaviour.value = this.maxCapacity;
+        this.hotAirAmountBehaviour = new HotAirBurnerValueBehaviour(this)
+                .between(() -> 5, () -> AeroConfig.server().blocks.hotAirBurnerMaxHotAir.get());
+        this.hotAirAmountBehaviour.initValue(this.maxCapacity);
 
         behaviours.add(this.hotAirAmountBehaviour);
     }
@@ -214,28 +202,28 @@ public class HotAirBurnerBlockEntity extends SmartBlockEntity
     }
 
     @Override
-    public void write(final CompoundTag compound, final HolderLookup.Provider registries, final boolean clientPacket) {
-        compound.putBoolean("IsPowered", this.powered);
-        compound.putInt("SignalStrength", this.signalStrength);
+    public void write(final ValueOutput view, final boolean clientPacket) {
+        view.putBoolean("IsPowered", this.powered);
+        view.putInt("SignalStrength", this.signalStrength);
 
         if (clientPacket) {
-            ClientBalloonInfo.writeToNBT(compound, (ServerBalloon) this.getBalloon());
+            ClientBalloonInfo.writeToNBT(view, (ServerBalloon) this.getBalloon());
         }
 
-        super.write(compound, registries, clientPacket);
+        super.write(view, clientPacket);
     }
 
     @Override
-    protected void read(final CompoundTag tag, final HolderLookup.Provider registries, final boolean clientPacket) {
-        this.powered = tag.getBoolean("IsPowered");
-        this.signalStrength = tag.getInt("SignalStrength");
+    protected void read(final ValueInput view, final boolean clientPacket) {
+        this.powered = view.getBooleanOr("IsPowered", false);
+        this.signalStrength = view.getIntOr("SignalStrength", 0);
 
         if (clientPacket) {
             this.ticksSinceSync = 0;
-            this.clientBalloonInfo = ClientBalloonInfo.readFromNBT(tag);
+            this.clientBalloonInfo = ClientBalloonInfo.readFromNBT(view);
         }
 
-        super.read(tag, registries, clientPacket);
+        super.read(view, clientPacket);
     }
 
     @Override
@@ -267,12 +255,12 @@ public class HotAirBurnerBlockEntity extends SmartBlockEntity
 
     @Override
     public double getGasOutput() {
-        return (this.hotAirAmountBehaviour.value * this.signalStrength) / 15.0;
+        return (this.hotAirAmountBehaviour.getValue() * this.signalStrength) / 15.0;
     }
 
     @Override
     public LiftingGasType getLiftingGasType() {
-        return AeroLiftingGasTypes.DEFAULT_GAS.get();
+        return AeroLiftingGasTypes.DEFAULT_GAS;
     }
 
     @Override
@@ -293,14 +281,13 @@ public class HotAirBurnerBlockEntity extends SmartBlockEntity
     }
 
     @Override
-    public boolean addToGoggleTooltip(final List<Component> tooltip, final boolean isPlayerSneaking) {
-        if (!this.canOutputGas()) return false;
+    public @Nullable ClientBalloonInfo getClientBalloonInfo() {
+        return this.clientBalloonInfo;
+    }
 
-        AeroLang.blockName(this.getBlockState()).text(":").forGoggles(tooltip, 1);
-        if (this.clientBalloonInfo != null) {
-            this.addBalloonGoggleInformation(tooltip, this.clientBalloonInfo, this.ticksSinceSync, this.getAirPressure(this.clientBalloonInfo, this.level));
-        }
-        return true;
+    @Override
+    public int getTicksSinceSync() {
+        return this.ticksSinceSync;
     }
 
     protected float getFlameIntensity(final float partialTicks) {
@@ -314,38 +301,4 @@ public class HotAirBurnerBlockEntity extends SmartBlockEntity
     public LerpedFloat getClientIntensity() {
         return this.intensity;
     }
-
-
-    private static class HotAirBurnerValueBoxTransform extends ValueBoxTransform.Sided {
-
-        @Override
-        protected Vec3 getSouthLocation() {
-            return VecHelper.voxelSpace(8, 8f, 14);
-        }
-
-        @Override
-        public float getScale() {
-            return 0.45f;
-        }
-
-        @Override
-        protected boolean isSideActive(final BlockState state, final Direction direction) {
-            return direction.getAxis() != Direction.Axis.Y || direction.equals(Direction.DOWN);
-        }
-
-        @Override
-        public Vec3 getLocalOffset(final LevelAccessor level, final BlockPos pos, final BlockState state) {
-            if (this.getSide() == Direction.DOWN) {
-                return VecHelper.voxelSpace(8, 0, 8);
-            }
-
-            Vec3 location = this.getSouthLocation();
-
-            location = location.add(VecHelper.voxelSpace(0, -3, 1.75));
-            location = VecHelper.rotateCentered(location, AngleHelper.horizontalAngle(this.getSide()), Direction.Axis.Y);
-
-            return location;
-        }
-    }
-
 }

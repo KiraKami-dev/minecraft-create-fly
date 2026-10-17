@@ -1,25 +1,15 @@
 package dev.eriksonn.aeronautics.content.ponder;
 
+import com.zurrtum.create.catnip.registry.RegisteredObjectsHelper;
 import com.zurrtum.create.client.infrastructure.ponder.AllCreatePonderTags;
-import dev.simulated_team.simulated.index.SimPonderTags;
+import com.zurrtum.create.client.ponder.api.registration.PonderTagRegistrationHelper;
 import dev.eriksonn.aeronautics.Aeronautics;
 import dev.eriksonn.aeronautics.index.AeroBlocks;
-import dev.eriksonn.aeronautics.index.AeroTags;
 import dev.eriksonn.aeronautics.service.AeroLevititeService;
-import com.zurrtum.create.catnip.registry.RegisteredObjectsHelper;
-import com.zurrtum.create.client.ponder.api.registration.MultiTagBuilder;
-import com.zurrtum.create.client.ponder.api.registration.PonderTagRegistrationHelper;
-import net.minecraft.client.Minecraft;
-import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.data.DataProvider;
-import net.minecraft.data.tags.TagsProvider;
+import dev.simulated_team.simulated.index.SimPonderTags;
 import net.minecraft.resources.Identifier;
-import net.minecraft.tags.TagKey;
 import net.minecraft.world.level.ItemLike;
-import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
-import net.neoforged.neoforge.common.data.BlockTagsProvider;
-import net.neoforged.neoforge.registries.DeferredRegister;
 
 public class AeroPonderTags {
 

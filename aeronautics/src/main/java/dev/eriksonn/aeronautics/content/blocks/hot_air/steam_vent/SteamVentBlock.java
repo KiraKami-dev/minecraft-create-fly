@@ -10,6 +10,7 @@ import dev.eriksonn.aeronautics.index.AeroTags;
 import com.zurrtum.create.catnip.data.Iterate;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.StringRepresentable;
@@ -23,13 +24,13 @@ import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelReader;
 import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.redstone.Orientation;
 import net.minecraft.world.level.block.SimpleWaterloggedBlock;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.BooleanProperty;
-import net.minecraft.world.level.block.state.properties.DirectionProperty;
 import net.minecraft.world.level.block.state.properties.EnumProperty;
 import net.minecraft.world.level.material.FluidState;
 import net.minecraft.world.level.material.Fluids;
@@ -37,6 +38,7 @@ import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.VoxelShape;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Locale;
 
@@ -44,7 +46,7 @@ import static net.minecraft.world.level.block.state.properties.BlockStatePropert
 
 public class SteamVentBlock extends Block implements IBE<SteamVentBlockEntity>, SimpleWaterloggedBlock, IWrenchable {
     public static final BooleanProperty POWERED = BlockStateProperties.POWERED;
-    public static final DirectionProperty FACING = BlockStateProperties.HORIZONTAL_FACING;
+    public static final EnumProperty<Direction> FACING = BlockStateProperties.HORIZONTAL_FACING;
     public static final EnumProperty<Variant> VARIANT = EnumProperty.create("variant", Variant.class);
 
 
@@ -82,6 +84,11 @@ public class SteamVentBlock extends Block implements IBE<SteamVentBlockEntity>, 
 
     @Override
     public void onPlace(final @NotNull BlockState pState, final @NotNull Level pLevel, final BlockPos pPos, final @NotNull BlockState pOldState, final boolean pIsMoving) {
+        if (pOldState.is(this) && pOldState != pState) {
+            // upstream onRemove also ran when only the state changed; 1.21.11 has no hook for that besides onPlace
+            this.onStateRemoved(pOldState, pLevel, pPos);
+        }
+
         FluidTankBlock.updateBoilerState(pState, pLevel, pPos.relative(Direction.DOWN));
 
         this.withBlockEntityDo(pLevel, pPos, SteamVentBlockEntity::getAndCacheTank);
@@ -92,11 +99,16 @@ public class SteamVentBlock extends Block implements IBE<SteamVentBlockEntity>, 
         });
     }
 
+    /**
+     * Upstream {@code onRemove} when the block changed (the block entity is already gone here, as upstream removed it first)
+     */
     @Override
-    public void onRemove(final BlockState pState, final @NotNull Level level, final @NotNull BlockPos pos, final @NotNull BlockState newState, final boolean pIsMoving) {
+    protected void affectNeighborsAfterRemoval(final BlockState pState, final ServerLevel level, final BlockPos pos, final boolean pIsMoving) {
+        this.onStateRemoved(pState, level, pos);
+    }
+
+    private void onStateRemoved(final BlockState pState, final Level level, final BlockPos pos) {
         this.withBlockEntityDo(level, pos, x -> x.rawSignalStrength = 0);
-        if (pState.hasBlockEntity() && (!pState.is(newState.getBlock()) || !newState.hasBlockEntity()))
-            level.removeBlockEntity(pos);
 
         for (Direction dir : Iterate.directions) {
             if (level.getBlockEntity(pos.relative(dir)) instanceof SteamVentBlockEntity vent) {
@@ -119,7 +131,7 @@ public class SteamVentBlock extends Block implements IBE<SteamVentBlockEntity>, 
     }
 
     @Override
-    public void neighborChanged(final BlockState state, final Level level, final BlockPos pos, final Block blockIn, final BlockPos fromPos, final boolean isMoving) {
+    public void neighborChanged(final BlockState state, final Level level, final BlockPos pos, final Block blockIn, @Nullable final Orientation orientation, final boolean isMoving) {
         if (level.isClientSide())
             return;
 

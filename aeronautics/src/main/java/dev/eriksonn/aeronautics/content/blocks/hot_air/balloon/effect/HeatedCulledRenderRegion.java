@@ -1,5 +1,8 @@
 package dev.eriksonn.aeronautics.content.blocks.hot_air.balloon.effect;
 
+import com.mojang.blaze3d.buffers.GpuBuffer;
+import com.mojang.blaze3d.buffers.GpuBufferSlice;
+import com.mojang.blaze3d.systems.RenderPass;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.*;
 import dev.eriksonn.aeronautics.content.blocks.hot_air.balloon.Balloon;
@@ -12,11 +15,14 @@ import dev.ryanhcode.sable.render.region.SimpleCulledRenderRegionBuilder;
 import dev.ryanhcode.sable.sublevel.ClientSubLevel;
 import dev.ryanhcode.sable.util.LevelAccelerator;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.ShaderInstance;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.phys.Vec3;
+import org.jetbrains.annotations.Nullable;
 import org.joml.Matrix4f;
+import org.joml.Matrix4fc;
 import org.joml.Quaternionf;
+import org.joml.Vector3f;
+import org.joml.Vector4f;
 import org.joml.Vector3i;
 import org.lwjgl.system.NativeResource;
 
@@ -24,9 +30,13 @@ import java.util.Iterator;
 import java.util.List;
 
 public class HeatedCulledRenderRegion implements NativeResource {
+    private static final Vector4f COLOR = new Vector4f(0.85f, 0.85f, 0.85f, 1.0f);
+
     private Balloon balloon;
     private boolean built = false;
-    private VertexBuffer buffer;
+    @Nullable
+    private GpuBuffer buffer;
+    private int indexCount;
     private Vec3 origin;
     private final LevelAccelerator accelerator;
 
@@ -35,18 +45,21 @@ public class HeatedCulledRenderRegion implements NativeResource {
         this.balloon = balloon;
     }
 
-    public void render(final Matrix4f modelView, final Matrix4f projectionMatrix) {
+    /**
+     * Draws the region into the given pass (pipeline, textures and the {@code HotAirInfo} block are bound by the
+     * caller). Upstream drew a {@code VertexBuffer} with the current Veil shader instance.
+     *
+     * @param modelView The world model view matrix (camera rotation)
+     * @return the index count needed from the shared quad index buffer, or 0 if nothing was drawn
+     */
+    public int render(final RenderPass renderPass, final Matrix4fc modelView, final RenderSystem.AutoStorageIndexBuffer indices) {
         if (!this.built) {
             this.build();
         }
 
-        if (this.buffer == null) {
-            return;
+        if (this.buffer == null || this.indexCount == 0) {
+            return 0;
         }
-
-
-        final ShaderInstance shader = RenderSystem.getShader();
-        assert shader != null;
 
         final Minecraft client = Minecraft.getInstance();
         final ClientSubLevel subLevel = Sable.HELPER.getContainingClient(this.origin);
@@ -60,20 +73,19 @@ public class HeatedCulledRenderRegion implements NativeResource {
             globalOrientation.set(renderPose.orientation());
         }
 
-        final Vec3 relativePos = globalOrigin.subtract(client.gameRenderer.getMainCamera().getPosition());
+        final Vec3 relativePos = globalOrigin.subtract(client.gameRenderer.getMainCamera().position());
 
         final Matrix4f modelViewMatrix = new Matrix4f(modelView)
                 .setTranslation(0.0f, 0.0f, 0.0f)
                 .translate((float) relativePos.x, (float) relativePos.y, (float) relativePos.z)
                 .rotate(globalOrientation);
 
-        shader.setDefaultUniforms(VertexFormat.Mode.QUADS, modelViewMatrix, projectionMatrix, client.getWindow());
-        shader.apply();
-
-        this.buffer.bind();
-        this.buffer.draw();
-
-        VertexBuffer.unbind();
+        final GpuBufferSlice transform = RenderSystem.getDynamicUniforms().writeTransform(modelViewMatrix, COLOR, new Vector3f(), new Matrix4f());
+        renderPass.setUniform("DynamicTransforms", transform);
+        renderPass.setVertexBuffer(0, this.buffer);
+        renderPass.setIndexBuffer(indices.getBuffer(this.indexCount), indices.type());
+        renderPass.drawIndexed(0, 0, this.indexCount, 1);
+        return this.indexCount;
     }
 
     public void build() {
@@ -111,18 +123,21 @@ public class HeatedCulledRenderRegion implements NativeResource {
 
         builder.buildNoGreedy();
 
-        final BufferBuilder bufferBuilder = Tesselator.getInstance().begin(VertexFormat.Mode.QUADS, this.getVertexFormat());
-        builder.render(new Matrix4f(), bufferBuilder);
+        try (final ByteBufferBuilder byteBuffer = new ByteBufferBuilder(this.getVertexFormat().getVertexSize() * 256)) {
+            final BufferBuilder bufferBuilder = new BufferBuilder(byteBuffer, VertexFormat.Mode.QUADS, this.getVertexFormat());
+            builder.render(new Matrix4f(), bufferBuilder);
 
-        this.balloon = null;
-        final MeshData builtData = bufferBuilder.build();
+            this.balloon = null;
 
-        if (builtData != null) {
-            this.buffer = new VertexBuffer(VertexBuffer.Usage.STATIC);
-            this.buffer.bind();
-            this.buffer.upload(builtData);
-        } else {
-            this.buffer = null;
+            try (final MeshData builtData = bufferBuilder.build()) {
+                if (builtData != null) {
+                    this.buffer = RenderSystem.getDevice().createBuffer(() -> "Aeronautics hot air region", GpuBuffer.USAGE_VERTEX, builtData.vertexBuffer());
+                    this.indexCount = builtData.drawState().indexCount();
+                } else {
+                    this.buffer = null;
+                    this.indexCount = 0;
+                }
+            }
         }
 
         this.built = true;
@@ -144,6 +159,7 @@ public class HeatedCulledRenderRegion implements NativeResource {
     public void free() {
         if (this.built && this.buffer != null) {
             this.buffer.close();
+            this.buffer = null;
         }
     }
 }
