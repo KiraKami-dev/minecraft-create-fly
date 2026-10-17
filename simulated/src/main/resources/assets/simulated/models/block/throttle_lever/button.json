@@ -1,6 +1,7 @@
 {
  "format_version": "1.9.0",
  "credit": "Made with Blockbench",
+ "render_type": "minecraft:cutout",
  "textures": {
   "0": "simulated:block/throttle_lever/throttle_lever_1",
   "particle": "simulated:block/throttle_lever/throttle_lever_1"

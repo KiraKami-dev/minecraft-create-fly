@@ -23,6 +23,7 @@ import dev.simulated_team.simulated.index.SimEntityRenders;
 import dev.simulated_team.simulated.index.SimItemTooltips;
 import dev.simulated_team.simulated.index.SimMenuScreens;
 import dev.simulated_team.simulated.index.SimPartialModels;
+import dev.simulated_team.simulated.index.SimRenderTypes;
 import dev.simulated_team.simulated.index.SimResourceManagers;
 import dev.simulated_team.simulated.index.SimSpriteShifts;
 import dev.simulated_team.simulated.index.ponder.SimPonderPlugin;
@@ -41,6 +42,7 @@ public class SimulatedClient {
     public static void init() {
         SimPartialModels.init();
         SimSpriteShifts.init();
+        SimRenderTypes.init();
         BlockPropertiesTooltip.init();
         SimResourceManagers.init();
 
