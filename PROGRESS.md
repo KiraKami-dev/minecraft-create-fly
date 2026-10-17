@@ -12,7 +12,7 @@ flowchart LR
 ```
 
 ## Now
-- Phase 1 finishing with 4 parallel agents (clones in `../mcf-agents/sable-*`, shared e2e lock): S11 Sodium, S17 compat mixins running. Open after: S12a Flywheel lighting, S10 manual checks (walk/jump on moving sub-levels, multiplayer).
+- Phase 1 finishing with 4 parallel agents (clones in `../mcf-agents/sable-*`, shared e2e lock): S11 Sodium, S17 compat mixins running. Open after: S10 manual checks (walk/jump on moving sub-levels, multiplayer).
 
 ## Next
 - Phase 2: C1 (add `simulated`/`aeronautics` to the build) → C2 Registrate replacement.
