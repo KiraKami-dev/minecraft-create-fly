@@ -1,120 +1,53 @@
 package dev.eriksonn.aeronautics.index.client;
 
-import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.vertex.DefaultVertexFormat;
-import com.mojang.blaze3d.vertex.VertexFormat;
+import com.mojang.blaze3d.pipeline.BlendFunction;
+import com.mojang.blaze3d.pipeline.RenderPipeline;
+import com.mojang.blaze3d.platform.DepthTestFunction;
+import com.mojang.blaze3d.shaders.UniformType;
 import dev.eriksonn.aeronautics.Aeronautics;
-import dev.eriksonn.aeronautics.content.blocks.levitite.LevititeShaderManager;
-import dev.ryanhcode.sable.veillite.api.client.render.VeilRenderBridge;
-import net.minecraft.client.renderer.RenderStateShard;
-import net.minecraft.client.renderer.rendertype.RenderType;
-import net.minecraft.resources.Identifier;
+import dev.ryanhcode.sable.sublevel.render.SubLevelRenderPipelines;
+import net.minecraft.client.renderer.RenderPipelines;
 
-import static org.lwjgl.opengl.GL11C.glDisable;
-import static org.lwjgl.opengl.GL11C.glEnable;
-import static org.lwjgl.opengl.GL30C.GL_RASTERIZER_DISCARD;
+/**
+ * The levitite render pipelines (upstream: the {@code aeronautics:levitite} and {@code aeronautics:levitite_ghosts}
+ * Veil chunk render types with the tessellated {@code aeronautics:levitite/levitite} shader).
+ * <p>
+ * Both draw the compiled solid section meshes of sub-levels with {@code aeronautics:core/levitite}, which skips every
+ * quad that is not textured with a levitite sprite. See {@link dev.eriksonn.aeronautics.content.blocks.levitite.render.LevititeRenderer}.
+ */
+public class AeroRenderTypes {
 
-public class AeroRenderTypes extends RenderType {
+    public static final String LEVITITE_UNIFORM = "LevititeInfo";
 
-    public static final Identifier LEVITITE_SHADER = Aeronautics.path("levitite/levitite");
-    private static final ShaderStateShard LEVITITE_SHADER_SHARD = new LevititeShaderState(VeilRenderBridge.shaderState(LEVITITE_SHADER), new OutputStateShard("disabled", () -> {
-        RENDERTYPE_SOLID_SHADER.setupRenderState();
-        RenderSystem.colorMask(false, false, false, false);
-        RenderSystem.depthMask(false);
-    }, () -> {
-        RENDERTYPE_SOLID_SHADER.clearRenderState();
-        RenderSystem.colorMask(true, true, true, true);
-        RenderSystem.depthMask(true);
-    }));
+    private static final RenderPipeline.Snippet LEVITITE_SNIPPET = RenderPipeline.builder(RenderPipelines.TERRAIN_SNIPPET, RenderPipelines.GLOBALS_SNIPPET)
+            .withVertexShader(Aeronautics.path("core/levitite"))
+            .withFragmentShader(Aeronautics.path("core/levitite"))
+            .withUniform(SubLevelRenderPipelines.SUB_LEVEL_UNIFORM, UniformType.UNIFORM_BUFFER)
+            .withUniform(LEVITITE_UNIFORM, UniformType.UNIFORM_BUFFER)
+            .withSampler("Noise")
+            .withBlend(BlendFunction.TRANSLUCENT)
+            .buildSnippet();
 
-    private static final RenderType LEVITITE = RenderType.create(
-            Aeronautics.MOD_ID + ":levitite",
-            DefaultVertexFormat.BLOCK,
-            VertexFormat.Mode.QUADS,
-            TRANSIENT_BUFFER_SIZE,
-            false,
-            true,
-            VeilRenderBridge.create(
-                            RenderType.CompositeState.builder()
-                                    .setShaderState(LEVITITE_SHADER_SHARD)
-                                    .setTransparencyState(TRANSLUCENT_TRANSPARENCY)
-                                    .setCullState(CULL)
-                                    .setTextureState(RenderStateShard.BLOCK_SHEET)
-                                    .setLightmapState(LightmapStateShard.LIGHTMAP)
-                    )
-                    .addLayer(VeilRenderBridge.patchState(4))
-                    .create(false)
-    );
+    /**
+     * Layer 0: the shimmering block, drawn over the solid fallback block (depth tested, culled).
+     */
+    public static final RenderPipeline LEVITITE = RenderPipeline.builder(LEVITITE_SNIPPET)
+            .withLocation(Aeronautics.path("pipeline/levitite"))
+            .build();
 
-    private static final RenderType LEVITITE_GHOSTS = RenderType.create(
-            Aeronautics.MOD_ID + ":levitite_ghosts",
-            DefaultVertexFormat.BLOCK,
-            VertexFormat.Mode.QUADS,
-            TRANSIENT_BUFFER_SIZE,
-            false,
-            true,
-            VeilRenderBridge.create(
-                            RenderType.CompositeState.builder()
-                                    .setShaderState(LEVITITE_SHADER_SHARD)
-                                    .setTransparencyState(TRANSLUCENT_TRANSPARENCY)
-                                    .setCullState(NO_CULL)
-                                    .setTextureState(RenderStateShard.BLOCK_SHEET)
-                                    .setLightmapState(LightmapStateShard.LIGHTMAP)
-                    )
-                    .addLayer(VeilRenderBridge.patchState(4))
-                    .create(false)
-    );
+    /**
+     * Layers 1 and -1: the translucent ghosts trailing moving sub-levels. Drawn without a depth attachment (upstream
+     * disabled the depth test), fading against the scene depth sampled from {@code DepthSampler}.
+     */
+    public static final RenderPipeline LEVITITE_GHOSTS = RenderPipeline.builder(LEVITITE_SNIPPET)
+            .withLocation(Aeronautics.path("pipeline/levitite_ghosts"))
+            .withShaderDefine("GHOSTS")
+            .withSampler("DepthSampler")
+            .withCull(false)
+            .withDepthTestFunction(DepthTestFunction.NO_DEPTH_TEST)
+            .withDepthWrite(false)
+            .build();
 
-    public AeroRenderTypes(final String name,
-                           final VertexFormat format,
-                           final VertexFormat.Mode mode,
-                           final int bufferSize,
-                           final boolean affectsCrumbling,
-                           final boolean sortOnUpload,
-                           final Runnable setupState,
-                           final Runnable clearState) {
-        super(name, format, mode, bufferSize, affectsCrumbling, sortOnUpload, setupState, clearState);
-    }
-
-    public static RenderType levitite() {
-        return LEVITITE;
-    }
-
-    public static RenderType levititeGhosts() {
-        return LEVITITE_GHOSTS;
-    }
-
-    private static class LevititeShaderState extends RenderStateShard.ShaderStateShard {
-
-        private final RenderStateShard enabled;
-        private final RenderStateShard disabled;
-
-        public LevititeShaderState(RenderStateShard enabled, RenderStateShard disabled) {
-            this.enabled = enabled;
-            this.disabled = disabled;
-        }
-
-        @Override
-        public void setupRenderState() {
-            if (LevititeShaderManager.isEnabled()) {
-                this.enabled.setupRenderState();
-            } else {
-                this.disabled.setupRenderState();
-            }
-        }
-
-        @Override
-        public void clearRenderState() {
-            if (LevititeShaderManager.isEnabled()) {
-                this.enabled.clearRenderState();
-            } else {
-                this.disabled.clearRenderState();
-            }
-        }
-
-        @Override
-        public String toString() {
-            return LevititeShaderManager.isEnabled() ? this.enabled.toString() : this.disabled.toString();
-        }
+    private AeroRenderTypes() {
     }
 }

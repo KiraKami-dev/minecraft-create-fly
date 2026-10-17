@@ -1,171 +1,240 @@
 package dev.eriksonn.aeronautics.content.blocks.hot_air.balloon.effect;
 
-import com.mojang.blaze3d.platform.Window;
+import com.mojang.blaze3d.buffers.GpuBufferSlice;
+import com.mojang.blaze3d.buffers.Std140Builder;
+import com.mojang.blaze3d.buffers.Std140SizeCalculator;
+import com.mojang.blaze3d.pipeline.RenderPipeline;
+import com.mojang.blaze3d.pipeline.RenderTarget;
+import com.mojang.blaze3d.pipeline.TextureTarget;
+import com.mojang.blaze3d.platform.DepthTestFunction;
+import com.mojang.blaze3d.shaders.UniformType;
+import com.mojang.blaze3d.systems.CommandEncoder;
+import com.mojang.blaze3d.systems.RenderPass;
 import com.mojang.blaze3d.systems.RenderSystem;
+import com.mojang.blaze3d.textures.FilterMode;
+import com.mojang.blaze3d.textures.GpuSampler;
+import com.mojang.blaze3d.vertex.DefaultVertexFormat;
+import com.mojang.blaze3d.vertex.VertexFormat;
 import dev.eriksonn.aeronautics.Aeronautics;
 import dev.eriksonn.aeronautics.config.AeroConfig;
 import dev.eriksonn.aeronautics.content.blocks.hot_air.BlockEntityLiftingGasProvider;
 import dev.eriksonn.aeronautics.content.blocks.hot_air.balloon.Balloon;
 import dev.eriksonn.aeronautics.content.blocks.hot_air.balloon.ClientBalloon;
 import dev.eriksonn.aeronautics.content.blocks.hot_air.balloon.map.BalloonMap;
-import dev.ryanhcode.sable.veillite.api.client.render.VeilRenderSystem;
-import dev.ryanhcode.sable.veillite.api.client.render.framebuffer.AdvancedFbo;
-import dev.ryanhcode.sable.veillite.api.client.render.post.PostPipeline;
-import dev.ryanhcode.sable.veillite.api.client.render.post.PostProcessingManager;
-import dev.ryanhcode.sable.veillite.api.client.render.shader.program.ShaderProgram;
-import dev.ryanhcode.sable.veillite.api.client.render.shader.uniform.ShaderUniformAccess;
-import dev.ryanhcode.sable.veillite.api.event.VeilRenderLevelStageEvent;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
+import net.minecraft.client.renderer.DynamicUniformStorage;
+import net.minecraft.client.renderer.RenderPipelines;
+import net.minecraft.client.renderer.texture.AbstractTexture;
 import net.minecraft.resources.Identifier;
 import net.minecraft.util.Mth;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Matrix4f;
 import org.joml.Matrix4fc;
-import org.lwjgl.opengl.GL11;
-import org.lwjgl.opengl.GL30;
 
+import java.nio.ByteBuffer;
+import java.util.OptionalDouble;
+import java.util.OptionalInt;
+
+/**
+ * Renders the heated air inside balloons: the inside faces of every balloon volume are drawn into an offscreen target
+ * with scrolling heat textures, which is then soft-light blended onto the scene where it is not occluded.
+ * <p>
+ * Upstream: a Veil {@code AdvancedFbo} + {@code aeronautics:hot_air_overlay} shader at {@code AFTER_SOLID_BLOCKS}, and the
+ * Veil post pipeline {@code aeronautics:soft_light}. Here: {@link TextureTarget}s and blaze3d pipelines, drawn right
+ * after the opaque section layers (hooked through Sable's sub-level dispatcher, see
+ * {@code mixin/levitite/VanillaSubLevelRenderDispatcherMixin}).
+ */
 public class ClientBalloonEffectRenderer {
-
-    private static final Identifier FBO_ID = Aeronautics.path("soft_light");
-    private static final Identifier POST_SHADER_ID = Aeronautics.path("soft_light");
 
     private static final Identifier SIDE_TEXTURE = Aeronautics.path("textures/special/heat_overlay.png");
     private static final Identifier TOP_TEXTURE = Aeronautics.path("textures/special/lava_still.png");
 
-    private static final Identifier SHADER_ID = Aeronautics.path("hot_air_overlay");
+    private static final String HOT_AIR_UNIFORM = "HotAirInfo";
+    private static final int HOT_AIR_UBO_SIZE = new Std140SizeCalculator().putVec4().get();
+
+    /**
+     * Inside faces of balloons (upstream culled front faces; the mesh is wound the other way round instead), pushed in
+     * front of the blocks by a depth bias (upstream: polygon offset -0.5, -30).
+     */
+    public static final RenderPipeline HOT_AIR_OVERLAY = RenderPipeline.builder(RenderPipelines.MATRICES_PROJECTION_SNIPPET)
+            .withLocation(Aeronautics.path("pipeline/hot_air_overlay"))
+            .withVertexShader(Aeronautics.path("core/hot_air_overlay"))
+            .withFragmentShader(Aeronautics.path("core/hot_air_overlay"))
+            .withUniform(HOT_AIR_UNIFORM, UniformType.UNIFORM_BUFFER)
+            .withSampler("Sampler0")
+            .withSampler("Sampler1")
+            .withVertexFormat(DefaultVertexFormat.POSITION_TEX_COLOR_NORMAL, VertexFormat.Mode.QUADS)
+            .withDepthBias(-0.5f, -30.0f)
+            .build();
+
+    public static final RenderPipeline SOFT_LIGHT = RenderPipeline.builder()
+            .withLocation(Aeronautics.path("pipeline/soft_light"))
+            .withVertexShader("core/screenquad")
+            .withFragmentShader(Aeronautics.path("core/soft_light"))
+            .withSampler("MainSampler")
+            .withSampler("MainDepthSampler")
+            .withSampler("OverlaySampler")
+            .withSampler("OverlayDepthSampler")
+            .withVertexFormat(DefaultVertexFormat.EMPTY, VertexFormat.Mode.TRIANGLES)
+            .withDepthTestFunction(DepthTestFunction.NO_DEPTH_TEST)
+            .withDepthWrite(false)
+            .build();
 
     @Nullable
-    private static AdvancedFbo overlayFbo;
+    private static TextureTarget overlayTarget;
+    @Nullable
+    private static TextureTarget sceneCopy;
+    @Nullable
+    private static DynamicUniformStorage<HotAirUniform> uniforms;
+    private static final Matrix4f modelView = new Matrix4f();
 
-    public static void onRenderLevelStage(final VeilRenderLevelStageEvent.Stage stage,
-                                          final Matrix4fc frustumMatrix,
-                                          final Matrix4fc projectionMatrix,
-                                          final int renderTick) {
-        if (stage != VeilRenderLevelStageEvent.Stage.AFTER_SOLID_BLOCKS) {
-            return;
-        }
+    /**
+     * Stores the world model view matrix (camera rotation) for this frame.
+     */
+    public static void setModelView(final Matrix4fc matrix) {
+        modelView.set(matrix);
+    }
 
+    /**
+     * Renders the balloon effects, right after the opaque terrain (upstream {@code AFTER_SOLID_BLOCKS}).
+     *
+     * @param mainTarget The target the opaque terrain was drawn into
+     */
+    public static void render(final RenderTarget mainTarget) {
         if (!AeroConfig.client().enableHotAirRendering.get()) {
-            freeFbo();
+            free();
             return;
         }
 
         final Minecraft minecraft = Minecraft.getInstance();
         final ClientLevel level = minecraft.level;
         if (level == null) {
-            freeFbo();
+            free();
             return;
         }
 
         final BalloonMap ballonMap = BalloonMap.MAP.get(level);
         if (ballonMap.isEmpty()) {
-            freeFbo();
+            free();
             return;
         }
 
-        final Window window = minecraft.getWindow();
-        if (overlayFbo == null || overlayFbo.getWidth() != window.getWidth() || overlayFbo.getHeight() != window.getHeight()) {
-            freeFbo();
-            overlayFbo = AdvancedFbo.withSize(window.getWidth(), window.getHeight())
-                    .addColorTextureBuffer()
-                    .setDepthTextureBuffer()
-                    .build(true);
+        final int width = mainTarget.width;
+        final int height = mainTarget.height;
+        if (overlayTarget == null || overlayTarget.width != width || overlayTarget.height != height) {
+            freeTargets();
+            overlayTarget = new TextureTarget("Aeronautics hot air overlay", width, height, true);
+            sceneCopy = new TextureTarget("Aeronautics hot air scene copy", width, height, false);
         }
 
-        renderBalloonEffects(ballonMap, frustumMatrix, projectionMatrix, renderTick);
+        if (uniforms == null) {
+            uniforms = new DynamicUniformStorage<>("Aeronautics hot air UBO", HOT_AIR_UBO_SIZE, 8);
+        } else {
+            uniforms.endFrame();
+        }
+
+        renderBalloonEffects(ballonMap, mainTarget, level.getGameTime());
     }
 
     /**
      * Renders the balloon effects for a given balloon map
+     *
      * @param balloonMap the balloon map to render effects for
-     * @param frustumMatrix the model view matrix
-     * @param projectionMatrix the projection matrix
+     * @param mainTarget the target to blend the effects onto
      * @param renderTick the render-tick
      */
-    private static void renderBalloonEffects(final BalloonMap balloonMap, final Matrix4fc frustumMatrix, final Matrix4fc projectionMatrix, final int renderTick) {
+    private static void renderBalloonEffects(final BalloonMap balloonMap, final RenderTarget mainTarget, final long renderTick) {
         final Minecraft minecraft = Minecraft.getInstance();
-        final float partialTicks = minecraft.getTimer().getGameTimeDeltaPartialTick(false);
+        final float partialTicks = minecraft.getDeltaTracker().getGameTimeDeltaPartialTick(false);
+        final CommandEncoder encoder = RenderSystem.getDevice().createCommandEncoder();
 
-        final ShaderProgram shader = VeilRenderSystem.setShader(SHADER_ID);
-        if (shader == null) return;
+        encoder.clearColorAndDepthTextures(overlayTarget.getColorTexture(), 0, overlayTarget.getDepthTexture(), 1.0);
 
-        overlayFbo.bind(false);
-        overlayFbo.clear(0.0f, 0.0f, 0.0f, 0.0f, GL30.GL_COLOR_BUFFER_BIT | GL30.GL_DEPTH_BUFFER_BIT);
+        final float scrollAmount = ((renderTick % 100000L) + partialTicks) / -20.0f;
+        final float scroll = (float) (Math.floor(scrollAmount * 16.0f) / 16.0f);
 
-        RenderSystem.setShaderTexture(0, SIDE_TEXTURE);
-        RenderSystem.setShaderTexture(1, TOP_TEXTURE);
-        RenderSystem.enableCull();
-        RenderSystem.depthMask(true);
-        RenderSystem.enableDepthTest();
+        final AbstractTexture side = minecraft.getTextureManager().getTexture(SIDE_TEXTURE);
+        final AbstractTexture top = minecraft.getTextureManager().getTexture(TOP_TEXTURE);
+        final RenderSystem.AutoStorageIndexBuffer indices = RenderSystem.getSequentialBuffer(VertexFormat.Mode.QUADS);
+        boolean drawn = false;
 
-        GL30.glCullFace(GL11.GL_FRONT);
+        try (final RenderPass renderPass = encoder.createRenderPass(() -> "Aeronautics hot air overlay",
+                overlayTarget.getColorTextureView(), OptionalInt.empty(), overlayTarget.getDepthTextureView(), OptionalDouble.empty())) {
+            RenderSystem.bindDefaultUniforms(renderPass);
+            renderPass.setPipeline(HOT_AIR_OVERLAY);
+            renderPass.bindTexture("Sampler0", side.getTextureView(), side.getSampler());
+            renderPass.bindTexture("Sampler1", top.getTextureView(), top.getSampler());
 
-        // Polygon offset to be before blocks
-        RenderSystem.polygonOffset(-0.5F, -30.0F);
-        RenderSystem.enablePolygonOffset();
+            for (final Balloon balloon : balloonMap.getBalloons()) {
+                final ClientBalloon clientBalloon = (ClientBalloon) balloon;
 
-        final float scrollAmount = (renderTick + partialTicks) / -20.0f;
+                final HeatedCulledRenderRegion renderRegion = clientBalloon.getRenderRegion();
 
-        final ShaderUniformAccess scrollUniform = shader.getUniformSafe("Scroll");
-        final ShaderUniformAccess yCutoffUniform = shader.getUniformSafe("CutoffY");
+                if (renderRegion == null) {
+                    continue;
+                }
 
-        scrollUniform.setFloat((float) (Math.floor(scrollAmount * 16.0f) / 16.0f));
+                float filledPercent = 0.0f;
 
-        final float brightness = 0.85f;
-        final float alpha = 1.0f;
-        RenderSystem.setShaderColor(brightness, brightness, brightness, alpha);
+                // These should all have the same client predicted volume, but we pick the max
+                // to be safe
+                for (final BlockEntityLiftingGasProvider heater : balloon.getHeaters()) {
+                    filledPercent = Math.max(filledPercent, (float) heater.getClientPredictedVolume() / balloon.getCapacity());
+                }
 
-        final Matrix4f modelViewMat = new Matrix4f(frustumMatrix);
-        final Matrix4f projMat = new Matrix4f(projectionMatrix);
+                filledPercent = Mth.clamp(filledPercent, 0.0f, 1.0f);
+                final GpuBufferSlice uniform = uniforms.writeUniform(new HotAirUniform(scroll, (1.0f - filledPercent) * (balloon.getHeight() + 1.0f)));
+                renderPass.setUniform(HOT_AIR_UNIFORM, uniform);
 
-        for (final Balloon balloon : balloonMap.getBalloons()) {
-            final ClientBalloon clientBalloon = (ClientBalloon) balloon;
-
-            final HeatedCulledRenderRegion renderRegion = clientBalloon.getRenderRegion();
-
-            if (renderRegion == null) {
-                continue;
+                drawn |= renderRegion.render(renderPass, modelView, indices) > 0;
             }
-
-            float filledPercent = 0.0f;
-
-            // These should all have the same client predicted volume, but we pick the max
-            // to be safe
-            for (final BlockEntityLiftingGasProvider heater : balloon.getHeaters()) {
-                filledPercent = Math.max(filledPercent, (float) heater.getClientPredictedVolume() / balloon.getCapacity());
-            }
-
-            filledPercent = Mth.clamp(filledPercent, 0.0f, 1.0f);
-            yCutoffUniform.setFloat((1.0f - filledPercent) * (balloon.getHeight() + 1.0f));
-
-            renderRegion.render(modelViewMat, projMat);
         }
 
-        // Cleanup render state
-        RenderSystem.polygonOffset(0.0F, 0.0F);
-        RenderSystem.disablePolygonOffset();
-        GL30.glCullFace(GL11.GL_BACK);
-        RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
-        AdvancedFbo.unbind();
-
-        applyHeatingToScreen();
-    }
-
-    private static void applyHeatingToScreen() {
-        final PostProcessingManager manager = VeilRenderSystem.renderer().getPostProcessingManager();
-        final PostPipeline pipeline = manager.getPipeline(POST_SHADER_ID);
-        final PostPipeline.Context context = manager.getPostPipelineContext();
-
-        context.setFramebuffer(FBO_ID, overlayFbo);
-        manager.runPipeline(pipeline);
-    }
-
-    private static void freeFbo() {
-        if (overlayFbo != null) {
-            overlayFbo.free();
+        if (drawn) {
+            applyHeatingToScreen(encoder, mainTarget);
         }
+    }
 
-        overlayFbo = null;
+    private static void applyHeatingToScreen(final CommandEncoder encoder, final RenderTarget mainTarget) {
+        // The pass writes into the main target, so it reads a copy of the scene colors
+        encoder.copyTextureToTexture(mainTarget.getColorTexture(), sceneCopy.getColorTexture(), 0, 0, 0, 0, 0, mainTarget.width, mainTarget.height);
+
+        final GpuSampler sampler = RenderSystem.getSamplerCache().getClampToEdge(FilterMode.NEAREST);
+        try (final RenderPass renderPass = encoder.createRenderPass(() -> "Aeronautics hot air soft light",
+                mainTarget.getColorTextureView(), OptionalInt.empty())) {
+            renderPass.setPipeline(SOFT_LIGHT);
+            renderPass.bindTexture("MainSampler", sceneCopy.getColorTextureView(), sampler);
+            renderPass.bindTexture("MainDepthSampler", mainTarget.getDepthTextureView(), sampler);
+            renderPass.bindTexture("OverlaySampler", overlayTarget.getColorTextureView(), sampler);
+            renderPass.bindTexture("OverlayDepthSampler", overlayTarget.getDepthTextureView(), sampler);
+            renderPass.draw(0, 3);
+        }
+    }
+
+    private static void freeTargets() {
+        if (overlayTarget != null) {
+            overlayTarget.destroyBuffers();
+            overlayTarget = null;
+        }
+        if (sceneCopy != null) {
+            sceneCopy.destroyBuffers();
+            sceneCopy = null;
+        }
+    }
+
+    public static void free() {
+        freeTargets();
+        if (uniforms != null) {
+            uniforms.close();
+            uniforms = null;
+        }
+    }
+
+    private record HotAirUniform(float scroll, float cutoffY) implements DynamicUniformStorage.DynamicUniform {
+        @Override
+        public void write(final ByteBuffer buffer) {
+            Std140Builder.intoBuffer(buffer).putVec4(this.scroll, this.cutoffY, 0.0f, 0.0f);
+        }
     }
 }
