@@ -6,6 +6,9 @@
   "planks": "block/oak_planks",
   "particle": "create:block/andesite_casing"
  },
+ "loader": "neoforge:obj",
+ "flip_v": true,
+ "model": "simulated:models/block/steering_wheel/wheel.obj",
  "display": {
   "gui": {
    "rotation": [
@@ -41,6 +44,5 @@
     0.45
    ]
   }
- },
- "_obj_model": "simulated:models/block/steering_wheel/wheel.obj"
+ }
 }
