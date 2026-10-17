@@ -3,7 +3,6 @@ package dev.simulated_team.simulated.content.display_sources;
 import com.zurrtum.create.content.redstone.displayLink.DisplayLinkContext;
 import com.zurrtum.create.content.redstone.displayLink.target.DisplayTargetStats;
 import dev.simulated_team.simulated.content.blocks.portable_engine.PortableEngineBlockEntity;
-import dev.simulated_team.simulated.data.SimLang;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 
@@ -13,7 +12,7 @@ public class PortableEngineDisplaySource extends AbstractNumericDisplaysource {
 
     @Override
     List<Component> getOptions() {
-        return SimLang.translatedOptions("display_source.portable_engine", "current_burn", "total_burn");
+        return DisplaySourceLang.translatedOptions("display_source.portable_engine", "current_burn", "total_burn");
     }
 
     @Override
@@ -32,18 +31,18 @@ public class PortableEngineDisplaySource extends AbstractNumericDisplaysource {
             return ZERO.copy();
         }
 
-        switch (displayLinkContext.sourceConfig().getInt(this.getSelectionKey())) {
+        switch (displayLinkContext.sourceConfig().getIntOr(this.getSelectionKey(), 0)) {
             case 0 -> {
                 if (be.isCurrentFuelInfinite()) {
-                    return SimLang.translate("portable_engine.infinite").component();
+                    return DisplaySourceLang.translate("portable_engine.infinite");
                 }
-                return SimLang.number((double) be.getCurrentBurnTime() / 20).component();
+                return DisplaySourceLang.number((double) be.getCurrentBurnTime() / 20);
             }
             case 1 -> {
                 if (be.isCurrentFuelInfinite()) {
-                    return SimLang.translate("portable_engine.infinite").component();
+                    return DisplaySourceLang.translate("portable_engine.infinite");
                 }
-                return SimLang.number((double) be.getTotalBurnTime() / 20).component();
+                return DisplaySourceLang.number((double) be.getTotalBurnTime() / 20);
             }
         }
 

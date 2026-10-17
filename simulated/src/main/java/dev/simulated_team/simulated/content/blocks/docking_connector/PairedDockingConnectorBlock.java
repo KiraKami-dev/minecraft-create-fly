@@ -4,13 +4,14 @@ import com.mojang.serialization.MapCodec;
 import dev.simulated_team.simulated.index.SimBlocks;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.LevelReader;
+import net.minecraft.world.level.ScheduledTickAccess;
 import net.minecraft.world.level.block.*;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
@@ -56,14 +57,14 @@ public class PairedDockingConnectorBlock extends DirectionalBlock {
     }
 
     @Override
-    protected @NotNull BlockState updateShape(final BlockState state, final @NotNull Direction direction, final @NotNull BlockState neighborState, final @NotNull LevelAccessor level, final @NotNull BlockPos pos, final @NotNull BlockPos neighborPos) {
+    protected @NotNull BlockState updateShape(final BlockState state, final @NotNull LevelReader level, final @NotNull ScheduledTickAccess tickAccess, final @NotNull BlockPos pos, final @NotNull Direction direction, final @NotNull BlockPos neighborPos, final @NotNull BlockState neighborState, final @NotNull RandomSource random) {
         final Direction facing = state.getValue(FACING);
         if (facing != direction) {
-            return super.updateShape(state, direction, neighborState, level, pos, neighborPos);
+            return super.updateShape(state, level, tickAccess, pos, direction, neighborPos, neighborState, random);
         }
 
         if (neighborState.is(SimBlocks.DOCKING_CONNECTOR) && neighborState.getValue(BlockStateProperties.FACING) == facing.getOpposite()) {
-            return super.updateShape(state, direction, neighborState, level, pos, neighborPos);
+            return super.updateShape(state, level, tickAccess, pos, direction, neighborPos, neighborState, random);
         }
 
         return Blocks.AIR.defaultBlockState();
@@ -119,7 +120,7 @@ public class PairedDockingConnectorBlock extends DirectionalBlock {
     }
 
     @Override
-    public @NotNull ItemStack getCloneItemStack(final @NotNull LevelReader level, final @NotNull BlockPos pos, final @NotNull BlockState state) {
+    public @NotNull ItemStack getCloneItemStack(final @NotNull LevelReader level, final @NotNull BlockPos pos, final @NotNull BlockState state, final boolean includeData) {
         return new ItemStack(SimBlocks.DOCKING_CONNECTOR);
     }
 

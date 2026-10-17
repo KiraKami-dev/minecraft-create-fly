@@ -1,7 +1,6 @@
 package dev.simulated_team.simulated.content.blocks.physics_assembler;
 
 import com.zurrtum.create.content.contraptions.AssemblyException;
-import com.zurrtum.create.client.content.contraptions.IDisplayAssemblyExceptions;
 import com.zurrtum.create.foundation.blockEntity.SmartBlockEntity;
 import com.zurrtum.create.api.behaviour.BlockEntityBehaviour;
 import dev.ryanhcode.sable.Sable;
@@ -21,8 +20,8 @@ import dev.ryanhcode.sable.sublevel.SubLevel;
 import dev.simulated_team.simulated.config.server.blocks.SimAssembly;
 import dev.simulated_team.simulated.content.blocks.behaviour.HoldTipBehaviour;
 import dev.simulated_team.simulated.content.blocks.physics_assembler.assembly_preventer.DisassemblyPrevention;
+import dev.simulated_team.simulated.Simulated;
 import dev.simulated_team.simulated.content.physics_staff.PhysicsStaffServerHandler;
-import dev.simulated_team.simulated.data.SimLang;
 import dev.simulated_team.simulated.mixin_interface.assembly_preventer.PrimaryAssemblerExtension;
 import dev.simulated_team.simulated.network.packets.physics_assembler.PhysicsAssemblerFailedPacket;
 import dev.simulated_team.simulated.network.packets.physics_assembler.PhysicsAssemblerFlickAndHoldLeverPacket;
@@ -33,8 +32,7 @@ import dev.simulated_team.simulated.util.assembly.SimAssemblyException;
 import dev.ryanhcode.sable.veillite.api.network.VeilPacketManager;
 import com.zurrtum.create.catnip.animation.LerpedFloat;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.HolderLookup;
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.Mth;
@@ -43,6 +41,8 @@ import net.minecraft.world.level.block.Rotation;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.LevelChunk;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
 import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Quaterniond;
@@ -51,7 +51,11 @@ import org.joml.Vector3d;
 
 import java.util.List;
 
-public class PhysicsAssemblerBlockEntity extends SmartBlockEntity implements IDisplayAssemblyExceptions {
+/**
+ * The assembly exception display (upstream: {@code implements IDisplayAssemblyExceptions}) is the client-side
+ * {@code PhysicsAssemblerTooltipBehaviour}, as Create Fly does for its own assemblers.
+ */
+public class PhysicsAssemblerBlockEntity extends SmartBlockEntity {
     private static final float FLICKED_ANGLE_DEGREES = 45.0f;
     private static final double LEVER_CHASE_SPEED = 0.75f;
 
@@ -60,8 +64,9 @@ public class PhysicsAssemblerBlockEntity extends SmartBlockEntity implements IDi
 
     private static final double ANGULAR_STIFFNESS = 13000.0;
     private static final double ANGULAR_DAMPING = 1000.0;
-    private static final MutableComponent ASSEMBLE_TIP = SimLang.translate("gui.hold_tip.hold_to_assemble").component();
-    private static final MutableComponent DISASSEMBLE_TIP = SimLang.translate("gui.hold_tip.hold_to_disassemble").component();
+    // plain components: SimLang's LangBuilder is a client class in Create Fly, and this class loads on the server
+    private static final MutableComponent ASSEMBLE_TIP = Component.translatable(Simulated.MOD_ID + ".gui.hold_tip.hold_to_assemble");
+    private static final MutableComponent DISASSEMBLE_TIP = Component.translatable(Simulated.MOD_ID + ".gui.hold_tip.hold_to_disassemble");
 
     protected AssemblyException lastException;
     protected boolean primaryAssembler;
@@ -92,7 +97,7 @@ public class PhysicsAssemblerBlockEntity extends SmartBlockEntity implements IDi
     }
 
     @Override
-    public void addBehaviours(final List<BlockEntityBehaviour> behaviours) {
+    public void addBehaviours(final List<BlockEntityBehaviour<?>> behaviours) {
         behaviours.add(this.holdTipBehaviour = new HoldTipBehaviour(this, ASSEMBLE_TIP));
     }
 
@@ -197,8 +202,9 @@ public class PhysicsAssemblerBlockEntity extends SmartBlockEntity implements IDi
 
     private void throwDisassemblyExceptions(final ServerSubLevel subLevel) throws AssemblyException {
         final BoundingBox3dc bounds = subLevel.boundingBox();
-        if (bounds.maxY() > this.level.getMaxBuildHeight()
-                || bounds.minY() < this.level.getMinBuildHeight()) {
+        // getMaxBuildHeight() was exclusive; getMaxY() is the inclusive top block, hence the + 1
+        if (bounds.maxY() > this.level.getMaxY() + 1
+                || bounds.minY() < this.level.getMinY()) {
             throw SimAssemblyException.outOfWorld();
         }
 
@@ -372,22 +378,21 @@ public class PhysicsAssemblerBlockEntity extends SmartBlockEntity implements IDi
     }
 
     @Override
-    public void write(final CompoundTag compound, final HolderLookup.Provider registries, final boolean clientPacket) {
-        super.write(compound, registries, clientPacket);
+    public void write(final ValueOutput view, final boolean clientPacket) {
+        super.write(view, clientPacket);
 
-        AssemblyException.write(compound, registries, this.lastException);
-        compound.putBoolean("IsPrimary", this.primaryAssembler);
+        AssemblyException.write(view, this.lastException);
+        view.putBoolean("IsPrimary", this.primaryAssembler);
     }
 
     @Override
-    protected void read(final CompoundTag tag, final HolderLookup.Provider registries, final boolean clientPacket) {
-        super.read(tag, registries, clientPacket);
+    protected void read(final ValueInput view, final boolean clientPacket) {
+        super.read(view, clientPacket);
 
-        this.lastException = AssemblyException.read(tag, registries);
-        this.primaryAssembler = tag.getBoolean("IsPrimary");
+        this.lastException = AssemblyException.read(view);
+        this.primaryAssembler = view.getBooleanOr("IsPrimary", false);
     }
 
-    @Override
     public AssemblyException getLastAssemblyException() {
         return this.lastException;
     }

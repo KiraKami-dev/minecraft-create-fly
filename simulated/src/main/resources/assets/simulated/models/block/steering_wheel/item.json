@@ -6,6 +6,9 @@
   "spruce_planks": "block/spruce_planks",
   "particle": "create:block/andesite_casing"
  },
+ "loader": "neoforge:obj",
+ "flip_v": true,
+ "model": "simulated:models/block/steering_wheel/item.obj",
  "display": {
   "thirdperson_righthand": {
    "rotation": [
@@ -147,6 +150,5 @@
     5
    ]
   }
- ],
- "_obj_model": "simulated:models/block/steering_wheel/item.obj"
+ ]
 }

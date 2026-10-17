@@ -35,6 +35,7 @@
     "new_ponder.PonderTooltipHandlerMixin",
     "new_ponder.PonderUIMixin",
     "physics_staff.GuiGraphicsMixin",
+    "plunger_launcher.ItemInHandRendererMixin",
     "ponder.PonderSceneMixin",
     "ponder.PonderSceneTransformMixin",
     "ponder.SceneRendererMixin",

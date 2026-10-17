@@ -3,9 +3,7 @@ package dev.simulated_team.simulated.content.display_sources;
 import com.zurrtum.create.content.redstone.displayLink.DisplayLinkContext;
 import com.zurrtum.create.content.redstone.displayLink.source.NumericSingleLineDisplaySource;
 import com.zurrtum.create.content.redstone.displayLink.target.DisplayTargetStats;
-import com.zurrtum.create.client.foundation.gui.ModularGuiLineBuilder;
 import dev.simulated_team.simulated.content.blocks.altitude_sensor.AltitudeSensorBlockEntity;
-import dev.simulated_team.simulated.data.SimLang;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 
@@ -17,7 +15,7 @@ public class AltitudeSensorDisplaySource extends NumericSingleLineDisplaySource 
             return ZERO.copy();
         }
 
-        switch (context.sourceConfig().getInt("AltitudeSensorSelection")) {
+        switch (context.sourceConfig().getIntOr("AltitudeSensorSelection", 0)) {
             case 0 -> {
                 assert be.hasLevel();
                 final float airPressure = (float) be.getAirPressure() * 100.0f;
@@ -30,17 +28,7 @@ public class AltitudeSensorDisplaySource extends NumericSingleLineDisplaySource 
         return EMPTY_LINE.copy();
     }
 
-    @Override
-    public void initConfigurationWidgets(final DisplayLinkContext context, final ModularGuiLineBuilder builder, final boolean isFirstLine) {
-        super.initConfigurationWidgets(context, builder, isFirstLine);
-        if (isFirstLine) {
-            return;
-        }
-
-        builder.addSelectionScrollInput(0, 95, (selectionScrollInput, label) -> {
-            selectionScrollInput.forOptions(SimLang.translatedOptions("display_source.altitude_sensor", "air_pressure", "height"));
-        }, "AltitudeSensorSelection");
-    }
+    // configuration widgets: SimDisplaySourceRenders (client)
 
     @Override
     protected String getTranslationKey() {
@@ -48,7 +36,7 @@ public class AltitudeSensorDisplaySource extends NumericSingleLineDisplaySource 
     }
 
     @Override
-    protected boolean allowsLabeling(final DisplayLinkContext context) {
+    public boolean allowsLabeling(final DisplayLinkContext context) {
         return true;
     }
 }

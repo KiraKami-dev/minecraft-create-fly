@@ -1,6 +1,5 @@
 package dev.simulated_team.simulated.content.particle;
 
-import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.zurrtum.create.content.equipment.goggles.GogglesItem;
 import com.zurrtum.create.client.catnip.animation.AnimationTickHolder;
 import com.zurrtum.create.catnip.math.VecHelper;
@@ -13,8 +12,10 @@ import net.minecraft.client.particle.ParticleProvider;
 import net.minecraft.client.particle.SimpleAnimatedParticle;
 import net.minecraft.client.particle.SpriteSet;
 import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.client.renderer.state.QuadParticleRenderState;
 import net.minecraft.core.Direction;
 import net.minecraft.core.Vec3i;
+import net.minecraft.util.RandomSource;
 import net.minecraft.world.phys.Vec3;
 
 public class AugerIndicatorParticle extends SimpleAnimatedParticle {
@@ -38,7 +39,7 @@ public class AugerIndicatorParticle extends SimpleAnimatedParticle {
         this.xd = 0;
         this.yd = 0;
         this.zd = 0;
-        final Vec3i normal = direction.getNormal();
+        final Vec3i normal = direction.getUnitVec3i();
         this.origin = new Vec3(
                 x - normal.getX() * 0.5,
                 y - normal.getY() * 0.5,
@@ -70,12 +71,13 @@ public class AugerIndicatorParticle extends SimpleAnimatedParticle {
     }
 
     @Override
-    public void render(final VertexConsumer buffer, final Camera renderInfo, final float partialTicks) {
+    public void extract(final QuadParticleRenderState state, final Camera renderInfo, final float partialTicks) {
         if (!this.isVisible)
             return;
-        super.render(buffer, renderInfo, partialTicks);
+        super.extract(state, renderInfo, partialTicks);
     }
 
+    @Override
     public void move(final double x, final double y, final double z) {
         final float time = AnimationTickHolder.getTicks(this.level);
         float angle = ((time * this.speed) % 360) - (this.speed / 2 * this.age * (((float) this.age) / this.lifetime));
@@ -84,7 +86,7 @@ public class AugerIndicatorParticle extends SimpleAnimatedParticle {
         angle += this.angleOffset * 360f;
         final Vec3 position = VecHelper.rotate(this.offset.scale(this.radius), angle, this.direction.getAxis())
                 .add(this.origin)
-                .add(Vec3.atLowerCornerOf(this.direction.getNormal()).scale((double) this.age / this.lifetime));
+                .add(Vec3.atLowerCornerOf(this.direction.getUnitVec3i()).scale((double) this.age / this.lifetime));
         this.x = position.x;
         this.y = position.y;
         this.z = position.z;
@@ -97,8 +99,9 @@ public class AugerIndicatorParticle extends SimpleAnimatedParticle {
             this.spriteSet = animatedSprite;
         }
 
+        @Override
         public Particle createParticle(final AugerIndicatorParticleData data, final ClientLevel worldIn, final double x, final double y, final double z,
-                                       final double xSpeed, final double ySpeed, final double zSpeed) {
+                                       final double xSpeed, final double ySpeed, final double zSpeed, final RandomSource random) {
             final Minecraft mc = Minecraft.getInstance();
             final LocalPlayer player = mc.player;
             final boolean visible = worldIn != mc.level || player != null && GogglesItem.isWearingGoggles(player);

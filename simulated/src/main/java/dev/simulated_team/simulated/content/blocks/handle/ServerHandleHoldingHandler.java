@@ -1,13 +1,16 @@
 package dev.simulated_team.simulated.content.blocks.handle;
 
+import dev.ryanhcode.sable.veillite.api.network.VeilPacketManager;
 import dev.simulated_team.simulated.index.SimStats;
 import dev.simulated_team.simulated.network.packets.handle.ClientboundPlayersHoldingHandlePacket;
 import it.unimi.dsi.fastutil.objects.Object2IntMap;
 import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
 import it.unimi.dsi.fastutil.objects.ObjectIterator;
-import net.createmod.catnip.platform.CatnipServices;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.entity.player.Player;
+import org.jetbrains.annotations.Nullable;
 
+import java.util.HashSet;
 import java.util.Map;
 import java.util.UUID;
 
@@ -23,15 +26,16 @@ public class ServerHandleHoldingHandler {
 		}
 
 		if (holdingPlayers.size() != count)
-			sync();
-	}
-	
-	public static void stopHolding(final Player player) {
-		if (holdingPlayers.removeInt(player.getUUID()) != 0)
-			sync();
+			sync(player.level().getServer());
 	}
 
-	public static void tick() {
+	public static void stopHolding(final Player player) {
+		if (holdingPlayers.removeInt(player.getUUID()) != 0)
+			sync(player.level().getServer());
+	}
+
+	// (not called upstream either)
+	public static void tick(final MinecraftServer server) {
 		ticks++;
 
 		final int before = holdingPlayers.size();
@@ -52,11 +56,16 @@ public class ServerHandleHoldingHandler {
 		if (ticks % 10 != 0 && before == after)
 			return;
 
-		sync();
+		sync(server);
 
 	}
 
-	public static void sync() {
-		CatnipServices.NETWORK.sendToAllClients(new ClientboundPlayersHoldingHandlePacket(holdingPlayers.keySet()));
+	/**
+	 * Sends the players holding handles to all clients (was CatnipServices.NETWORK.sendToAllClients)
+	 */
+	public static void sync(@Nullable final MinecraftServer server) {
+		if (server == null)
+			return;
+		VeilPacketManager.all(server).sendPacket(new ClientboundPlayersHoldingHandlePacket(new HashSet<>(holdingPlayers.keySet())));
 	}
 }

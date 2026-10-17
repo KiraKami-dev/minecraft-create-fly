@@ -24,7 +24,7 @@ public class LinkedTypewriterDisplaySource extends SingleLineDisplaySource {
     }
 
     @Override
-    protected boolean allowsLabeling(final DisplayLinkContext context) {
+    public boolean allowsLabeling(final DisplayLinkContext context) {
         return true;
     }
 }
