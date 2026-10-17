@@ -69,8 +69,12 @@ Rendering
   vertices so all flames share one batch: colour r = intensity, g = palette row, UV2.x = render time mod 10/3 s scaled to 0..32767
   (the shader is periodic with that period). The pinwheel files are now unused.
 
-## Files edited before the scope change (left as they are, not compile-verified)
-WIP commit `9b3b41e` also touched `content/blocks/propeller/**` (render-state renderers incl. `PropellerBearingRenderer extends BearingRenderer`,
+## Files edited before the scope change (left as they are)
+After merging p2-port (aero-core) they compile with 0 errors (flow check included), but they were not reviewed further. If they are
+kept, the propeller bearing contraption should be registered with `PropellerBearingContraptionEntityRenderer::new` /
+`PropellerBearingContraptionVisual::new` (Create Fly's `ControlledContraption*` pair lacks the gyro tilt of upstream's `applyLocalTransforms`),
+and the propeller client hooks are `PropellerBearingClient#registerClient()` plus `PropellerTooltipBehaviours.SmallPropellerTooltipBehaviour`
+for the small propellers (not registered anywhere yet). WIP commit `9b3b41e` also touched `content/blocks/propeller/**` (render-state renderers incl. `PropellerBearingRenderer extends BearingRenderer`,
 `PropellerActorBehaviour` without the goggle code + client `PropellerTooltipBehaviours`, `PropellerBearingClient` (thrust direction
 `ScrollOptionBehaviour` + gyro slot), `ServerScrollOptionBehaviour` + `ValueOutput` in the bearing BEs, `PropellerBearingContraptionEntity`
 without `applyLocalTransforms` + new `PropellerBearingContraptionEntityRenderer`/`Visual`, `Create.RANDOM` -> `level.random`,
