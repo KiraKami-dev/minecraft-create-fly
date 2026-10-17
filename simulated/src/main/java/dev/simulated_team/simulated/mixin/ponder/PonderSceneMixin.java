@@ -20,8 +20,8 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(PonderScene.class)
 public class PonderSceneMixin implements PonderSceneExtension {
 
-    @Shadow float scaleFactor;
-    @Shadow float yOffset;
+    @Shadow(remap = false) float scaleFactor;
+    @Shadow(remap = false) float yOffset;
     @Unique
     LerpedFloat simulated$shadowAlpha = LerpedFloat.linear();
     @Unique

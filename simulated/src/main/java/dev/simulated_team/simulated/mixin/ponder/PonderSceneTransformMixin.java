@@ -10,12 +10,12 @@ import org.spongepowered.asm.mixin.injection.Redirect;
 @Mixin(PonderScene.SceneTransform.class)
 public abstract class PonderSceneTransformMixin {
     // todo pr create to interpolate these variables
-    @Redirect(method = "apply(Lcom/mojang/blaze3d/vertex/PoseStack;F)Lcom/mojang/blaze3d/vertex/PoseStack;", at = @At(value = "FIELD", target = "Lcom/zurrtum/create/client/ponder/foundation/PonderScene;scaleFactor:F"))
+    @Redirect(method = "apply(Lcom/mojang/blaze3d/vertex/PoseStack;F)Lcom/mojang/blaze3d/vertex/PoseStack;", at = @At(value = "FIELD", target = "Lcom/zurrtum/create/client/ponder/foundation/PonderScene;scaleFactor:F", remap = false))
     private float interpolateScaleFactor(final PonderScene instance, @Local(argsOnly = true) final float pt) {
         return ((PonderSceneExtension)instance).simulated$getScale(pt);
     }
 
-    @Redirect(method = "apply(Lcom/mojang/blaze3d/vertex/PoseStack;F)Lcom/mojang/blaze3d/vertex/PoseStack;", at = @At(value = "FIELD", target = "Lcom/zurrtum/create/client/ponder/foundation/PonderScene;yOffset:F"))
+    @Redirect(method = "apply(Lcom/mojang/blaze3d/vertex/PoseStack;F)Lcom/mojang/blaze3d/vertex/PoseStack;", at = @At(value = "FIELD", target = "Lcom/zurrtum/create/client/ponder/foundation/PonderScene;yOffset:F", remap = false))
     private float interpolateYOffset(final PonderScene instance, @Local(argsOnly = true) final float pt) {
         return ((PonderSceneExtension)instance).simulated$getYOffset(pt);
     }

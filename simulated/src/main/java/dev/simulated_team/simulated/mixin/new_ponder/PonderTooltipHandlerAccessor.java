@@ -7,7 +7,7 @@ import org.spongepowered.asm.mixin.gen.Accessor;
 
 @Mixin(PonderTooltipHandler.class)
 public interface PonderTooltipHandlerAccessor {
-	@Accessor
+	@Accessor(remap = false)
 	static ItemStack getTrackingStack() {
 		return null;
 	}

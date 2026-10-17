@@ -31,16 +31,16 @@ public abstract class KineticBlockEntityMixin extends SmartBlockEntity implement
         super(type, pos, state);
     }
 
-    @Shadow
+    @Shadow(remap = false)
     public abstract boolean hasSource();
 
-    @Shadow
+    @Shadow(remap = false)
     protected float speed;
 
-    @Shadow
+    @Shadow(remap = false)
     public abstract void initialize();
 
-    @Shadow private int validationCountdown;
+    @Shadow(remap = false) private int validationCountdown;
     @Unique
     private boolean simulated$extraKineticsConnected = false;
 
@@ -54,7 +54,7 @@ public abstract class KineticBlockEntityMixin extends SmartBlockEntity implement
         return this.simulated$extraKineticsConnected;
     }
 
-    @Inject(method = "switchToBlockState", at = @At("TAIL"))
+    @Inject(method = "switchToBlockState", at = @At("TAIL"), remap = false)
     private static void simulated$switchExtraKinetics(final Level world, final BlockPos pos, final BlockState state, final CallbackInfo ci, @Local final BlockEntity be) {
         if (be instanceof final ExtraKinetics ek) {
             final KineticBlockEntity extraKinetics = ek.getExtraKinetics();
@@ -73,7 +73,7 @@ public abstract class KineticBlockEntityMixin extends SmartBlockEntity implement
         }
     }
 
-    @Redirect(method = "validateKinetics", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/level/Level;getBlockEntity(Lnet/minecraft/core/BlockPos;)Lnet/minecraft/world/level/block/entity/BlockEntity;"))
+    @Redirect(method = "validateKinetics", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/level/Level;getBlockEntity(Lnet/minecraft/core/BlockPos;)Lnet/minecraft/world/level/block/entity/BlockEntity;", remap = true), remap = false)
     public BlockEntity simulated$useProperSource(final Level instance, final BlockPos blockPos) {
         BlockEntity be = instance.getBlockEntity(blockPos);
         if (be instanceof final ExtraKinetics ek && this.simulated$extraKineticsConnected) {
@@ -83,7 +83,7 @@ public abstract class KineticBlockEntityMixin extends SmartBlockEntity implement
         return be;
     }
 
-    @Redirect(method = "setSource", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/level/Level;getBlockEntity(Lnet/minecraft/core/BlockPos;)Lnet/minecraft/world/level/block/entity/BlockEntity;"))
+    @Redirect(method = "setSource", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/level/Level;getBlockEntity(Lnet/minecraft/core/BlockPos;)Lnet/minecraft/world/level/block/entity/BlockEntity;", remap = true), remap = false)
     public BlockEntity simulated$useProperSource2(final Level instance, final BlockPos blockPos) {
         BlockEntity be = instance.getBlockEntity(blockPos);
         if (be instanceof final ExtraKinetics ek && blockPos instanceof final ExtraBlockPos exp) {

@@ -13,7 +13,7 @@ import org.spongepowered.asm.mixin.injection.At;
 public abstract class LinkedControllerItemMixin {
 	// Create Fly's static onItemUseFirst checks hitState.is(AllBlocks.X) where Create used AllBlocks.X.has(hitState);
 	// ordinal 1 is still the redstone link check (0 is the lectern controller check of the sneaking branch).
-	@WrapOperation(method = "onItemUseFirst", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/level/block/state/BlockState;is(Lnet/minecraft/world/level/block/Block;)Z", ordinal = 1))
+	@WrapOperation(method = "onItemUseFirst", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/level/block/state/BlockState;is(Lnet/minecraft/world/level/block/Block;)Z", ordinal = 1, remap = true), remap = false)
 	private static boolean simulated$onItemUseFirst(final BlockState instance, final Block block, final Operation<Boolean> original) {
 		return original.call(instance, block) || instance.is(SimBlocks.MODULATING_LINKED_RECEIVER) || instance.is(SimBlocks.DIRECTIONAL_LINKED_RECEIVER);
 	}

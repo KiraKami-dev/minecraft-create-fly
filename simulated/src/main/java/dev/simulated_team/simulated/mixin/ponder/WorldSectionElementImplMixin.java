@@ -12,22 +12,22 @@ import org.spongepowered.asm.mixin.injection.At;
 @Mixin(WorldSectionElementImpl.class)
 public class WorldSectionElementImplMixin {
 
-    @WrapOperation(method = "transformMS", at = @At(value = "INVOKE", target = "Lcom/zurrtum/create/client/flywheel/lib/transform/PoseTransformStack;rotateYDegrees(F)Lcom/zurrtum/create/client/flywheel/lib/transform/Rotate;", ordinal = 0))
+    @WrapOperation(method = "transformMS", at = @At(value = "INVOKE", target = "Lcom/zurrtum/create/client/flywheel/lib/transform/PoseTransformStack;rotateYDegrees(F)Lcom/zurrtum/create/client/flywheel/lib/transform/Rotate;", ordinal = 0), remap = false)
     public Rotate<PoseTransformStack> fixRotateY(final PoseTransformStack instance, final float v, final Operation<Rotate<PoseTransformStack>> original, @Local(ordinal = 1) final double rotZ) {
         return instance.rotateZDegrees((float) rotZ);
     }
 
-    @WrapOperation(method = "transformMS", at = @At(value = "INVOKE", target = "Lcom/zurrtum/create/client/flywheel/lib/transform/PoseTransformStack;rotateZDegrees(F)Lcom/zurrtum/create/client/flywheel/lib/transform/Rotate;", ordinal = 0))
+    @WrapOperation(method = "transformMS", at = @At(value = "INVOKE", target = "Lcom/zurrtum/create/client/flywheel/lib/transform/PoseTransformStack;rotateZDegrees(F)Lcom/zurrtum/create/client/flywheel/lib/transform/Rotate;", ordinal = 0), remap = false)
     public Rotate<PoseTransformStack> fixRotateZ(final PoseTransformStack instance, final float v, final Operation<Rotate<PoseTransformStack>> original, @Local(ordinal = 2) final double rotY) {
         return instance.rotateYDegrees((float) rotY);
     }
 
-    @WrapOperation(method = "transformMS", at = @At(value = "INVOKE", target = "Lcom/zurrtum/create/client/flywheel/lib/transform/PoseTransformStack;rotateYDegrees(F)Lcom/zurrtum/create/client/flywheel/lib/transform/Rotate;", ordinal = 1))
+    @WrapOperation(method = "transformMS", at = @At(value = "INVOKE", target = "Lcom/zurrtum/create/client/flywheel/lib/transform/PoseTransformStack;rotateYDegrees(F)Lcom/zurrtum/create/client/flywheel/lib/transform/Rotate;", ordinal = 1), remap = false)
     public Rotate<PoseTransformStack> fixUnRotateY(final PoseTransformStack instance, final float v, final Operation<Rotate<PoseTransformStack>> original, @Local(ordinal = 1) final double rotZ) {
         return instance.rotateZDegrees((float) -rotZ);
     }
 
-    @WrapOperation(method = "transformMS", at = @At(value = "INVOKE", target = "Lcom/zurrtum/create/client/flywheel/lib/transform/PoseTransformStack;rotateZDegrees(F)Lcom/zurrtum/create/client/flywheel/lib/transform/Rotate;", ordinal = 1))
+    @WrapOperation(method = "transformMS", at = @At(value = "INVOKE", target = "Lcom/zurrtum/create/client/flywheel/lib/transform/PoseTransformStack;rotateZDegrees(F)Lcom/zurrtum/create/client/flywheel/lib/transform/Rotate;", ordinal = 1), remap = false)
     public Rotate<PoseTransformStack> fixUnRotateZ(final PoseTransformStack instance, final float v, final Operation<Rotate<PoseTransformStack>> original, @Local(ordinal = 2) final double rotY) {
         return instance.rotateYDegrees((float) -rotY);
     }

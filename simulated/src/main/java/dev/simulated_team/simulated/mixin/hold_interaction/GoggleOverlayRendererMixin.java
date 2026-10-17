@@ -15,21 +15,21 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-// The Mth.clamp target is a Minecraft member, so these injectors keep remapping on (remap = false would leave the
-// descriptor unmapped in production); renderOverlay itself is a Create Fly method and keeps its name.
+// renderOverlay is a Create Fly method (remap = false); the Mth.clamp target is a Minecraft member, so its @At keeps
+// remap = true (upstream's injector-wide remap = false would leave it unmapped in a production jar).
 @Mixin(GoggleOverlayRenderer.class)
 public class GoggleOverlayRendererMixin {
 
     @Shadow(remap = false) public static int hoverTicks;
 
-    @Inject(method = "renderOverlay", at = @At(value = "INVOKE", target = "Lnet/minecraft/util/Mth;clamp(FFF)F", shift = At.Shift.BEFORE))
+    @Inject(method = "renderOverlay", at = @At(value = "INVOKE", target = "Lnet/minecraft/util/Mth;clamp(FFF)F", shift = At.Shift.BEFORE, remap = true), remap = false)
     private static void decrementRenderTicks(final CallbackInfo ci) {
         if (SimClickInteractions.STEERING_WHEEL_MANAGER.isActive()) {
             hoverTicks = Mth.clamp(hoverTicks - 2, 0, 24);
         }
     }
 
-    @WrapOperation(method = "renderOverlay", at = @At(value = "INVOKE", target = "Lnet/minecraft/util/Mth;clamp(FFF)F"))
+    @WrapOperation(method = "renderOverlay", at = @At(value = "INVOKE", target = "Lnet/minecraft/util/Mth;clamp(FFF)F", remap = true), remap = false)
     private static float fixPartialTicks(final float value, final float min, final float max, final Operation<Float> original, @Local(argsOnly = true) final DeltaTracker deltaTracker) {
         if (SimClickInteractions.STEERING_WHEEL_MANAGER.isActive()) {
             return Mth.clamp(hoverTicks - deltaTracker.getGameTimeDeltaTicks(), 0, 24) / 24;
@@ -37,7 +37,7 @@ public class GoggleOverlayRendererMixin {
         return original.call(value, min, max);
     }
 
-    @Inject(method = "renderOverlay", at = @At(value = "INVOKE", target = "Lnet/minecraft/util/Mth;clamp(FFF)F"), cancellable = true)
+    @Inject(method = "renderOverlay", at = @At(value = "INVOKE", target = "Lnet/minecraft/util/Mth;clamp(FFF)F", remap = true), cancellable = true, remap = false)
     private static void dontRenderTheText(final Minecraft mc, final GuiGraphics guiGraphics, final DeltaTracker deltaTracker, final CallbackInfo ci) {
         if (hoverTicks - deltaTracker.getGameTimeDeltaTicks() <= 0) {
             // renderOverlay pushed the GUI pose right before this point

@@ -15,9 +15,9 @@ import org.spongepowered.asm.mixin.injection.At;
 @Mixin(value = {HorizontalKineticBlock.class, DirectionalAxisKineticBlock.class, DirectionalKineticBlock.class})
 public class FixAutoOrientationMixin {
 
-    // remapping stays on: the target descriptor holds Minecraft classes (getPreferredHorizontalFacing /
+    // the @At keeps remap = true: its descriptor holds Minecraft classes (getPreferredHorizontalFacing /
     // prefersConnectionTo / getPreferredFacing)
-    @WrapOperation(method = "*", at = @At(value = "INVOKE", target = "Lcom/zurrtum/create/content/kinetics/base/IRotate;hasShaftTowards(Lnet/minecraft/world/level/LevelReader;Lnet/minecraft/core/BlockPos;Lnet/minecraft/world/level/block/state/BlockState;Lnet/minecraft/core/Direction;)Z"))
+    @WrapOperation(method = "*", at = @At(value = "INVOKE", target = "Lcom/zurrtum/create/content/kinetics/base/IRotate;hasShaftTowards(Lnet/minecraft/world/level/LevelReader;Lnet/minecraft/core/BlockPos;Lnet/minecraft/world/level/block/state/BlockState;Lnet/minecraft/core/Direction;)Z", remap = true), remap = false)
     public boolean simulated$handleAutoOrientationWithExtraKinetics(final IRotate instance, final LevelReader world, final BlockPos pos, final BlockState state, final Direction incomingDir, final Operation<Boolean> originalWrap) {
         Boolean original = originalWrap.call(instance, world, pos, state, incomingDir);
 

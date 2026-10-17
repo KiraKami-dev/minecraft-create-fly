@@ -22,8 +22,8 @@ public class DisplayLinkScreenMixin {
 
     @Shadow(remap = false) Label targetLineLabel;
 
-    // Component (a Minecraft class) is in the target descriptor, so this keeps remapping on
-    @WrapOperation(method = "initGathererOptions", at = @At(value = "INVOKE", target = "Lcom/zurrtum/create/api/behaviour/display/DisplayTarget;getLineOptionText(I)Lnet/minecraft/network/chat/Component;"))
+    // Component (a Minecraft class) is in the target descriptor, so the @At keeps remap = true
+    @WrapOperation(method = "initGathererOptions", at = @At(value = "INVOKE", target = "Lcom/zurrtum/create/api/behaviour/display/DisplayTarget;getLineOptionText(I)Lnet/minecraft/network/chat/Component;", remap = true), remap = false)
     private Component simulated$displayConditionalError(final DisplayTarget instance, final int line, final Operation<Component> original, @Local final ClientLevel level) {
         final DisplayLinkContext context = new DisplayLinkContext(level, this.blockEntity);
         if (instance instanceof final ConditionalDisplayTarget cdt && !cdt.allowsWriting(context)) {
