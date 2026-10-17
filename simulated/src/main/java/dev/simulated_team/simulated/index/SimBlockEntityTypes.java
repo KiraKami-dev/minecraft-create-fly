@@ -32,16 +32,10 @@ import dev.simulated_team.simulated.content.blocks.swivel_bearing.link_block.Swi
 import dev.simulated_team.simulated.content.blocks.throttle_lever.ThrottleLeverBlockEntity;
 import dev.simulated_team.simulated.content.blocks.torsion_spring.TorsionSpringBlockEntity;
 import dev.simulated_team.simulated.content.blocks.velocity_sensor.VelocitySensorBlockEntity;
-import dev.simulated_team.simulated.multiloader.energy.SingleBattery;
-import dev.simulated_team.simulated.multiloader.inventory.AbstractContainer;
-import dev.simulated_team.simulated.multiloader.tanks.SingleTank;
 import dev.simulated_team.simulated.registrate.SimulatedRegistrate;
 import dev.simulated_team.simulated.service.SimInventoryService;
-import net.minecraft.core.Direction;
-import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 
-import java.util.function.BiFunction;
 
 /**
  * Block entity types. Renderers and Flywheel visuals are registered on the client in {@code SimBlockEntityRenders}.
@@ -151,31 +145,21 @@ public class SimBlockEntityTypes {
         return result;
     }
 
-    private static <T extends BlockEntity> void inventory(final BlockEntityType<T> type, final BiFunction<T, Direction, AbstractContainer> getter) {
-        SimInventoryService.INSTANCE.registerInventory(getter).accept(type);
-    }
-
-    private static <T extends BlockEntity> void tank(final BlockEntityType<T> type, final BiFunction<T, Direction, SingleTank> getter) {
-        SimInventoryService.INSTANCE.registerTank(getter).accept(type);
-    }
-
-    private static <T extends BlockEntity> void battery(final BlockEntityType<T> type, final BiFunction<T, Direction, SingleBattery> getter) {
-        SimInventoryService.INSTANCE.registerBattery(getter).accept(type);
-    }
-
     /**
      * Exposes block entity storages to other mods (upstream: Registrate {@code onRegister} capability hooks).
      */
     public static void register() {
-        inventory(DOCKING_CONNECTOR, (be, dir) -> be.getInventory());
-        tank(DOCKING_CONNECTOR, (be, dir) -> be.tank);
-        battery(DOCKING_CONNECTOR, (be, dir) -> be.battery);
+        final SimInventoryService storages = SimInventoryService.INSTANCE;
 
-        inventory(PORTABLE_ENGINE, (be, dir) -> be.inventory);
+        storages.registerInventory(DOCKING_CONNECTOR, (be, dir) -> be.getInventory());
+        storages.registerTank(DOCKING_CONNECTOR, (be, dir) -> be.tank);
+        storages.registerBattery(DOCKING_CONNECTOR, (be, dir) -> be.battery);
 
-        inventory(NAVIGATION_TABLE, (be, dir) -> be.inventory);
+        storages.registerInventory(PORTABLE_ENGINE, (be, dir) -> be.inventory);
 
-        inventory(AUGER_SHAFT, (be, dir) -> {
+        storages.registerInventory(NAVIGATION_TABLE, (be, dir) -> be.inventory);
+
+        storages.registerInventory(AUGER_SHAFT, (be, dir) -> {
             if (dir == null) {
                 return null; //don't just give our inventory to non-directional requests.
             } else {

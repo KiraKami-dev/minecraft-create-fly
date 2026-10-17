@@ -1,12 +1,11 @@
 package dev.simulated_team.simulated;
 
-import com.zurrtum.create.client.catnip.render.SuperByteBufferCache;
 import com.zurrtum.create.client.content.contraptions.wrench.RadialWrenchMenu;
 import com.zurrtum.create.client.ponder.foundation.PonderIndex;
 import dev.ryanhcode.sable.veillite.platform.VeilEventPlatform;
 import dev.simulated_team.simulated.client.BlockPropertiesTooltip;
+import dev.simulated_team.simulated.content.blocks.SimKineticBlocksClient;
 import dev.simulated_team.simulated.content.blocks.physics_assembler.PhysicsAssemblerTooltipBehaviour;
-import dev.simulated_team.simulated.content.blocks.steering_wheel.SteeringWheelRenderer;
 import dev.simulated_team.simulated.content.blocks.swivel_bearing.SwivelBearingClient;
 import dev.simulated_team.simulated.content.display_sources.SimDisplaySourceRenders;
 import dev.simulated_team.simulated.content.end_sea.EndSeaShadowRenderer;
@@ -61,6 +60,7 @@ public class SimulatedClient {
         PlungerLauncherItemRenderer.registerClient();
         SimParticleProviders.registerClient();
         SimDisplaySourceRenders.registerClient();
+        SimKineticBlocksClient.registerClient();
         SwivelBearingClient.registerClient();
         PhysicsAssemblerTooltipBehaviour.registerClient();
 
@@ -74,7 +74,6 @@ public class SimulatedClient {
         // stages; 1.21.11 render types are drawn by the feature renderer, so there is nothing to register.
 
         VeilEventPlatform.INSTANCE.onVeilRenderLevelStage(SimulatedCommonClientEvents::onRenderLevelStage);
-
-        SuperByteBufferCache.getInstance().registerCompartment(SteeringWheelRenderer.STEERING_WHEEL);
+        // (the steering wheel's SuperByteBufferCache compartment is registered by SimKineticBlocksClient)
     }
 }

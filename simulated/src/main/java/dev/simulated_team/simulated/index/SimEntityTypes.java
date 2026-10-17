@@ -4,6 +4,7 @@ import dev.simulated_team.simulated.Simulated;
 import dev.simulated_team.simulated.content.entities.diagram.DiagramEntity;
 import dev.simulated_team.simulated.content.entities.honey_glue.HoneyGlueEntity;
 import dev.simulated_team.simulated.content.entities.launched_plunger.LaunchedPlungerEntity;
+import dev.simulated_team.simulated.service.SimEntityService;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.MobCategory;
@@ -35,19 +36,8 @@ public class SimEntityTypes {
         return Simulated.getRegistrate().entity(name, applyLoaderSpecificTransform(builder, data));
     }
 
-    /**
-     * Upstream NeoForge transform: eye height and {@code fixed} were not applied there either.
-     */
     public static <T extends Entity> EntityType.Builder<T> applyLoaderSpecificTransform(final EntityType.Builder<T> builder, final EntityLoaderData data) {
-        if (data.immuneToFire()) {
-            builder.fireImmune();
-        }
-
-        return builder
-                .clientTrackingRange(data.clientTrackingRange())
-                .updateInterval(data.updateFrequency())
-                .sized(data.width(), data.height())
-                .alwaysUpdateVelocity(data.sendVelocity());
+        return SimEntityService.INSTANCE.loaderEntityTransform(builder, data);
     }
 
     public record EntityLoaderData(int clientTrackingRange, int updateFrequency, float width, float height, float eyeHeight, boolean sendVelocity, boolean immuneToFire, boolean fixed) {}
