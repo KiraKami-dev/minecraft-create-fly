@@ -31,6 +31,7 @@ public final class E2E implements ModInitializer {
     private int commandTick = -1;
     private final Map<UUID, Vector3dc> spawnPositions = new HashMap<>();
     private final Playtest playtest = "playtest".equals(System.getProperty("e2e.scenario")) ? new Playtest() : null;
+    private final WaterScenario water = "water".equals(System.getProperty("e2e.scenario")) ? new WaterScenario() : null;
 
     @Override
     public void onInitialize() {
@@ -56,6 +57,13 @@ public final class E2E implements ModInitializer {
         if (this.playtest != null) {
             if (!server.getPlayerList().getPlayers().isEmpty() && this.ticks >= 40) {
                 this.playtest.tick(server);
+            }
+            return;
+        }
+
+        if (this.water != null) {
+            if (!server.getPlayerList().getPlayers().isEmpty() && this.ticks >= 40) {
+                this.water.tick(server);
             }
             return;
         }

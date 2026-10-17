@@ -51,9 +51,10 @@ loom {
         configureEach {
             vmArg '-De2e.enabled=true'
             // -Pe2ePrepare: boot without spawning anything (tools/e2e.sh uses it to make a clean template world)
-            vmArg "-De2e.commands=${project.hasProperty('e2ePrepare') || project.findProperty('e2eScenario') == 'playtest' ? '' : e2eCommands}"
+            vmArg "-De2e.commands=${project.hasProperty('e2ePrepare') || project.findProperty('e2eScenario') in ['playtest', 'water'] ? '' : e2eCommands}"
             vmArg '-Dmixin.debug.verify=true'
             // -Pe2ePlay: same scene, but no screenshots and the client stays open (tools/e2e.sh play)
+            // -Pe2eScenario=water: pool + hull + water occlusion region, screenshots (client only)
             // -Pe2eScenario=playtest: scripted assemble/collide/stand-on checks instead of the default scene (client only)
             if (project.hasProperty('e2eScenario')) vmArg "-De2e.scenario=${project.property('e2eScenario')}"
             if (project.hasProperty('e2ePlay')) vmArg '-De2e.play=true'

@@ -1,5 +1,6 @@
 package dev.ryanhcode.sable.render.water_occlusion;
 
+import com.mojang.blaze3d.buffers.GpuBufferSlice;
 import com.mojang.blaze3d.pipeline.RenderPipeline;
 import com.mojang.blaze3d.pipeline.RenderTarget;
 import com.mojang.blaze3d.pipeline.TextureTarget;
@@ -22,8 +23,12 @@ import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Matrix4f;
 import org.joml.Matrix4fc;
+import org.lwjgl.opengl.GL11C;
+import org.lwjgl.opengl.GL32C;
 
 import java.util.Collection;
+import java.util.IdentityHashMap;
+import java.util.Map;
 import java.util.OptionalDouble;
 import java.util.OptionalInt;
 import java.util.Set;
@@ -36,9 +41,8 @@ import java.util.Set;
  * The translucent terrain pipeline is then swapped for {@link #TRANSLUCENT_TERRAIN_OCCLUDED}, which discards any
  * fragment lying between the two depths.
  * <p>
- * PORT-TODO(1.21.11): GL_DEPTH_CLAMP is not exposed by the blaze3d {@link RenderPipeline}, so volumes that
- * intersect the camera near plane are clipped instead of clamped. Inside a hull this is covered by clearing
- * the close depth to 0.
+ * GL_DEPTH_CLAMP is not exposed by the blaze3d {@link RenderPipeline}, so it is toggled with raw GL calls around
+ * the volume draws, as upstream does. Inside a hull the close depth is additionally cleared to 0.
  */
 @ApiStatus.Internal
 public class WaterOcclusionRenderer {
@@ -175,14 +179,29 @@ public class WaterOcclusionRenderer {
     }
 
     private void renderDepth(final RenderTarget target, final String label, final double clearDepth, final Matrix4fc modelView) {
+        // uniforms and index buffers can't be uploaded while a render pass is open
+        final Map<WaterOcclusionRenderRegion, GpuBufferSlice> transforms = new IdentityHashMap<>();
+        for (final WaterOcclusionRenderRegion region : this.regions) {
+            final GpuBufferSlice transform = region.prepare(modelView);
+            if (transform != null) {
+                transforms.put(region, transform);
+            }
+        }
+
         try (final RenderPass renderPass = RenderSystem.getDevice()
                 .createCommandEncoder()
                 .createRenderPass(() -> "Sable water occlusion (" + label + ")", target.getColorTextureView(), OptionalInt.of(0), target.getDepthTextureView(), OptionalDouble.of(clearDepth))) {
             renderPass.setPipeline(DEPTH_PIPELINE);
             RenderSystem.bindDefaultUniforms(renderPass);
 
-            for (final WaterOcclusionRenderRegion region : this.regions) {
-                region.render(renderPass, modelView);
+
+            // Volumes crossing the near plane would be clipped instead of clamped to depth 0. blaze3d draws
+            // immediately and never touches this flag, so a raw GL toggle around the draws is enough.
+            GL11C.glEnable(GL32C.GL_DEPTH_CLAMP);
+            try {
+                transforms.forEach((region, transform) -> region.draw(renderPass, transform));
+            } finally {
+                GL11C.glDisable(GL32C.GL_DEPTH_CLAMP);
             }
         }
     }
