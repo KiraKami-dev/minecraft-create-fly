@@ -39,24 +39,27 @@ public class WaterOcclusionRenderRegion {
     private GpuBuffer vertexBuffer;
     private int indexCount;
     private Vec3 origin;
+    private RenderSystem.AutoStorageIndexBuffer indices;
+    private GpuBuffer indexBuffer;
 
     public WaterOcclusionRenderRegion(final Collection<BlockPos> blocks) {
         this.unbuiltData = blocks;
     }
 
     /**
-     * Draws this region into the currently open render pass. The pass must already have the water occlusion
-     * depth pipeline and default uniforms set.
+     * Uploads the transform for a following {@link #draw}. Must be called while no render pass is open, as
+     * uploads cannot be done during one.
      *
      * @param modelView the camera rotation matrix of the level
+     * @return the transform to pass to {@link #draw}, or null if there is nothing to draw
      */
-    public void render(final RenderPass renderPass, final Matrix4fc modelView) {
+    public GpuBufferSlice prepare(final Matrix4fc modelView) {
         if (!this.built) {
             this.build();
         }
 
         if (this.vertexBuffer == null) {
-            return;
+            return null;
         }
 
         final Minecraft client = Minecraft.getInstance();
@@ -78,12 +81,21 @@ public class WaterOcclusionRenderRegion {
                 .translate((float) relativePos.x, (float) relativePos.y, (float) relativePos.z)
                 .rotate(globalOrientation);
 
-        final GpuBufferSlice transform = RenderSystem.getDynamicUniforms().writeTransform(modelViewMatrix, WHITE, new Vector3f(), new Matrix4f());
-        final RenderSystem.AutoStorageIndexBuffer indices = RenderSystem.getSequentialBuffer(VertexFormat.Mode.QUADS);
+        this.indices = RenderSystem.getSequentialBuffer(VertexFormat.Mode.QUADS);
+        this.indexBuffer = this.indices.getBuffer(this.indexCount);
+        return RenderSystem.getDynamicUniforms().writeTransform(modelViewMatrix, WHITE, new Vector3f(), new Matrix4f());
+    }
 
+    /**
+     * Draws this region into the currently open render pass. The pass must already have the water occlusion
+     * depth pipeline and default uniforms set.
+     *
+     * @param transform the result of {@link #prepare}
+     */
+    public void draw(final RenderPass renderPass, final GpuBufferSlice transform) {
         renderPass.setUniform("DynamicTransforms", transform);
         renderPass.setVertexBuffer(0, this.vertexBuffer);
-        renderPass.setIndexBuffer(indices.getBuffer(this.indexCount), indices.type());
+        renderPass.setIndexBuffer(this.indexBuffer, this.indices.type());
         renderPass.drawIndexed(0, 0, this.indexCount, 1);
     }
 

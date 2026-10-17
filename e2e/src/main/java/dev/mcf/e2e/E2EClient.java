@@ -1,5 +1,9 @@
 package dev.mcf.e2e;
 
+import dev.ryanhcode.sable.SableClient;
+import dev.ryanhcode.sable.render.water_occlusion.WaterOcclusionRenderer;
+import dev.ryanhcode.sable.sublevel.water_occlusion.WaterOcclusionContainer;
+import dev.ryanhcode.sable.util.BoundedBitVolume3i;
 import dev.ryanhcode.sable.veillite.api.client.editor.EditorManager;
 import dev.ryanhcode.sable.veillite.api.client.render.VeilRenderSystem;
 import net.fabricmc.api.ClientModInitializer;
@@ -51,6 +55,30 @@ public final class E2EClient implements ClientModInitializer {
                         message -> E2E.LOG.info("E2E: screenshot {}", shot));
             }
             if (Playtest.done && ++this.doneTicks == 20) {
+                E2E.LOG.info("E2E: done, closing client");
+                minecraft.stop();
+            }
+            return;
+        }
+
+        // water scenario: the server script publishes the occlusion region and requests screenshots
+        if ("water".equals(System.getProperty("e2e.scenario"))) {
+            if (minecraft.screen != null) {
+                minecraft.setScreen(null);
+            }
+            final BoundedBitVolume3i region = WaterScenario.pendingRegion;
+            if (region != null) {
+                WaterScenario.pendingRegion = null;
+                WaterOcclusionContainer.getContainer(minecraft.level).addRegion(region);
+                E2E.LOG.info("E2E: water occlusion region added, renderer enabled={}", WaterOcclusionRenderer.isEnabled());
+            }
+            final String shot = WaterScenario.pendingShot;
+            if (shot != null) {
+                WaterScenario.pendingShot = null;
+                Screenshot.grab(minecraft.gameDirectory, shot, minecraft.getMainRenderTarget(), 1,
+                        message -> E2E.LOG.info("E2E: screenshot {} (occlusion active={})", shot, SableClient.WATER_OCCLUSION_RENDERER.isActive()));
+            }
+            if (WaterScenario.done && ++this.doneTicks == 20) {
                 E2E.LOG.info("E2E: done, closing client");
                 minecraft.stop();
             }
