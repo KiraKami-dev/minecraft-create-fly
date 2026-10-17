@@ -350,3 +350,33 @@ Upstream Sable kept all of its Create compat in the NeoForge module
 - Upstream parity, not a regression: `AllHandle.onBlockEntityConfiguration` checks `pos.closerThan(player.blockPosition())`
   with the raw plot position, so curved-track destroy / chain package packets for far-away plots are dropped before the
   Sable-aware checks run (upstream Sable has the same limitation).
+
+## Assembly duplicated Create block contents (sable-create-fix)
+
+- Symptom: `mcf_e2e:sable_assembly_test_all_blocks` failed on `create:deployer` and `create:item_drain` with Create Fly
+  loaded ("2 blocks failed": extra entities after assembly). The blocks moved fine; their items were **duplicated**.
+- Cause: `SubLevelAssemblyHelper.moveBlocks` saves the BE, empties it only via `Clearable.clearContent()` (or removes it
+  silently for `sable:silent_assembly_removal`), loads the data into the plot BE, then removes the old block with
+  `UPDATE_MOVE_BY_PISTON` -> `LevelChunk.setBlockState` calls `BlockEntity.preRemoveSideEffects` (only flag 256 skips
+  it). On 1.21.11 that hook has no "is moving" flag (1.21.1 `onRemove` had `isMoving`). Create Fly drops there:
+  `DeployerBlockEntity.preRemoveSideEffects -> discardPlayer()` (fake player's `Inventory.dropAll()` + `overflowItems`;
+  its `clearContent()` only clears the filter) and `ItemDrainBlockEntity.preRemoveSideEffects` (held item; not
+  `Clearable`).
+- Fix: `mixin/compatibility/create/assembly/MovedBlockEntityContentsMixin` makes the affected blocks
+  `BlockSubLevelAssemblyListener`s (same pattern as upstream's lectern controller); `afterMove` (data already copied,
+  old block not yet removed) calls `mixinhelper/compatibility/create/assembly/MovedBlockEntityContents.clear(oldBe)`,
+  which empties exactly what removal would drop; the rest of `preRemoveSideEffects`/`destroy()` still runs. Not done
+  with the silent-removal tag or flag 256 (they skip those hooks entirely; Create BEs use them for network cleanup and
+  tanks/vaults for `ConnectivityHandler.splitMulti`), nor by making the BEs `Clearable` (that would also change
+  `/setblock`, `/fill`, `/clone` and structure placement).
+- Same bug, found by audit (the test can't fill these: no item storage, or insertion refused), fixed by the same mixin:
+  weighted ejector (`EjectorBlockEntity` isn't `Clearable`; `DepotBehaviour.destroy` drops held/incoming/output),
+  mechanical arm (`ArmBlockEntity.destroy` pops `heldItem`), placard (`preRemoveSideEffects` pops `heldItem`), brass
+  tunnel (`destroy` pops `stackToDistribute`), table cloths (`destroy` drops `manuallyAddedItems`).
+- Still duplicated on assembly (not fixed): filter items (list/attribute filters, `ServerFilteringBehaviour.destroy`
+  drops `isFilterItem()` filters) on non-`Clearable` BEs: brass tunnel side filters, mechanical roller; factory gauges
+  with more than one panel (`FactoryPanelBlockEntity.destroy` pops the extra gauges); vanilla furnaces pop the stored
+  recipe XP (`AbstractFurnaceBlockEntity.preRemoveSideEffects`; `RecipesUsed` is also copied). Already handled
+  upstream-style: lectern controller (`LecternControllerBlockMixin` no-drop flag).
+- Unrelated, pre-existing (upstream parity): `moveBlocks` registers a POI block's POI twice (in the move loop and again
+  in `markAndNotifyBlock`), logging "POI data mismatch: already registered" during the all-blocks test.

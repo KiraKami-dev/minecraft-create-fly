@@ -66,6 +66,7 @@
   "mixins": [
     "airflow.AirCurrentMixin",
     "airflow.FanProcessingTypeMixin",
+    "assembly.MovedBlockEntityContentsMixin",
     "basin_interactions.BasinBlockEntityMixin",
     "basin_interactions.BasinOperatingBlockEntityMixin",
     "behaviour_compatibility.BlockEntityBehaviourMixin",
