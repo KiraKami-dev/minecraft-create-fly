@@ -1,5 +1,6 @@
 {
  "credit": "Made with Blockbench",
+ "render_type": "minecraft:cutout",
  "textures": {
   "0": "simulated:block/gimbal_sensor/gimbal_sensor",
   "particle": "simulated:block/gimbal_sensor/gimbal_sensor"

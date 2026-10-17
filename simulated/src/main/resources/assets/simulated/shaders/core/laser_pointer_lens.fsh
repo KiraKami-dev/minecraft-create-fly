@@ -1,5 +1,8 @@
 #version 330
 
+// Port of pinwheel/shaders/program/laser_pointer/lens.fsh (Veil) to a 1.21.11 core shader.
+// Sampler0 is the block atlas (Veil's "TextureSheet").
+
 #moj_import <minecraft:fog.glsl>
 #moj_import <minecraft:dynamictransforms.glsl>
 
@@ -8,8 +11,8 @@ uniform sampler2D Sampler0;
 in float sphericalVertexDistance;
 in float cylindricalVertexDistance;
 in vec4 vertexColor;
-in vec4 vertexLight;
 in vec2 texCoord0;
+in vec4 vertexLight;
 
 out vec4 fragColor;
 
