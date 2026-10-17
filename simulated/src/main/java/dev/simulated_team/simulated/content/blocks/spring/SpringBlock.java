@@ -1,21 +1,22 @@
 package dev.simulated_team.simulated.content.blocks.spring;
 
 import com.zurrtum.create.AllSoundEvents;
-import com.zurrtum.create.Create;
 import com.zurrtum.create.content.equipment.wrench.IWrenchable;
 import com.zurrtum.create.foundation.block.IBE;
 import com.zurrtum.create.foundation.block.WrenchableDirectionalBlock;
 import dev.ryanhcode.sable.Sable;
 import dev.ryanhcode.sable.api.block.BlockSubLevelAssemblyListener;
 import dev.ryanhcode.sable.sublevel.SubLevel;
-import dev.simulated_team.simulated.data.SimLang;
+import dev.simulated_team.simulated.Simulated;
 import dev.simulated_team.simulated.index.SimBlockEntityTypes;
 import dev.simulated_team.simulated.index.SimBlockShapes;
 import dev.simulated_team.simulated.index.SimItems;
 import dev.simulated_team.simulated.util.SimColors;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.util.RandomSource;
 import net.minecraft.util.StringRepresentable;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
@@ -23,8 +24,8 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.LevelReader;
+import net.minecraft.world.level.ScheduledTickAccess;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.entity.BlockEntityType;
@@ -48,13 +49,8 @@ public class SpringBlock extends WrenchableDirectionalBlock implements IBE<Sprin
     }
 
     @Override
-    public ItemStack getCloneItemStack(final LevelReader levelReader, final BlockPos blockPos, final BlockState blockState) {
+    public ItemStack getCloneItemStack(final LevelReader levelReader, final BlockPos blockPos, final BlockState blockState, final boolean includeData) {
         return new ItemStack(SimItems.SPRING);
-    }
-
-    @Override
-    public void onRemove(final BlockState pState, final Level pLevel, final BlockPos pPos, final BlockState pNewState, final boolean pMovedByPiston) {
-        IBE.onRemove(pState, pLevel, pPos, pNewState);
     }
 
     @Override
@@ -63,8 +59,8 @@ public class SpringBlock extends WrenchableDirectionalBlock implements IBE<Sprin
     }
 
     @Override
-    public BlockState updateShape(final BlockState pState, final Direction pFacing, final BlockState pFacingState, final LevelAccessor pLevel, final BlockPos pCurrentPos, final BlockPos pFacingPos) {
-        return pState.getValue(FACING).getOpposite() == pFacing && !pState.canSurvive(pLevel, pCurrentPos) ? Blocks.AIR.defaultBlockState() : super.updateShape(pState, pFacing, pFacingState, pLevel, pCurrentPos, pFacingPos);
+    public BlockState updateShape(final BlockState pState, final LevelReader pLevel, final ScheduledTickAccess pTickAccess, final BlockPos pCurrentPos, final Direction pFacing, final BlockPos pFacingPos, final BlockState pFacingState, final RandomSource pRandom) {
+        return pState.getValue(FACING).getOpposite() == pFacing && !pState.canSurvive(pLevel, pCurrentPos) ? Blocks.AIR.defaultBlockState() : super.updateShape(pState, pLevel, pTickAccess, pCurrentPos, pFacing, pFacingPos, pFacingState, pRandom);
     }
 
     public static boolean canAttach(final LevelReader pReader, final BlockPos pPos, final Direction pDirection) {
@@ -94,9 +90,10 @@ public class SpringBlock extends WrenchableDirectionalBlock implements IBE<Sprin
     }
 
     private static void sendLengthMessage(final String suffix, final int color, final SpringBlockEntity spring, Player player) {
-        SimLang.translate("spring." + suffix, String.format("%.2f", spring.desiredLength))
-                .color(color)
-                .sendStatus(player);
+        // runs on the server: same component as SimLang.translate(...).color(color).sendStatus(player), whose
+        // LangBuilder is client-only in Create Fly
+        player.displayClientMessage(Component.translatable(Simulated.MOD_ID + ".spring." + suffix, String.format("%.2f", spring.desiredLength))
+                .withColor(color), true);
     }
 
     @Override
@@ -125,7 +122,7 @@ public class SpringBlock extends WrenchableDirectionalBlock implements IBE<Sprin
 
         level.setBlockAndUpdate(pos, newState);
         level.setBlockAndUpdate(partnerPos, newPartnerState);
-        AllSoundEvents.WRENCH_ROTATE.playOnServer(level, pos, 1, Create.RANDOM.nextFloat() + .5f);
+        AllSoundEvents.WRENCH_ROTATE.playOnServer(level, pos, 1, level.random.nextFloat() + .5f);
 
         return InteractionResult.SUCCESS;
     }

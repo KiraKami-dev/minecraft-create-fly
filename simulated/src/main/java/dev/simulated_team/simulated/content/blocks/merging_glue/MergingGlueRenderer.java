@@ -2,9 +2,7 @@ package dev.simulated_team.simulated.content.blocks.merging_glue;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
-import com.zurrtum.create.client.foundation.blockEntity.renderer.SmartBlockEntityRenderer;
 import dev.ryanhcode.sable.Sable;
-import dev.ryanhcode.sable.api.SubLevelHelper;
 import dev.ryanhcode.sable.api.math.OrientedBoundingBox3d;
 import dev.ryanhcode.sable.companion.math.Pose3dc;
 import dev.ryanhcode.sable.sublevel.ClientSubLevel;
@@ -12,25 +10,47 @@ import dev.ryanhcode.sable.sublevel.SubLevel;
 import dev.ryanhcode.sable.companion.math.JOMLConversion;
 import dev.simulated_team.simulated.Simulated;
 import dev.simulated_team.simulated.content.blocks.spring.SpringBlock;
-import net.minecraft.client.renderer.MultiBufferSource;
-import net.minecraft.client.renderer.rendertype.RenderType;
+import it.unimi.dsi.fastutil.floats.FloatArrayList;
+import net.minecraft.client.renderer.SubmitNodeCollector;
+import net.minecraft.client.renderer.blockentity.BlockEntityRenderer;
 import net.minecraft.client.renderer.blockentity.BlockEntityRendererProvider;
+import net.minecraft.client.renderer.blockentity.state.BlockEntityRenderState;
+import net.minecraft.client.renderer.feature.ModelFeatureRenderer;
+import net.minecraft.client.renderer.rendertype.RenderType;
+import net.minecraft.client.renderer.rendertype.RenderTypes;
+import net.minecraft.client.renderer.state.CameraRenderState;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.Vec3;
+import org.jetbrains.annotations.Nullable;
 import org.joml.Matrix4f;
 import org.joml.Vector2d;
 import org.joml.Vector3d;
 import org.joml.Vector3dc;
 
-public class MergingGlueRenderer extends SmartBlockEntityRenderer<MergingGlueBlockEntity> {
+/**
+ * Upstream extended {@code SmartBlockEntityRenderer} but replaced its rendering without calling super (no filter or
+ * link slots), so this is a plain {@link BlockEntityRenderer}. The strands are computed while extracting and replayed
+ * into the vertex consumer on submission.
+ */
+public class MergingGlueRenderer implements BlockEntityRenderer<MergingGlueBlockEntity, MergingGlueRenderer.MergingGlueRenderState> {
+    private static final RenderType STRAND_RENDER_TYPE = RenderTypes.entityCutout(Simulated.path("textures/block/merging_glue/strand.png"));
+
     public MergingGlueRenderer(final BlockEntityRendererProvider.Context context) {
-        super(context);
     }
 
     @Override
-    protected void renderSafe(final MergingGlueBlockEntity be, final float partialTicks, final PoseStack ms, final MultiBufferSource bufferSource, final int light, final int overlay) {
+    public MergingGlueRenderState createRenderState() {
+        return new MergingGlueRenderState();
+    }
+
+    @Override
+    public void extractRenderState(final MergingGlueBlockEntity be, final MergingGlueRenderState state, final float partialTicks, final Vec3 cameraPos, @Nullable final ModelFeatureRenderer.CrumblingOverlay crumblingOverlay) {
+        BlockEntityRenderState.extractBase(be, state, crumblingOverlay);
+        state.vertices.clear();
+
         if (!be.isController()) {
             return;
         }
@@ -48,13 +68,11 @@ public class MergingGlueRenderer extends SmartBlockEntityRenderer<MergingGlueBlo
         final Vector3dc center = be.getCenter(new Vector3d());
         final Vector3d otherCenter = other.getCenter(new Vector3d());
 
-        final BlockState state = be.getBlockState();
-        final Direction facing = state.getValue(SpringBlock.FACING);
+        final BlockState blockState = be.getBlockState();
+        final Direction facing = blockState.getValue(SpringBlock.FACING);
         final Direction otherFacing = other.getBlockState().getValue(SpringBlock.FACING);
-        final Vector3dc normalA = JOMLConversion.atLowerCornerOf(facing.getNormal());
-        final Vector3d normalB = JOMLConversion.atLowerCornerOf(otherFacing.getNormal());
-
-        final VertexConsumer buffer = bufferSource.getBuffer(RenderType.entityCutout(Simulated.path("textures/block/merging_glue/strand.png")));
+        final Vector3dc normalA = JOMLConversion.atLowerCornerOf(facing.getUnitVec3i());
+        final Vector3d normalB = JOMLConversion.atLowerCornerOf(otherFacing.getUnitVec3i());
 
         final Pose3dc renderPose = subLevel != null ? ((ClientSubLevel) subLevel).renderPose() : null;
         final Pose3dc otherRenderPose = otherSubLevel != null ? ((ClientSubLevel) otherSubLevel).renderPose() : null;
@@ -63,11 +81,11 @@ public class MergingGlueRenderer extends SmartBlockEntityRenderer<MergingGlueBlo
         final boolean horizontal = facing.getAxis().isHorizontal();
 
         final Vector3dc rightA = horizontal ?
-                JOMLConversion.atLowerCornerOf(facing.getClockWise().getNormal(), new Vector3d()) :
+                JOMLConversion.atLowerCornerOf(facing.getClockWise().getUnitVec3i(), new Vector3d()) :
                 OrientedBoundingBox3d.FORWARD;
 
         final Vector3d rightB = horizontal ?
-                JOMLConversion.atLowerCornerOf(otherFacing.getCounterClockWise().getNormal(), new Vector3d()) :
+                JOMLConversion.atLowerCornerOf(otherFacing.getCounterClockWise().getUnitVec3i(), new Vector3d()) :
                 new Vector3d(OrientedBoundingBox3d.FORWARD);
 
         final Vector3dc upA = horizontal ?
@@ -118,46 +136,82 @@ public class MergingGlueRenderer extends SmartBlockEntityRenderer<MergingGlueBlo
                     upB,
                     rightB,
 
-                    buffer, ms, light);
+                    state.vertices);
         }
 
     }
 
-    private static VertexConsumer addVertex(final VertexConsumer buffer, final Matrix4f pose, final Vector3dc pos) {
-        return buffer.addVertex(pose, (float) pos.x(), (float) pos.y(), (float) pos.z());
+    @Override
+    public void submit(final MergingGlueRenderState state, final PoseStack ms, final SubmitNodeCollector queue, final CameraRenderState cameraState) {
+        if (state.vertices.isEmpty()) {
+            return;
+        }
+
+        queue.submitCustomGeometry(ms, STRAND_RENDER_TYPE, state);
     }
+
+    /**
+     * Records one vertex (position + uv); upstream wrote it straight into the buffer
+     */
+    private static void addVertex(final FloatArrayList vertices, final Vector3dc pos, final float u, final float v) {
+        vertices.add((float) pos.x());
+        vertices.add((float) pos.y());
+        vertices.add((float) pos.z());
+        vertices.add(u);
+        vertices.add(v);
+    }
+
     private static void renderGlueCross(final Vector3dc posA,
                                         final Vector3dc upA,
                                         final Vector3dc rightA,
                                         final Vector3dc posB,
                                         final Vector3dc upB,
                                         final Vector3dc rightB,
-                                        final VertexConsumer buffer,
-                                        final PoseStack ms,
-                                        final int light) {
-        final Matrix4f pose = ms.last().pose();
+                                        final FloatArrayList buffer) {
         final Vector3d vertex = new Vector3d();
 
         // vertical plane & backface
-        addVertex(buffer, pose, posA.fma(-0.5, upA, vertex)).setColor(0xffffffff).setUv(0.0f, 0.0f).setOverlay(OverlayTexture.NO_OVERLAY).setLight(light).setNormal(ms.last(), 0.0f, 1.0f, 0.0f);
-        addVertex(buffer, pose, posA.fma(0.5, upA, vertex)).setColor(0xffffffff).setUv(0.0f, 1.0f).setOverlay(OverlayTexture.NO_OVERLAY).setLight(light).setNormal(ms.last(), 0.0f, 1.0f, 0.0f);
-        addVertex(buffer, pose, posB.fma(0.5, upB, vertex)).setColor(0xffffffff).setUv(1.0f, 1.0f).setOverlay(OverlayTexture.NO_OVERLAY).setLight(light).setNormal(ms.last(), 0.0f, 1.0f, 0.0f);
-        addVertex(buffer, pose, posB.fma(-0.5, upB, vertex)).setColor(0xffffffff).setUv(1.0f, 0.0f).setOverlay(OverlayTexture.NO_OVERLAY).setLight(light).setNormal(ms.last(), 0.0f, 1.0f, 0.0f);
+        addVertex(buffer, posA.fma(-0.5, upA, vertex), 0.0f, 0.0f);
+        addVertex(buffer, posA.fma(0.5, upA, vertex), 0.0f, 1.0f);
+        addVertex(buffer, posB.fma(0.5, upB, vertex), 1.0f, 1.0f);
+        addVertex(buffer, posB.fma(-0.5, upB, vertex), 1.0f, 0.0f);
 
-        addVertex(buffer, pose, posB.fma(-0.5, upB, vertex)).setColor(0xffffffff).setUv(1.0f, 0.0f).setOverlay(OverlayTexture.NO_OVERLAY).setLight(light).setNormal(ms.last(), 0.0f, 1.0f, 0.0f);
-        addVertex(buffer, pose, posB.fma(0.5, upB, vertex)).setColor(0xffffffff).setUv(1.0f, 1.0f).setOverlay(OverlayTexture.NO_OVERLAY).setLight(light).setNormal(ms.last(), 0.0f, 1.0f, 0.0f);
-        addVertex(buffer, pose, posA.fma(0.5, upA, vertex)).setColor(0xffffffff).setUv(0.0f, 1.0f).setOverlay(OverlayTexture.NO_OVERLAY).setLight(light).setNormal(ms.last(), 0.0f, 1.0f, 0.0f);
-        addVertex(buffer, pose, posA.fma(-0.5, upA, vertex)).setColor(0xffffffff).setUv(0.0f, 0.0f).setOverlay(OverlayTexture.NO_OVERLAY).setLight(light).setNormal(ms.last(), 0.0f, 1.0f, 0.0f);
+        addVertex(buffer, posB.fma(-0.5, upB, vertex), 1.0f, 0.0f);
+        addVertex(buffer, posB.fma(0.5, upB, vertex), 1.0f, 1.0f);
+        addVertex(buffer, posA.fma(0.5, upA, vertex), 0.0f, 1.0f);
+        addVertex(buffer, posA.fma(-0.5, upA, vertex), 0.0f, 0.0f);
 
         // horizontal plane & backface
-        addVertex(buffer, pose, posA.fma(-0.5, rightA, vertex)).setColor(0xffffffff).setUv(0.0f, 0.0f).setOverlay(OverlayTexture.NO_OVERLAY).setLight(light).setNormal(ms.last(), 0.0f, 1.0f, 0.0f);
-        addVertex(buffer, pose, posA.fma(0.5, rightA, vertex)).setColor(0xffffffff).setUv(0.0f, 1.0f).setOverlay(OverlayTexture.NO_OVERLAY).setLight(light).setNormal(ms.last(), 0.0f, 1.0f, 0.0f);
-        addVertex(buffer, pose, posB.fma(0.5, rightB, vertex)).setColor(0xffffffff).setUv(1.0f, 1.0f).setOverlay(OverlayTexture.NO_OVERLAY).setLight(light).setNormal(ms.last(), 0.0f, 1.0f, 0.0f);
-        addVertex(buffer, pose, posB.fma(-0.5, rightB, vertex)).setColor(0xffffffff).setUv(1.0f, 0.0f).setOverlay(OverlayTexture.NO_OVERLAY).setLight(light).setNormal(ms.last(), 0.0f, 1.0f, 0.0f);
+        addVertex(buffer, posA.fma(-0.5, rightA, vertex), 0.0f, 0.0f);
+        addVertex(buffer, posA.fma(0.5, rightA, vertex), 0.0f, 1.0f);
+        addVertex(buffer, posB.fma(0.5, rightB, vertex), 1.0f, 1.0f);
+        addVertex(buffer, posB.fma(-0.5, rightB, vertex), 1.0f, 0.0f);
 
-        addVertex(buffer, pose, posB.fma(-0.5, rightB, vertex)).setColor(0xffffffff).setUv(1.0f, 0.0f).setOverlay(OverlayTexture.NO_OVERLAY).setLight(light).setNormal(ms.last(), 0.0f, 1.0f, 0.0f);
-        addVertex(buffer, pose, posB.fma(0.5, rightB, vertex)).setColor(0xffffffff).setUv(1.0f, 1.0f).setOverlay(OverlayTexture.NO_OVERLAY).setLight(light).setNormal(ms.last(), 0.0f, 1.0f, 0.0f);
-        addVertex(buffer, pose, posA.fma(0.5, rightA, vertex)).setColor(0xffffffff).setUv(0.0f, 1.0f).setOverlay(OverlayTexture.NO_OVERLAY).setLight(light).setNormal(ms.last(), 0.0f, 1.0f, 0.0f);
-        addVertex(buffer, pose, posA.fma(-0.5, rightA, vertex)).setColor(0xffffffff).setUv(0.0f, 0.0f).setOverlay(OverlayTexture.NO_OVERLAY).setLight(light).setNormal(ms.last(), 0.0f, 1.0f, 0.0f);
+        addVertex(buffer, posB.fma(-0.5, rightB, vertex), 1.0f, 0.0f);
+        addVertex(buffer, posB.fma(0.5, rightB, vertex), 1.0f, 1.0f);
+        addVertex(buffer, posA.fma(0.5, rightA, vertex), 0.0f, 1.0f);
+        addVertex(buffer, posA.fma(-0.5, rightA, vertex), 0.0f, 0.0f);
+    }
+
+    public static class MergingGlueRenderState extends BlockEntityRenderState implements SubmitNodeCollector.CustomGeometryRenderer {
+        /**
+         * x, y, z, u, v per vertex, relative to the block entity
+         */
+        public final FloatArrayList vertices = new FloatArrayList();
+
+        @Override
+        public void render(final PoseStack.Pose ms, final VertexConsumer buffer) {
+            final Matrix4f pose = ms.pose();
+            final float[] data = this.vertices.elements();
+
+            for (int i = 0; i < this.vertices.size(); i += 5) {
+                buffer.addVertex(pose, data[i], data[i + 1], data[i + 2])
+                        .setColor(0xffffffff)
+                        .setUv(data[i + 3], data[i + 4])
+                        .setOverlay(OverlayTexture.NO_OVERLAY)
+                        .setLight(this.lightCoords)
+                        .setNormal(ms, 0.0f, 1.0f, 0.0f);
+            }
+        }
     }
 }

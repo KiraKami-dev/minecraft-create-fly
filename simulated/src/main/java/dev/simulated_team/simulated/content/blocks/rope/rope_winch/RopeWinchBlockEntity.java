@@ -13,18 +13,19 @@ import dev.simulated_team.simulated.content.blocks.rope.RopeStrandHolderBlockEnt
 import dev.simulated_team.simulated.content.blocks.rope.rope_connector.RopeConnectorBlockEntity;
 import dev.simulated_team.simulated.content.blocks.rope.strand.client.ClientRopeStrand;
 import dev.simulated_team.simulated.content.blocks.rope.strand.server.ServerRopeStrand;
-import dev.simulated_team.simulated.data.SimLang;
+import dev.simulated_team.simulated.Simulated;
 import dev.simulated_team.simulated.index.SimSoundEvents;
 import dev.simulated_team.simulated.service.SimConfigService;
 import com.zurrtum.create.catnip.animation.LerpedFloat;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.HolderLookup;
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.Mth;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import org.joml.Vector3d;
@@ -48,19 +49,20 @@ public class RopeWinchBlockEntity extends KineticBlockEntity implements RopeStra
         return this.ropeHolder;
     }
 
-    public void addBehaviours(final List<BlockEntityBehaviour> behaviours) {
+    @Override
+    public void addBehaviours(final List<BlockEntityBehaviour<?>> behaviours) {
         super.addBehaviours(behaviours);
         behaviours.add(this.ropeHolder = new RopeStrandHolderBehavior(this));
     }
 
     @Override
-    protected void read(final CompoundTag compound, final HolderLookup.Provider registries, final boolean clientPacket) {
-        super.read(compound, registries, clientPacket);
+    protected void read(final ValueInput view, final boolean clientPacket) {
+        super.read(view, clientPacket);
     }
 
     @Override
-    protected void write(final CompoundTag compound, final HolderLookup.Provider registries, final boolean clientPacket) {
-        super.write(compound, registries, clientPacket);
+    protected void write(final ValueOutput view, final boolean clientPacket) {
+        super.write(view, clientPacket);
     }
 
     @Override
@@ -200,6 +202,7 @@ public class RopeWinchBlockEntity extends KineticBlockEntity implements RopeStra
 
     @Override
     public MutableComponent format(final int value) {
-        return SimLang.translate("gui.threshold_switch.rope_winch_length", value).component();
+        // same component as SimLang.translate(...).component(), without the client-only LangBuilder (as Create Fly's pulley)
+        return Component.translatable(Simulated.MOD_ID + ".gui.threshold_switch.rope_winch_length", value);
     }
 }
