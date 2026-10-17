@@ -1,7 +1,9 @@
 package dev.ryanhcode.sable.mixin.sublevel_render.impl.sodium;
 
 import com.mojang.blaze3d.textures.GpuSampler;
+import dev.ryanhcode.sable.SableClient;
 import dev.ryanhcode.sable.api.sublevel.SubLevelContainer;
+import dev.ryanhcode.sable.render.sky_light_shadow.SableSkyLightShadows;
 import dev.ryanhcode.sable.mixinterface.plot.SubLevelContainerHolder;
 import dev.ryanhcode.sable.sublevel.plot.LevelPlot;
 import dev.ryanhcode.sable.sublevel.ClientSubLevel;
@@ -39,6 +41,16 @@ public abstract class SodiumWorldRendererMixin {
     private void sable$setSectionDispatcherCamera(final Camera camera, final Viewport viewport, final FogParameters fogParameters, final boolean spectator, final boolean updateChunksImmediately, final ChunkRenderMatrices matrices, final CallbackInfo ci) {
         // vanilla's cullTerrain sets this, but Sodium replaces cullTerrain
         Minecraft.getInstance().levelRenderer.getSectionRenderDispatcher().setCameraPosition(camera.position());
+    }
+
+    @Inject(method = "drawChunkLayer", at = @At("HEAD"))
+    private void sable$preDrawChunkLayer(final ChunkSectionLayerGroup group, final ChunkRenderMatrices matrices, final double x, final double y, final double z, final GpuSampler sampler, final CallbackInfo ci) {
+        // what ChunkSectionsToRender#renderGroup does for vanilla terrain, outside of any render pass
+        if (group == ChunkSectionLayerGroup.OPAQUE) {
+            SableSkyLightShadows.renderShadowMap();
+        } else if (group == ChunkSectionLayerGroup.TRANSLUCENT) {
+            SableClient.WATER_OCCLUSION_RENDERER.preRenderTranslucent();
+        }
     }
 
     @Inject(method = "drawChunkLayer", at = @At("TAIL"))
