@@ -9,11 +9,10 @@ dependencies {
     modRuntimeOnly "fuzs.forgeconfigapiport:forgeconfigapiport-fabric:${forgeconfigapiport_version}"
 }
 
-// Aeronautics GameTests live in src/aero/java and need :aeronautics, which does not compile yet. They are built,
-// registered (fabric-gametest entrypoints) and the Aeronautics mod is loaded only with -Pe2eAero, e.g.
-//   ORG_GRADLE_PROJECT_e2eAero=true tools/e2e.sh gametest 'mcf_e2e:aeronautics_*'
-// Once Aeronautics compiles, drop this switch: move the classes to src/main/java and the list into fabric.mod.json.
-def e2eAero = project.hasProperty('e2eAero') && project.property('e2eAero') != 'false'
+// Aeronautics and its GameTests (src/aero/java) are loaded by default; -Pe2eAero=false runs the harness without
+// Aeronautics (Sable + Create Fly + Simulated only), e.g. to bisect a problem:
+//   ORG_GRADLE_PROJECT_e2eAero=false tools/e2e.sh gametest
+def e2eAero = !project.hasProperty('e2eAero') || project.property('e2eAero') != 'false'
 def aeroGameTestClasses = ['AeronauticsLevititeTest', 'AeronauticsPropellerTest', 'AeronauticsHotAirTest']
 if (e2eAero) {
     sourceSets.main.java.srcDir 'src/aero/java'
