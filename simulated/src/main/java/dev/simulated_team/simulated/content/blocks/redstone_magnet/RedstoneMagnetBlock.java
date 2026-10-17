@@ -14,6 +14,8 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.BooleanProperty;
+import net.minecraft.world.level.redstone.Orientation;
+import org.jetbrains.annotations.Nullable;
 
 public class RedstoneMagnetBlock extends WrenchableDirectionalBlock implements IBE<RedstoneMagnetBlockEntity> {
     public static final BooleanProperty POWERED = BlockStateProperties.POWERED;
@@ -40,8 +42,8 @@ public class RedstoneMagnetBlock extends WrenchableDirectionalBlock implements I
     }
 
     @Override
-    public void neighborChanged(final BlockState state, final Level level, final BlockPos pos, final Block blockIn, final BlockPos fromPos,
-                                final boolean isMoving) {
+    protected void neighborChanged(final BlockState state, final Level level, final BlockPos pos, final Block blockIn, @Nullable final Orientation orientation,
+                                   final boolean isMoving) {
         if (level.isClientSide())
             return;
         this.withBlockEntityDo(level, pos, RedstoneMagnetBlockEntity::updateSignal);

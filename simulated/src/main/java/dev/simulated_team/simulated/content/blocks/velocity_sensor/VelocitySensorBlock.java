@@ -2,6 +2,7 @@ package dev.simulated_team.simulated.content.blocks.velocity_sensor;
 
 import com.mojang.serialization.MapCodec;
 import com.zurrtum.create.foundation.block.IBE;
+import com.zurrtum.create.foundation.block.RedStoneConnectBlock;
 import dev.simulated_team.simulated.content.blocks.util.AbstractDirectionalAxisBlock;
 import dev.simulated_team.simulated.index.SimBlockEntityTypes;
 import dev.simulated_team.simulated.multiloader.CommonRedstoneBlock;
@@ -20,7 +21,7 @@ import net.minecraft.world.phys.shapes.VoxelShape;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-public class VelocitySensorBlock extends AbstractDirectionalAxisBlock implements IBE<VelocitySensorBlockEntity>, CommonRedstoneBlock {
+public class VelocitySensorBlock extends AbstractDirectionalAxisBlock implements IBE<VelocitySensorBlockEntity>, CommonRedstoneBlock, RedStoneConnectBlock {
     public static final MapCodec<VelocitySensorBlock> CODEC = simpleCodec(VelocitySensorBlock::new);
 
     /**
@@ -91,6 +92,11 @@ public class VelocitySensorBlock extends AbstractDirectionalAxisBlock implements
     @Override
     public boolean commonConnectRedstone(final BlockState state, final BlockGetter level, final BlockPos pos, @Nullable final Direction direction) {
         return direction != null && getAxis(state) == direction.getAxis();
+    }
+
+    @Override
+    public boolean canConnectRedstone(final BlockState state, @Nullable final Direction side) {
+        return this.commonConnectRedstone(state, null, null, side);
     }
 
     @Override
