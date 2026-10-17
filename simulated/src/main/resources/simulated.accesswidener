@@ -49,3 +49,9 @@ accessible method net/minecraft/client/renderer/GameRenderer getFov (Lnet/minecr
 # items-misc
 # plunger launcher item renderer: hand projection FOV
 accessible method net/minecraft/client/renderer/GameRenderer getFov (Lnet/minecraft/client/Camera;FZ)F
+
+# entities-render
+accessible method net/minecraft/client/renderer/GameRenderer getFov (Lnet/minecraft/client/Camera;FZ)F
+accessible field net/minecraft/client/Camera eyeHeight F
+accessible field net/minecraft/client/Camera eyeHeightOld F
+extendable method net/minecraft/world/entity/Entity moveOrInterpolateTo (Lnet/minecraft/world/phys/Vec3;FF)V

@@ -1,5 +1,12 @@
-uniform float ShadowVolumeSize;
-uniform float StartY;
+#version 330
+
+// End sea layers (ported from the Veil program simulated:end_sea)
+layout(std140) uniform EndSeaInfo {
+    float ShadowVolumeSize;
+    float StartY;
+    float CameraY;
+};
+
 uniform sampler2D SkySampler;
 uniform sampler2D ShadowDepthSampler;
 uniform sampler2D ShadowStrengthSampler;
