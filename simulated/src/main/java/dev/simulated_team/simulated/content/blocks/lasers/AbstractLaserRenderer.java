@@ -7,6 +7,7 @@ import com.zurrtum.create.catnip.data.Couple;
 import com.zurrtum.create.client.flywheel.lib.transform.TransformStack;
 import com.zurrtum.create.client.foundation.blockEntity.renderer.SmartBlockEntityRenderer;
 import dev.ryanhcode.sable.Sable;
+import dev.simulated_team.simulated.index.SimRenderTypes;
 import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.client.renderer.blockentity.BlockEntityRendererProvider;
 import net.minecraft.client.renderer.feature.ModelFeatureRenderer;
@@ -54,7 +55,7 @@ public abstract class AbstractLaserRenderer<T extends AbstractLaserBlockEntity, 
         if (state.laser.visible) {
             pose.pushPose();
             transformPose(state.laser, pose);
-            queue.submitCustomGeometry(pose, LaserRenderTypes.laser(), state.laser);
+            queue.submitCustomGeometry(pose, SimRenderTypes.laser(), state.laser);
             pose.popPose();
         }
     }

@@ -1,7 +1,5 @@
 package dev.simulated_team.simulated.content.blocks.nameplate;
 
-import com.mojang.blaze3d.platform.Lighting;
-import com.mojang.blaze3d.vertex.PoseStack;
 import dev.simulated_team.simulated.Simulated;
 import dev.simulated_team.simulated.data.SimLang;
 import dev.simulated_team.simulated.network.packets.name_plate.NameplateChangeNamePacket;
@@ -11,10 +9,13 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.font.TextFieldHelper;
 import net.minecraft.client.gui.screens.Screen;
-import net.minecraft.client.renderer.rendertype.RenderType;
+import net.minecraft.client.input.CharacterEvent;
+import net.minecraft.client.input.KeyEvent;
+import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.level.block.state.BlockState;
+import org.joml.Matrix3x2fStack;
 
 import javax.annotation.Nullable;
 
@@ -73,29 +74,28 @@ public class NameplateScreen extends Screen {
    }
 
    @Override
-   public boolean keyPressed(final int pKeyCode, final int pScanCode, final int pModifiers) {
+   public boolean keyPressed(final KeyEvent keyEvent) {
+      final int pKeyCode = keyEvent.key();
       if (pKeyCode != 264 && pKeyCode != 257 && pKeyCode != 335) {
-         return this.nameField.keyPressed(pKeyCode) || super.keyPressed(pKeyCode, pScanCode, pModifiers);
+         return this.nameField.keyPressed(keyEvent) || super.keyPressed(keyEvent);
       }
       return false;
    }
 
    @Override
-   public boolean charTyped(final char pCodePoint, final int pModifiers) {
-      this.nameField.charTyped(pCodePoint);
+   public boolean charTyped(final CharacterEvent characterEvent) {
+      this.nameField.charTyped(characterEvent);
       return true;
    }
 
    @Override
    public void render(final GuiGraphics gui, final int pMouseX, final int pMouseY, final float pPartialTick) {
-      Lighting.setupForFlatItems();
-      this.renderBackground(gui, pMouseX, pMouseY, pPartialTick);
-      gui.drawCenteredString(this.font, this.title, this.width / 2, 40, 16777215);
+      // the background is drawn by Screen#renderWithTooltipAndSubtitles on 1.21.11
+      gui.drawCenteredString(this.font, this.title, this.width / 2, 40, 0xFFFFFFFF);
 
       this.renderSign(gui);
-      Lighting.setupFor3DItems();
 
-      //we have to do this now because we are manually rendering the background, so we can't call super otherwise the background will be rendered twice
+      // the button is not a renderable widget, it is drawn here
       this.button.render(gui, pMouseX, pMouseY, pPartialTick);
    }
 
@@ -117,51 +117,50 @@ public class NameplateScreen extends Screen {
    protected void renderSignBackground(final GuiGraphics gui, final BlockState pState) {
       final String color = ((NameplateBlock) pState.getBlock()).getColor().getSerializedName();
 
-      final PoseStack ps = gui.pose();
+      final Matrix3x2fStack ps = gui.pose();
 
-      ps.pushPose();
+      ps.pushMatrix();
       final float sy = 15.0f / 12.0f;
-      ps.scale(sy, sy, 1.0f);
-      ps.translate(8.0 - 16.0 * 4, 5.7, 0.0);
+      ps.scale(sy, sy);
+      ps.translate(8.0f - 16.0f * 4, 5.7f);
 
-      gui.blit(Simulated.path("textures/block/nameplate/" + color + "_nameplate.png"), -8, -8, 0.0F, 12, 16, 10, 32, 32);
+      gui.blit(RenderPipelines.GUI_TEXTURED, Simulated.path("textures/block/nameplate/" + color + "_nameplate.png"), -8, -8, 0.0F, 12, 16, 10, 32, 32);
 
       for (int i = 0; i < 6; i++) {
-         ps.translate(16.0, 0.0, 0.0);
-         gui.blit(Simulated.path("textures/block/nameplate/" + color + "_nameplate.png"), -8, -8,  8, 12, 16, 10, 32, 32);
+         ps.translate(16.0f, 0.0f);
+         gui.blit(RenderPipelines.GUI_TEXTURED, Simulated.path("textures/block/nameplate/" + color + "_nameplate.png"), -8, -8,  8, 12, 16, 10, 32, 32);
       }
-      ps.translate(16.0, 0.0, 0.0);
-      gui.blit(Simulated.path("textures/block/nameplate/" + color + "_nameplate.png"), -8, -8, 16, 12, 16, 10, 32, 32);
+      ps.translate(16.0f, 0.0f);
+      gui.blit(RenderPipelines.GUI_TEXTURED, Simulated.path("textures/block/nameplate/" + color + "_nameplate.png"), -8, -8, 16, 12, 16, 10, 32, 32);
 
-      ps.popPose();
+      ps.popMatrix();
    }
 
    protected void offsetSign(final GuiGraphics pGuiGraphics, final BlockState pState) {
-      pGuiGraphics.pose().translate((float)this.width / 2.0F, this.height / 2f - 26, 50.0F);
+      pGuiGraphics.pose().translate((float)this.width / 2.0F, this.height / 2f - 26);
    }
 
    private void renderSign(final GuiGraphics pGuiGraphics) {
-      final PoseStack ps = pGuiGraphics.pose();
+      final Matrix3x2fStack ps = pGuiGraphics.pose();
 
-      ps.pushPose();
+      ps.pushMatrix();
 
       final BlockState blockstate = this.be.getBlockState();
-      pGuiGraphics.pose().pushPose();
+      pGuiGraphics.pose().pushMatrix();
       this.offsetSign(pGuiGraphics, blockstate);
       final float scale = 2.0f;
-      ps.scale(scale, scale, scale);
-      pGuiGraphics.pose().pushPose();
+      ps.scale(scale, scale);
+      pGuiGraphics.pose().pushMatrix();
       this.renderSignBackground(pGuiGraphics, blockstate);
-      pGuiGraphics.pose().popPose();
+      pGuiGraphics.pose().popMatrix();
       this.renderSignText(pGuiGraphics);
-      pGuiGraphics.pose().popPose();
+      pGuiGraphics.pose().popMatrix();
 
-      ps.popPose();
+      ps.popMatrix();
    }
 
    private void renderSignText(final GuiGraphics pGuiGraphics) {
       final int lineHeight = 8;
-      pGuiGraphics.pose().translate(0.0F, 0.0F, 4.0F);
 
       final int color = this.be.getDarkColor(this.be.getTextColor());
 
@@ -199,7 +198,7 @@ public class NameplateScreen extends Screen {
             final int maxWith = this.font.width(this.message.substring(0, max)) - this.font.width(this.message) / 2;
             final int selMin = Math.min(minWidth, maxWith);
             final int selMax = Math.max(minWidth, maxWith);
-            pGuiGraphics.fill(RenderType.guiTextHighlight(), selMin, -1, selMax, lineHeight, -16776961);
+            pGuiGraphics.textHighlight(selMin, -1, selMax, lineHeight, true);
          }
       }
    }

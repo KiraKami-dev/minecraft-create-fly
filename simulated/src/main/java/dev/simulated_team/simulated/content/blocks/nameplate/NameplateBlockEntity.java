@@ -229,7 +229,8 @@ public class NameplateBlockEntity extends SmartBlockEntity implements ClipboardC
             final int j = (int) ((double) ARGB.red(i) * 0.4);
             final int k = (int) ((double) ARGB.green(i) * 0.4);
             final int l = (int) ((double) ARGB.blue(i) * 0.4);
-            return ARGB.color(0, j, k, l);
+            // opaque: 1.21.11 text colors are ARGB (an alpha of 0 used to mean opaque)
+            return ARGB.color(255, j, k, l);
         }
     }
 

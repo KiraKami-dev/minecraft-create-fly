@@ -6,7 +6,7 @@ import com.zurrtum.create.client.catnip.render.CachedBuffers;
 import com.zurrtum.create.client.catnip.render.SuperByteBuffer;
 import dev.simulated_team.simulated.content.blocks.lasers.AbstractLaserRenderer;
 import dev.simulated_team.simulated.content.blocks.lasers.LaserBehaviour;
-import dev.simulated_team.simulated.content.blocks.lasers.LaserRenderTypes;
+import dev.simulated_team.simulated.index.SimRenderTypes;
 import dev.simulated_team.simulated.index.SimPartialModels;
 import dev.simulated_team.simulated.util.SimColors;
 import net.minecraft.client.renderer.LightTexture;
@@ -58,7 +58,7 @@ public class LaserPointerRenderer extends AbstractLaserRenderer<LaserPointerBloc
 
     @Override
     public void submit(final LaserPointerRenderState state, final PoseStack pose, final SubmitNodeCollector queue, final CameraRenderState cameraState) {
-        queue.submitCustomGeometry(pose, LaserRenderTypes.lens(), state);
+        queue.submitCustomGeometry(pose, SimRenderTypes.lens(), state);
         super.submit(state, pose, queue, cameraState);
     }
 
