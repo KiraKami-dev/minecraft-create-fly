@@ -1,6 +1,6 @@
 package dev.simulated_team.simulated.util.hold_interaction;
 
-import com.zurrtum.create.CreateClient;
+import com.zurrtum.create.client.Create;
 import com.zurrtum.create.foundation.blockEntity.SmartBlockEntity;
 import com.zurrtum.create.api.behaviour.BlockEntityBehaviour;
 import dev.simulated_team.simulated.content.blocks.behaviour.HoldTipBehaviour;
@@ -40,7 +40,7 @@ public class HoldTipManager {
                 final List<MutableComponent> tip = new ArrayList<>();
                 tip.add(Component.literal(""));
                 tip.add(hoverTip);
-                CreateClient.VALUE_SETTINGS_HANDLER.showHoverTip(tip);
+                Create.VALUE_SETTINGS_HANDLER.showHoverTip(mc, tip);
             }
         }
     }

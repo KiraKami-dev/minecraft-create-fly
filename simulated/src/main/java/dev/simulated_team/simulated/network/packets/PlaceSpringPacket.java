@@ -49,7 +49,7 @@ public record PlaceSpringPacket(BlockPos parentPos, BlockPos childPos, Direction
         final BlockPos parentRelative = this.parentPos().relative(this.parentFacing);
         final BlockPos childRelative = this.childPos().relative(this.childFacing);
 
-        if (!player.canInteractWithBlock(childRelative, 4)) {
+        if (!player.isWithinBlockInteractionRange(childRelative, 4)) {
             return;
         }
 

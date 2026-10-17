@@ -46,7 +46,7 @@ public record PlaceMergingGluePacket(BlockPos parentPos, BlockPos childPos, Dire
         final ServerPlayer player = ctx.player();
         final Level level = ctx.level();
 
-        if (!player.canInteractWithBlock(this.childPos, 4)) {
+        if (!player.isWithinBlockInteractionRange(this.childPos, 4)) {
             return;
         }
 
