@@ -5,14 +5,17 @@ import dev.ryanhcode.sable.api.particle.ParticleSubLevelKickable;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.particle.*;
 import net.minecraft.client.renderer.LevelRenderer;
+import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.core.BlockPos;
 import net.minecraft.util.Mth;
+import net.minecraft.util.RandomSource;
 
-public class HotAirEmberParticle extends TextureSheetParticle implements ParticleSubLevelKickable {
+public class HotAirEmberParticle extends SingleQuadParticle implements ParticleSubLevelKickable {
     private final boolean isSoul;
 
-    protected HotAirEmberParticle(final ClientLevel level, final double x, final double y, final double z, final double xSpeed, final double ySpeed, final double zSpeed, final boolean isSoul) {
-        super(level, x, y, z, xSpeed, ySpeed, zSpeed);
+    protected HotAirEmberParticle(final ClientLevel level, final double x, final double y, final double z, final double xSpeed, final double ySpeed, final double zSpeed, final boolean isSoul,
+                                  final TextureAtlasSprite sprite) {
+        super(level, x, y, z, xSpeed, ySpeed, zSpeed, sprite);
         this.isSoul = isSoul;
         this.quadSize = 1.0f / 16.0f / 2.0f;
         this.lifetime = 18;
@@ -32,8 +35,9 @@ public class HotAirEmberParticle extends TextureSheetParticle implements Particl
         this.zd *= zSpeed;
     }
 
-    public ParticleRenderType getRenderType() {
-        return ParticleRenderType.PARTICLE_SHEET_TRANSLUCENT;
+    @Override
+    public SingleQuadParticle.Layer getLayer() {
+        return SingleQuadParticle.Layer.TRANSLUCENT;
     }
 
 
@@ -101,11 +105,10 @@ public class HotAirEmberParticle extends TextureSheetParticle implements Particl
             this.spriteSet = animatedSprite;
         }
 
+        @Override
         public Particle createParticle(final HotAirEmberParticleData data, final ClientLevel worldIn, final double x, final double y, final double z,
-                                       final double xSpeed, final double ySpeed, final double zSpeed) {
-            final HotAirEmberParticle particle = new HotAirEmberParticle(worldIn, x, y, z, xSpeed, ySpeed, zSpeed, data.isSoul);
-            particle.setSprite(this.spriteSet.get(0, 1));
-            return particle;
+                                       final double xSpeed, final double ySpeed, final double zSpeed, final RandomSource random) {
+            return new HotAirEmberParticle(worldIn, x, y, z, xSpeed, ySpeed, zSpeed, data.isSoul, this.spriteSet.get(0, 1));
         }
     }
 }

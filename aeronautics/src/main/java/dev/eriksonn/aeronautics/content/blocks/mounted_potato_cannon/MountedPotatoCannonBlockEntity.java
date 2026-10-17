@@ -248,7 +248,7 @@ public class MountedPotatoCannonBlockEntity extends KineticBlockEntity implement
 	@Override
 	public void sable$physicsTick(final ServerSubLevel subLevel, final RigidBodyHandle handle, final double timeStep) {
 		if (this.recoilMagnitude > 0) {
-			RECOIL_DIR.set(JOMLConversion.toJOML(Vec3.atLowerCornerOf(this.getBlockState().getValue(DirectionalKineticBlock.FACING).getOpposite().getNormal())));
+			RECOIL_DIR.set(JOMLConversion.toJOML(Vec3.atLowerCornerOf(this.getBlockState().getValue(DirectionalKineticBlock.FACING).getOpposite().getUnitVec3i())));
 			RECOIL_CENTER.set(JOMLConversion.toJOML(Vec3.atCenterOf(this.getBlockPos())));
 
 			RECOIL_DIR.mul(this.recoilMagnitude);
@@ -373,7 +373,7 @@ public class MountedPotatoCannonBlockEntity extends KineticBlockEntity implement
 	}
 
 	public Vec3 getAimingVector() {
-		return Vec3.atLowerCornerOf(this.getBlockState().getValue(DirectionalKineticBlock.FACING).getNormal());
+		return Vec3.atLowerCornerOf(this.getBlockState().getValue(DirectionalKineticBlock.FACING).getUnitVec3i());
 	}
 
 	public MountedPotatoCannonInventory getInventory() {

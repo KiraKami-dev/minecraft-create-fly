@@ -8,22 +8,20 @@ import dev.eriksonn.aeronautics.content.blocks.hot_air.balloon.map.SavedBalloon;
 import dev.eriksonn.aeronautics.content.blocks.hot_air.balloon.graph.BalloonBuilder;
 import dev.eriksonn.aeronautics.content.blocks.hot_air.balloon.graph.BalloonLayerGraph;
 import dev.eriksonn.aeronautics.content.blocks.hot_air.lifting_gas.LiftingGasType;
-import dev.eriksonn.aeronautics.data.AeroLang;
 import dev.eriksonn.aeronautics.index.AeroAdvancements;
 import dev.eriksonn.aeronautics.index.AeroTags;
 import dev.ryanhcode.sable.Sable;
 import dev.ryanhcode.sable.api.SubLevelHelper;
 import dev.ryanhcode.sable.physics.config.dimension_physics.DimensionPhysicsData;
 import dev.ryanhcode.sable.companion.math.JOMLConversion;
-import joptsimple.internal.Strings;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
-import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
-import net.minecraft.util.Mth;
 import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
@@ -33,7 +31,6 @@ import org.joml.Vector3dc;
 
 import javax.annotation.Nullable;
 import java.util.Iterator;
-import java.util.List;
 
 /**
  * Physics-related interface for {@link net.minecraft.world.level.block.entity.BlockEntity BlockEntities} that can produce hot air for hot air balloons.
@@ -69,7 +66,7 @@ public interface BlockEntityLiftingGasProvider {
     }
 
     private static MutableComponent bars(final int count, final ChatFormatting format) {
-        return Component.literal(Strings.repeat('|', count))
+        return Component.literal("|".repeat(count))
                 .withStyle(format);
     }
 
@@ -178,50 +175,19 @@ public interface BlockEntityLiftingGasProvider {
         }
     }
 
-    default void addBalloonGoggleInformation(final List<Component> tooltip, final ClientBalloonInfo info, final int ticksSinceSync, final double airPressure) {
-        if (info != null) {
-            final int totalVolume = info.clientBalloonVolume;
-            if (totalVolume == 0) {
-                AeroLang.translate("lifting_gas.no_suitable_balloon").style(ChatFormatting.RED)
-                        .forGoggles(tooltip, 2);
-                return;
-            }
+    /**
+     * @return the balloon information last synced to the client (goggle tooltip: client {@code LiftingGasGoggleInformation})
+     */
+    @Nullable
+    default ClientBalloonInfo getClientBalloonInfo() {
+        return null;
+    }
 
-            final MutableComponent gasOutputComponent = AeroLang.translate("unit.meter_cubed", String.format("%.2f", this.getGasOutput())).style(ChatFormatting.AQUA).component();
-            AeroLang.translate("lifting_gas.gas_output", this.getLiftingGasType().getName(), gasOutputComponent).style(ChatFormatting.GRAY)
-                    .forGoggles(tooltip, 2);
-
-            AeroLang.emptyLine(tooltip);
-            AeroLang.translate("lifting_gas.balloon").forGoggles(tooltip, 1);
-
-            final int totalBar = 30;
-            final int targetBar = (int) Math.ceil(totalBar * info.clientBalloonTarget / totalVolume);
-            final double volumeInterp = getPredictedVolume(info, ticksSinceSync);
-            final int volumeBar = Mth.clamp((int) Math.ceil(totalBar * volumeInterp / totalVolume), 0, totalBar);
-
-            final MutableComponent base = barComponent(volumeBar, targetBar, totalBar);
-            AeroLang.translate("lifting_gas.fill", base).style(ChatFormatting.GRAY)
-                    .forGoggles(tooltip, 2);
-
-            double lift = info.clientBalloonLift * airPressure;
-            if (info.clientBalloonFilled > 0.01) {
-                // lift is linear with volume, so we can use the fractional change in volume to also dynamically update lift
-                lift *= volumeInterp / info.clientBalloonFilled;
-            }
-
-            final MutableComponent liftComponent = AeroLang.kilopixelGram(lift)
-                    .style(ChatFormatting.AQUA).component();
-
-            AeroLang.translate("lifting_gas.total_lift", liftComponent)
-                    .style(ChatFormatting.GRAY)
-                    .forGoggles(tooltip, 2);
-
-            final MutableComponent balloonVolumeComponent = AeroLang.translate("unit.meter_cubed", totalVolume)
-                    .style(ChatFormatting.AQUA).component();
-            AeroLang.translate("lifting_gas.balloon_volume", balloonVolumeComponent)
-                    .style(ChatFormatting.GRAY)
-                    .forGoggles(tooltip, 2);
-        }
+    /**
+     * @return client ticks since {@link #getClientBalloonInfo()} was synced
+     */
+    default int getTicksSinceSync() {
+        return 0;
     }
 
     default double getAirPressure(final ClientBalloonInfo balloonInfo, final Level level) {
@@ -269,30 +235,30 @@ public interface BlockEntityLiftingGasProvider {
     record ClientBalloonInfo(int clientBalloonVolume, double clientBalloonFilled,
                              double clientBalloonTarget, double clientBalloonLift,
                              double clientBalloonChange, Vec3 gasCenter) {
-        public static void writeToNBT(final CompoundTag tag, final ServerBalloon balloon) {
+        public static void writeToNBT(final ValueOutput view, final ServerBalloon balloon) {
             if (balloon != null && balloon.getCenter() != null) {
-                tag.putInt("Volume", balloon.getCapacity());
-                tag.putDouble("Filled", balloon.getTotalFilledVolume());
-                tag.putDouble("Target", balloon.getTotalTargetVolume());
-                tag.putDouble("Delta", balloon.getTotalVolumeChange());
-                tag.putDouble("Lift", balloon.getTotalLift());
-                tag.putDouble("CenterX", balloon.getCenter().x);
-                tag.putDouble("CenterY", balloon.getCenter().y);
-                tag.putDouble("CenterZ", balloon.getCenter().z);
+                view.putInt("Volume", balloon.getCapacity());
+                view.putDouble("Filled", balloon.getTotalFilledVolume());
+                view.putDouble("Target", balloon.getTotalTargetVolume());
+                view.putDouble("Delta", balloon.getTotalVolumeChange());
+                view.putDouble("Lift", balloon.getTotalLift());
+                view.putDouble("CenterX", balloon.getCenter().x);
+                view.putDouble("CenterY", balloon.getCenter().y);
+                view.putDouble("CenterZ", balloon.getCenter().z);
             }
         }
 
-        public static ClientBalloonInfo readFromNBT(final CompoundTag tag) {
+        public static ClientBalloonInfo readFromNBT(final ValueInput view) {
             return new ClientBalloonInfo(
-                    tag.getInt("Volume"),
-                    tag.getDouble("Filled"),
-                    tag.getDouble("Target"),
-                    tag.getDouble("Lift"),
-                    tag.getDouble("Delta"),
+                    view.getIntOr("Volume", 0),
+                    view.getDoubleOr("Filled", 0),
+                    view.getDoubleOr("Target", 0),
+                    view.getDoubleOr("Lift", 0),
+                    view.getDoubleOr("Delta", 0),
                     new Vec3(
-                            tag.getDouble("CenterX"),
-                            tag.getDouble("CenterY"),
-                            tag.getDouble("CenterZ")
+                            view.getDoubleOr("CenterX", 0),
+                            view.getDoubleOr("CenterY", 0),
+                            view.getDoubleOr("CenterZ", 0)
                     ));
         }
     }

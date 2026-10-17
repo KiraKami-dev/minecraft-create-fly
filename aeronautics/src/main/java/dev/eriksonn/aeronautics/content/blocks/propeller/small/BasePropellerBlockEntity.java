@@ -9,13 +9,12 @@ import dev.ryanhcode.sable.api.block.propeller.BlockEntitySubLevelPropellerActor
 import dev.ryanhcode.sable.companion.math.JOMLConversion;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.core.HolderLookup;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.network.chat.Component;
 import net.minecraft.util.Mth;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
 import net.minecraft.world.phys.Vec3;
 import org.joml.Quaternionf;
 
@@ -33,7 +32,7 @@ public abstract class BasePropellerBlockEntity extends KineticBlockEntity implem
     }
 
     @Override
-    public void addBehaviours(final List<BlockEntityBehaviour> behaviours) {
+    public void addBehaviours(final List<BlockEntityBehaviour<?>> behaviours) {
         super.addBehaviours(behaviours);
 
         this.prop = this.createBehavior();
@@ -47,7 +46,7 @@ public abstract class BasePropellerBlockEntity extends KineticBlockEntity implem
      */
     public PropellerActorBehaviour createBehavior() {
         final PropellerActorBehaviour prop = new PropellerActorBehaviour(this, this);
-        prop.setThrustDirection(JOMLConversion.toJOML(Vec3.atLowerCornerOf(this.getBlockDirection().getNormal())));
+        prop.setThrustDirection(JOMLConversion.toJOML(Vec3.atLowerCornerOf(this.getBlockDirection().getUnitVec3i())));
 
         prop.setParticleAmountUpdater(() -> 0.12 * Math.abs(this.rotationSpeed));
         prop.setParticleCountProperties(5, 2);
@@ -137,17 +136,17 @@ public abstract class BasePropellerBlockEntity extends KineticBlockEntity implem
     }
 
     @Override
-    protected void write(final CompoundTag compound, final HolderLookup.Provider registries, final boolean clientPacket) {
-        super.write(compound, registries, clientPacket);
+    protected void write(final ValueOutput view, final boolean clientPacket) {
+        super.write(view, clientPacket);
 
-        compound.putFloat("RotationSpeed", this.rotationSpeed);
+        view.putFloat("RotationSpeed", this.rotationSpeed);
     }
 
     @Override
-    protected void read(final CompoundTag compound, final HolderLookup.Provider registries, final boolean clientPacket) {
-        super.read(compound, registries, clientPacket);
+    protected void read(final ValueInput view, final boolean clientPacket) {
+        super.read(view, clientPacket);
 
-        this.rotationSpeed = compound.getFloat("RotationSpeed");
+        this.rotationSpeed = view.getFloatOr("RotationSpeed", 0);
     }
 
     /**
@@ -202,13 +201,5 @@ public abstract class BasePropellerBlockEntity extends KineticBlockEntity implem
     @Override
     public boolean isActive() {
         return Math.abs(this.rotationSpeed) > 0.01f;
-    }
-
-    @Override
-    public boolean addToGoggleTooltip(final List<Component> tooltip, final boolean isPlayerSneaking) {
-        if (!super.addToGoggleTooltip(tooltip, isPlayerSneaking))
-            return false;
-
-        return this.prop.addToGoggleTooltip(tooltip, isPlayerSneaking);
     }
 }

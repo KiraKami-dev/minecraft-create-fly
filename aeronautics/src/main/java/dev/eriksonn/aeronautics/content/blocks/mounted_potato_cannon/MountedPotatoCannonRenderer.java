@@ -112,7 +112,7 @@ public class MountedPotatoCannonRenderer extends SafeBlockEntityRenderer<Mounted
 		msr.center();
 
 		final Direction facing = be.getBlockState().getValue(BlockStateProperties.FACING);
-		final Vec3i facingVec = facing.getNormal();
+		final Vec3i facingVec = facing.getUnitVec3i();
 
 		final float itemScale = 0.35f;
 		final float normalizedTimer = be.getItemTime(partialTicks);
