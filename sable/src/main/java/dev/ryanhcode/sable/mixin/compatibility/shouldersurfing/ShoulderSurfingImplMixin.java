@@ -15,7 +15,7 @@ import org.spongepowered.asm.mixin.injection.At;
 @Mixin(ShoulderSurfing.class)
 public class ShoulderSurfingImplMixin {
 
-    @WrapOperation(method = "togglePerspective", at = @At(value = "INVOKE", target = "Lcom/github/exopandora/shouldersurfing/api/model/Perspective;next(Lcom/github/exopandora/shouldersurfing/api/client/IPerspectiveConfig;)Lcom/github/exopandora/shouldersurfing/api/model/Perspective;"))
+    @WrapOperation(method = "togglePerspective", at = @At(value = "INVOKE", target = "Lcom/github/exopandora/shouldersurfing/api/client/Perspective;next(Lcom/github/exopandora/shouldersurfing/api/config/IPerspectiveConfig;)Lcom/github/exopandora/shouldersurfing/api/client/Perspective;"))
     public Perspective next(final Perspective instance, final IPerspectiveConfig config, final Operation<Perspective> original) {
         final Entity cameraEntity = Minecraft.getInstance().getCameraEntity();
 
