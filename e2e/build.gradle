@@ -83,6 +83,18 @@ if (flywheelScenario) {
     ].join(';')
 }
 
+// -Pe2eScenario=shadows: a large platform sub-level hovering (physics paused) over flat ground at noon, camera beside it
+// looking under it; compare screenshots with `sub_level_skylight_shadows` on and off (e2e/run/client/config/sable-client.toml)
+if (project.findProperty('e2eScenario') == 'shadows') {
+    e2eCommands = [
+            'time set noon', 'gamerule advance_time false', 'gamerule spawn_mobs false',
+            'tp @a 20 -60 30 146 6',
+            'forceload add -32 -32 47 32',
+            'execute positioned 0 -50 0 run sable spawn platform 12 minecraft:oak_planks',
+            'sable paused true',
+    ].join(';')
+}
+
 // -Pe2eScenario=inspector: put imguimc in the runtime (Sable's jar-in-jar is not unpacked for a project dependency)
 // and open the ImGui inspector window before the screenshots
 if (project.findProperty('e2eScenario') == 'inspector') {

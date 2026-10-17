@@ -480,6 +480,116 @@ public class VanillaSubLevelRenderDispatcher implements SubLevelRenderDispatcher
         profiler.pop();
     }
 
+    /**
+     * Renders the depth of every opaque and cutout sub-level section into a shadow map target.
+     *
+     * @param sublevels  The sub-levels to render
+     * @param target     The target to render into, which must be cleared by this call
+     * @param view       The model-view matrix of the shadow camera, relative to {@code origin}
+     * @param projection The projection uniform of the shadow camera
+     * @param origin     The world position of the shadow camera
+     * @return If anything was rendered
+     */
+    public boolean renderShadowMap(final Iterable<ClientSubLevel> sublevels, final RenderTarget target, final Matrix4fc view, final GpuBufferSlice projection, final Vector3dc origin) {
+        final Minecraft minecraft = Minecraft.getInstance();
+        if (this.uniformStorage == null) {
+            return false;
+        }
+
+        final GpuTextureView atlas = minecraft.getTextureManager().getTexture(TextureAtlas.LOCATION_BLOCKS).getTextureView();
+        final List<PendingDraw> pendingDraws = new ObjectArrayList<>();
+        final List<DynamicUniforms.ChunkSectionInfo> sectionInfos = new ObjectArrayList<>();
+        final Matrix4f transformation = new Matrix4f();
+        final Vector4f params = new Vector4f();
+        final Vector4f faceShade = new Vector4f(1.0f);
+        int maxIndices = 0;
+
+        for (final ClientSubLevel sublevel : sublevels) {
+            if (!(sublevel.getRenderData() instanceof final VanillaChunkedSubLevelRenderData chunked)) {
+                continue;
+            }
+
+            final Pose3dc renderPose = sublevel.renderPose();
+            final Vector3dc rotationPoint = renderPose.rotationPoint();
+            final BlockPos anchor = BlockPos.containing(rotationPoint.x(), rotationPoint.y(), rotationPoint.z());
+
+            GpuBufferSlice subLevelUniform = null;
+
+            for (final SectionRenderDispatcher.RenderSection renderSection : chunked.allRenderSections()) {
+                final SectionMesh mesh = renderSection.getSectionMesh();
+                final BlockPos sectionOrigin = renderSection.getRenderOrigin();
+                int sectionIndex = -1;
+
+                for (final ChunkSectionLayer layer : new ChunkSectionLayer[]{ChunkSectionLayer.SOLID, ChunkSectionLayer.CUTOUT}) {
+                    final SectionBuffers buffers = mesh.getBuffers(layer);
+                    if (buffers == null) {
+                        continue;
+                    }
+
+                    if (subLevelUniform == null) {
+                        getAnchoredTransformation(renderPose, anchor, origin.x(), origin.y(), origin.z(), transformation);
+                        params.set(0.0f, 1.0f, 0.0f, 0.0f);
+                        subLevelUniform = this.uniformStorage.writeUniform(new SubLevelRenderPipelines.SubLevelUniform(transformation, faceShade, faceShade, params));
+                    }
+
+                    if (sectionIndex == -1) {
+                        sectionIndex = sectionInfos.size();
+                        sectionInfos.add(new DynamicUniforms.ChunkSectionInfo(new Matrix4f(view),
+                                sectionOrigin.getX() - anchor.getX(), sectionOrigin.getY() - anchor.getY(), sectionOrigin.getZ() - anchor.getZ(),
+                                1.0f, atlas.getWidth(0), atlas.getHeight(0)));
+                    }
+
+                    if (buffers.getIndexBuffer() == null && buffers.getIndexCount() > maxIndices) {
+                        maxIndices = buffers.getIndexCount();
+                    }
+
+                    pendingDraws.add(new PendingDraw(layer, buffers, sectionIndex, subLevelUniform, 0.0));
+                }
+            }
+        }
+
+        if (pendingDraws.isEmpty()) {
+            return false;
+        }
+
+        final GpuBufferSlice[] sectionUniforms = RenderSystem.getDynamicUniforms().writeChunkSections(sectionInfos.toArray(new DynamicUniforms.ChunkSectionInfo[0]));
+        final EnumMap<ChunkSectionLayer, List<RenderPass.Draw<Void>>> shadowDraws = new EnumMap<>(ChunkSectionLayer.class);
+
+        for (final PendingDraw pending : pendingDraws) {
+            final SectionBuffers buffers = pending.buffers();
+            final GpuBufferSlice sectionUniform = sectionUniforms[pending.sectionIndex()];
+            final GpuBufferSlice subLevelUniform = pending.subLevelUniform();
+            final BiConsumer<Void, RenderPass.UniformUploader> uploader = (unused, uniformUploader) -> {
+                uniformUploader.upload("ChunkSection", sectionUniform);
+                uniformUploader.upload(SubLevelRenderPipelines.SUB_LEVEL_UNIFORM, subLevelUniform);
+            };
+
+            final GpuBuffer indexBuffer = buffers.getIndexBuffer();
+            shadowDraws.computeIfAbsent(pending.layer(), k -> new ArrayList<>()).add(new RenderPass.Draw<>(
+                    0, buffers.getVertexBuffer(), indexBuffer, indexBuffer == null ? null : buffers.getIndexType(), 0, buffers.getIndexCount(), uploader));
+        }
+
+        final RenderSystem.AutoStorageIndexBuffer sequentialBuffer = RenderSystem.getSequentialBuffer(VertexFormat.Mode.QUADS);
+        final GpuBuffer indexBuffer = maxIndices == 0 ? null : sequentialBuffer.getBuffer(maxIndices);
+        final VertexFormat.IndexType indexType = maxIndices == 0 ? null : sequentialBuffer.type();
+
+        try (final RenderPass renderPass = RenderSystem.getDevice()
+                .createCommandEncoder()
+                .createRenderPass(() -> "Sable sky light shadow map", target.getColorTextureView(), OptionalInt.of(0), target.getDepthTextureView(), OptionalDouble.of(1.0))) {
+            RenderSystem.bindDefaultUniforms(renderPass);
+            renderPass.setUniform("Projection", projection);
+            renderPass.bindTexture("Sampler2", minecraft.gameRenderer.lightTexture().getTextureView(), RenderSystem.getSamplerCache().getClampToEdge(FilterMode.LINEAR));
+            renderPass.bindTexture("Sampler0", atlas, RenderSystem.getSamplerCache().getClampToEdge(FilterMode.NEAREST));
+
+            for (final var entry : shadowDraws.entrySet()) {
+                renderPass.setPipeline(entry.getKey() == ChunkSectionLayer.SOLID ? SubLevelRenderPipelines.SHADOW_SOLID : SubLevelRenderPipelines.SHADOW_CUTOUT);
+                renderPass.drawMultipleIndexed(entry.getValue(), indexBuffer, indexType, DYNAMIC_UNIFORMS, null);
+            }
+        }
+
+        return true;
+    }
+
     @Override
     public void renderSectionLayerGroup(final ChunkSectionLayerGroup group, final GpuSampler sampler) {
         if (!this.hasDraws || this.atlasTexture == null) {

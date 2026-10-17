@@ -3,7 +3,6 @@ package dev.ryanhcode.sable;
 import dev.ryanhcode.sable.debug.SableClientGizmoHandler;
 import dev.ryanhcode.sable.network.client.SableClientNetworkEventLoop;
 import dev.ryanhcode.sable.render.SableRenderBootstrap;
-import dev.ryanhcode.sable.render.sky_light_shadow.SableSkyLightShadows;
 import dev.ryanhcode.sable.render.water_occlusion.WaterOcclusionRenderer;
 import dev.ryanhcode.sable.sublevel.storage.debug.SubLevelContainerInspector;
 import dev.ryanhcode.sable.veillite.api.client.editor.EditorManager;
@@ -28,8 +27,6 @@ public class SableClient {
 
         SableRenderBootstrap.init();
         VeilRenderSystem.init();
-
-        VeilEventPlatform.INSTANCE.onVeilRenderLevelStage(SableSkyLightShadows::renderShadowMap);
 
         GIZMO_HANDLER.init();
     }
