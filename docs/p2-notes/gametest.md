@@ -6,7 +6,8 @@ Owner files: `e2e/**`, `tools/e2e.sh`.
 - `tools/e2e.sh gametest [selector]` -> Loom run `gametest` (`:e2e:runGametest`, run dir `e2e/run/gametest`, fresh world
   every run). Prints `PASS/FAIL <test id>` per test + vanilla's `N GAME TESTS COMPLETE` line, writes
   `e2e/run/gametest/gametest-report.xml` (JUnit), exits 1 if a required test failed or the run did not finish.
-  Selector example: `tools/e2e.sh gametest 'mcf_e2e:sable_physics_test_*'` (`-Pe2eFilter=` on the Gradle task).
+  Selector example: `tools/e2e.sh gametest 'mcf_e2e:sable_physics_test_*'` (`-Pe2eFilter=` on the Gradle task);
+  `tools/e2e.sh gametest <selector> verify` (`-Pe2eVerify`) runs each selected test 100x per rotation and prints counts.
 - `all` now runs server, gametest, client. `GRADLEW="python3 -I .../gw.py" nice -n 19 tools/e2e.sh gametest` routes the
   Gradle call through the shared build-slot wrapper (default `./gradlew --console=plain`).
 - Logs: `e2e/run/gametest/logs/latest.log`; every result line is `E2E: GAMETEST ...` (from `E2ETestReporter`), tests that
@@ -85,16 +86,35 @@ Owner files: `e2e/**`, `tools/e2e.sh`.
 | Test | Origin | Asserts | Result |
 |---|---|---|---|
 | `sable_assembly_test_brittle_breaking` | upstream | 3x3x3 of comparator/torch/wire/lever/rails/button/plates/tripwire assembles with every state unchanged | PASS |
-| `sable_assembly_test_all_blocks` | upstream (manual-only there, optional here) | 202 vanilla blocks with a block entity or inventory: placed, every slot filled, assembled with a stone base: block survives, nothing drops, every slot keeps its item | PASS |
-| `sable_assembly_test_assembled_blocks_settle` | new | 3x1x3 deck + chest with 7 diamonds: world left empty, 10 blocks in a 3x2x3 plot, cargo kept, falls 1 block, rests on the floor (bottom y 1 +-0.1), still 10 blocks + cargo | PASS |
+| `sable_assembly_test_all_blocks` | upstream (manual-only there, optional here; own batch, env `mcf_e2e:isolated`) | 202 vanilla blocks with a block entity or inventory: placed, every slot filled, assembled with a stone base: block survives, nothing drops, every slot keeps its item | PASS |
+| `sable_assembly_test_assembled_blocks_settle` | new | 3x1x3 deck + chest with 7 diamonds: world left empty, 10 blocks in a 3x2x3 plot, cargo kept, falls 1 block, rests on the floor (bottom y 1 +-0.1), still 10 blocks + cargo | PASS (400/400 in verify mode; failed 1 of 10 full runs before `all_blocks` got its own batch, see the plot cache bug) |
+| `sable_assembly_test_plot_reuse_in_one_tick` | new, optional (known Sable bug) | remove a sub-level and create another in the same tick: the new one's block must be in its own chunk and readable through the level | FAIL (bug below) |
 | `sable_physics_test_continuous_collision` | upstream (+ must stay loaded and actually move) | glass block thrown at a brick wall never passes it | PASS |
 | `sable_physics_test_snag` | upstream, optional, 10/10 attempts | diamond block pushed along a 1x1 channel slides through without snagging | PASS (10/10) |
 | `sable_physics_test_gravity` | upstream, optional | v = g after 1 s (no drag) | FAIL (expected: drag, see above) |
 | `sable_physics_test_free_fall_with_drag` | new | after 20 ticks v matches the per-substep damped model to 0.01 m/s, drop within [exact, coarse] bounds, no sideways drift | PASS |
 | `sable_physics_test_falls_and_comes_to_rest` | new (S8a) | 3x2x3 box: stays loaded every tick, falls straight at 50-120% of free-fall speed, rests on the floor (bottom y 1 +-0.1) for 10 ticks, no drift, 18 blocks | PASS |
-(plus vanilla's own `minecraft:always_pass`). Suite: 9 tests, about 3-6 s of game time, about 2 min wall time with Gradle.
+(plus vanilla's own optional `minecraft:always_pass`). Suite: 10 tests, about 2-7 s of game time, about 2 min wall time with
+Gradle. Required tests: 6/6 pass; optional failures: `gravity` (upstream test ignores drag), `plot_reuse_in_one_tick` (bug).
+`tools/e2e.sh gametest <selector> verify` runs a test 100x in each rotation (also exercises the rotation-aware helpers).
 
 ## Findings (not fixed here; Sable is read-only for this area)
+- **Sable bug (upstream too): stale plot chunks in `ServerChunkCache`'s lookup cache.** Vanilla
+  `ServerChunkCache.getChunk(x, z, status, load)` returns any non-null chunk from its 4-entry `lastChunk` cache without
+  checking it; the cache is cleared only once per level tick (end of `tick()`) or when `runDistanceManagerUpdates` changes
+  something. Sable's `mixin/plot/ServerChunkCacheMixin` redirects `getChunkNow`, `getChunkFutureMainThread` (cache misses),
+  `getVisibleChunkIfPresent` etc. for plot positions, but not the cache hit in `getChunk`, and plot chunk add/remove
+  (`ServerLevelPlot.addChunkHolder` / `onRemoveChunkHolder`) never clears it. So when a sub-level is removed and another is
+  created in the same tick (it reuses the freed plot index), `level.getBlockState/setBlock/getBlockEntity` in the new plot hit
+  the removed plot's dead `LevelChunk` until the next tick: the new sub-level's blocks are written into the dead chunk and
+  vanish (evidence: `plot_reuse_in_one_tick` -> "air in its own chunk, diamond_block through the level"). The same happens to
+  a plot chunk that was looked up before it existed (the miss path returns the shared `EmptyLevelChunk`, which is then
+  cached). In gameplay: disassemble/destroy one ship and assemble another in the same tick -> blocks or block-entity data of
+  the new one lost (`SubLevelAssemblyHelper.moveBlocks` loads block entities via `resultingLevel.getBlockEntity`). Seen in
+  this suite as `assembled_blocks_settle` reading 1 of its 10 blocks when `all_blocks` had removed a sub-level that tick.
+  Suggested fix (Sable owner): `@Inject` at HEAD of `ServerChunkCache.getChunk(IILnet/minecraft/world/level/chunk/status/ChunkStatus;Z)`
+  returning the container chunk (or the empty chunk) for `container.inBounds(x, z)` on the main thread, or clear the cache
+  (`clearCache()`, accessor needed) in `addChunkHolder`/`onRemoveChunkHolder`. Then make the test required.
 - Upstream: `SubLevelAssemblyHelper.moveBlocks` registers POIs twice for every moved POI block
   (`level.updatePOIOnBlockStateChange(newPos, air, state)` in the move loop, then again in `markAndNotifyBlock`; upstream
   calls `onBlockStateChange` at the same two places). Each assembled bed/bell/lectern/workstation/beehive logs
@@ -115,7 +135,9 @@ Owner files: `e2e/**`, `tools/e2e.sh`.
 - Ticking N times: `helper.runAfterDelay(n, ...)`, `helper.startSequence().thenIdle(n).thenExecute(...)`,
   `thenExecuteFor(n, check)`, `thenWaitUntil(check)` (retried every tick until it stops throwing or the test times out).
 - New test class: add it to the `fabric-gametest` list in `e2e/src/main/resources/fabric.mod.json`, prefix its name
-  (`SimulatedXTest`, `AeronauticsXTest`), always set `maxTicks`. Build structures in code on top of an existing floor
+  (`SimulatedXTest`, `AeronauticsXTest`), always set `maxTicks`. Tests of one environment run concurrently in batches of
+  50; `environment = "mcf_e2e:isolated"` (empty `all_of`, `e2e/src/main/resources/data/mcf_e2e/test_environment/`) gives
+  a test its own batch. Build structures in code on top of an existing floor
   structure (`sable:assemblytest.allblocks` 5x4x5, `sable:physicstest.gravity` 5x13x5 shaft) or ship a new `.nbt` under
   `e2e/src/main/resources/data/mcf_e2e/structure/`. The e2e module will need `implementation project(path: ':simulated',
   configuration: 'namedElements')` (and `:aeronautics`, Create Fly runtime) once those compile.

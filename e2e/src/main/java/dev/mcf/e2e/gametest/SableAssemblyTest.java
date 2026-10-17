@@ -29,6 +29,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
@@ -36,6 +37,7 @@ import net.minecraft.world.level.block.entity.ChestBlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.Property;
+import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.level.entity.EntityTypeTest;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Vector3d;
@@ -130,8 +132,11 @@ public final class SableAssemblyTest {
      * Upstream (optional, manual-only there; runs automatically here): places one state of every block that has a
      * block entity or an item inventory on a stone block, fills every slot, assembles the two blocks and checks that
      * the block survived, nothing dropped, and every slot kept its item.
+     * <p>
+     * Runs in its own batch ({@code mcf_e2e:isolated} environment): it removes a sub-level every other tick, and a
+     * sub-level created by another test in that same tick hits the stale plot chunk bug ({@link #plotReuseInOneTick}).
      */
-    @GameTest(structure = "sable:assemblytest.allblocks", required = false, maxTicks = 30_000_000)
+    @GameTest(environment = "mcf_e2e:isolated", structure = "sable:assemblytest.allblocks", required = false, maxTicks = 30_000_000)
     public void allBlocks(final GameTestHelper helper) {
         final boolean failOnFirstError = false;
         final boolean fastTest = true;
@@ -388,6 +393,45 @@ public final class SableAssemblyTest {
                     assertCargo(helper, subLevel, cargo);
                 })
                 .thenSucceed();
+    }
+
+    /**
+     * Known Sable bug (upstream too), optional until fixed: when a sub-level is removed and another one is created in
+     * the same tick, the new one reuses the freed plot, but vanilla's 4-entry chunk lookup cache in
+     * {@code ServerChunkCache.getChunk} still holds the removed plot's chunk object (Sable's {@code ServerChunkCacheMixin}
+     * only redirects cache misses and never clears it). Until the cache is cleared at the next level tick,
+     * {@code level.getBlockState/setBlock/getBlockEntity} in the new plot use the dead chunk: the new sub-level's blocks
+     * are written into it and vanish.
+     */
+    @GameTest(structure = "sable:assemblytest.allblocks", maxTicks = 20, required = false)
+    public void plotReuseInOneTick(final GameTestHelper helper) {
+        final ServerLevel level = helper.getLevel();
+        final ServerSubLevelContainer container = container(helper);
+        final Vector3d pos = absolutePosition(helper, 2.5, 2.5, 2.5);
+
+        final ServerSubLevel removed = spawnSingleBlockSubLevel(container, pos, Blocks.GOLD_BLOCK.defaultBlockState());
+        final BlockPos center = removed.getPlot().getCenterBlock();
+        helper.assertTrue(level.getBlockState(center).is(Blocks.GOLD_BLOCK), "first sub-level's block readable through the level");
+        removeSubLevel(container, removed);
+
+        final ServerSubLevel reused = spawnSingleBlockSubLevel(container, pos, Blocks.DIAMOND_BLOCK.defaultBlockState());
+        helper.assertValueEqual(removed.getPlot().plotPos, reused.getPlot().plotPos, "plot of the second sub-level (should reuse the freed one)");
+
+        final Runnable check = () -> {
+            final LevelChunk ownChunk = reused.getPlot().getChunk(reused.getPlot().toLocal(new ChunkPos(center)));
+            final BlockState inOwnChunk = ownChunk == null ? Blocks.VOID_AIR.defaultBlockState() : ownChunk.getBlockState(center);
+            final BlockState viaLevel = level.getBlockState(center);
+            if (!inOwnChunk.is(Blocks.DIAMOND_BLOCK) || !viaLevel.is(Blocks.DIAMOND_BLOCK)) {
+                helper.fail("Sub-level in a plot freed this tick: its block is %s in its own chunk and %s through the level, expected a diamond block in both (stale ServerChunkCache entry for the removed plot's chunk)"
+                        .formatted(inOwnChunk, viaLevel));
+            }
+        };
+        check.run();
+        // and on the next tick, after the cache has been cleared
+        helper.runAfterDelay(1, () -> {
+            check.run();
+            helper.succeed();
+        });
     }
 
     /**
