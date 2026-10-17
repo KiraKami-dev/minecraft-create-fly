@@ -3,6 +3,9 @@
 dependencies {
     // the GameTests (dev.mcf.e2e.gametest) are written against Sable's API
     implementation project(path: ':sable', configuration: 'namedElements')
+    // Phase 2 content on Create Fly (the content GameTests use Simulated's and Create's API)
+    implementation project(path: ':simulated', configuration: 'namedElements')
+    modImplementation "maven.modrinth:create-fly:${create_fly_version}"
     modRuntimeOnly "fuzs.forgeconfigapiport:forgeconfigapiport-fabric:${forgeconfigapiport_version}"
 }
 

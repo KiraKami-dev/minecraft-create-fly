@@ -30,7 +30,7 @@
     "minecraft": "${minecraft_version}",
     "java": ">=${java_version}",
     "fabric-api": "*",
-    "create": ">=6.0.9",
+    "create": ">=6.0.9-",
     "sable": "*",
     "simulated": "*",
     "forgeconfigapiport": "*"
