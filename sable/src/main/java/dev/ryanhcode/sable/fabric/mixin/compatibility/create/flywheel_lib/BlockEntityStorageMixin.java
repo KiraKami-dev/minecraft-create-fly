@@ -192,8 +192,7 @@ public abstract class BlockEntityStorageMixin extends Storage<BlockEntity> imple
     }
 
     @WrapOperation(method = "createRaw(Lcom/zurrtum/create/client/flywheel/api/visualization/VisualizationContext;Lnet/minecraft/world/level/block/entity/BlockEntity;F)Lcom/zurrtum/create/client/flywheel/api/visual/BlockEntityVisual;",
-            at = @At(value = "INVOKE", target = "Lcom/zurrtum/create/client/flywheel/api/visualization/BlockEntityVisualizer;createVisual(Lcom/zurrtum/create/client/flywheel/api/visualization/VisualizationContext;Lnet/minecraft/world/level/block/entity/BlockEntity;F)Lcom/zurrtum/create/client/flywheel/api/visual/BlockEntityVisual;"),
-            remap = false)
+            at = @At(value = "INVOKE", target = "Lcom/zurrtum/create/client/flywheel/api/visualization/BlockEntityVisualizer;createVisual(Lcom/zurrtum/create/client/flywheel/api/visualization/VisualizationContext;Lnet/minecraft/world/level/block/entity/BlockEntity;F)Lcom/zurrtum/create/client/flywheel/api/visual/BlockEntityVisual;"))
     public BlockEntityVisual<?> sable$createVisual(final BlockEntityVisualizer<BlockEntity> instance, final VisualizationContext visualizationContext, final BlockEntity blockEntity, final float partialTick, final Operation<BlockEntityVisual<?>> original) {
         final SubLevel subLevel = Sable.HELPER.getContaining(blockEntity);
 
@@ -214,7 +213,7 @@ public abstract class BlockEntityStorageMixin extends Storage<BlockEntity> imple
      * When a block entity is removed, we also need to remove it from the list that we're tracking for every sub-level.
      * (Upstream overrode {@code remove}; injecting keeps Flywheel's own {@code posLookup} bookkeeping intact.)
      */
-    @Inject(method = "remove(Lnet/minecraft/world/level/block/entity/BlockEntity;)V", at = @At("HEAD"), remap = false)
+    @Inject(method = "remove(Lnet/minecraft/world/level/block/entity/BlockEntity;)V", at = @At("HEAD"))
     private void sable$remove(final BlockEntity blockEntity, final CallbackInfo ci) {
         final ClientSubLevel subLevel = Sable.HELPER.getContainingClient(blockEntity);
 

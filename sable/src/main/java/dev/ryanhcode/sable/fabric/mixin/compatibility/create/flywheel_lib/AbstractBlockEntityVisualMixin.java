@@ -28,7 +28,7 @@ public class AbstractBlockEntityVisualMixin {
             "relight(Lnet/minecraft/core/BlockPos;Ljava/util/Iterator;)V",
             "relight(Lnet/minecraft/core/BlockPos;Ljava/lang/Iterable;)V",
             "computePackedLight()I"
-    }, at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/LevelRenderer;getLightColor(Lnet/minecraft/world/level/BlockAndTintGetter;Lnet/minecraft/core/BlockPos;)I", remap = true), remap = false)
+    }, at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/LevelRenderer;getLightColor(Lnet/minecraft/world/level/BlockAndTintGetter;Lnet/minecraft/core/BlockPos;)I"))
     private int sable$getLightColor(final BlockAndTintGetter blockAndTintGetter, final BlockPos blockPos) {
         final ClientSubLevelContainer container = SubLevelContainer.getContainer(Minecraft.getInstance().level);
         assert container != null;
