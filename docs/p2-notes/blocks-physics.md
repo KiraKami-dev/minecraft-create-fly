@@ -91,6 +91,14 @@ Physics/assembly logic is unchanged from upstream; only API call sites moved.
 - GUI overlays: `graphics.pose()` is a `Matrix3x2fStack` (`pushMatrix/translate(x, y)/popMatrix`);
   `blit(id, x, y, u, v, w, h, tw, th)` -> `blit(RenderPipelines.GUI_TEXTURED, id, x, y, u, v, w, h, tw, th)`.
 
+## Packets used only by these blocks (`network/packets`)
+- `rope/ClientboundRopeDataPacket`, `rope/ClientboundRopeStoppedPacket`, `RopeBreakPacket`,
+  `physics_assembler/*` compile unchanged.
+- `RopeRidingPacket`: Create Fly's `ServerChainConveyorHandler.handleTTLPacket/handleStopRidingPacket(player)` take
+  the server first -> `(ctx.server(), player)` (veillite `ServerPacketContext#server()`).
+- `AssemblePacket` (physics assembler) is being fixed on p2-platform (`player.level()`,
+  `isWithinBlockInteractionRange`); left alone here to avoid a conflict.
+
 ## Expectations on other areas
 - `SimRenderTypes.spring(Identifier)` keeps the upstream vertex layout (Position, Color "Stress", UV0, UV2, Normal):
   `SpringRenderer` writes `setColor/setUv/setLight/setNormal` per vertex.
