@@ -7,12 +7,8 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 
 /**
- * Stationary harvesters can feed an attached auger. Upstream also wrapped Sable's {@code HarvesterTicker#dropItem}
- * (Sable's Create compatibility, which ticks harvesters placed on sub-levels) to deposit the drops.
+ * Stationary harvesters can feed an attached auger; their drops go through {@link HarvesterTickerMixin}.
  */
-// PORT-TODO(1.21.11): SableHarvesterTickerMixin is not ported: Sable's Create harvester compatibility (HarvesterTicker)
-//  isn't in this repo yet. Once it lands, wrap HarvesterTicker#dropItem(Level, ItemStack, BlockPos) to call
-//  BlockHarvester#depositItemStack and only drop the remainder.
 @Mixin(HarvesterBlockEntity.class)
 public class HarvesterBlockEntityMixin implements BlockHarvester {
 

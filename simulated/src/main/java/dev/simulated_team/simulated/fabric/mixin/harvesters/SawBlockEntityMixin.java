@@ -23,7 +23,7 @@ public abstract class SawBlockEntityMixin extends SmartBlockEntity {
         super(type, pos, state);
     }
 
-    @Inject(method = "dropItemFromCutTree", at = @At("HEAD"), cancellable = true)
+    @Inject(method = "dropItemFromCutTree", at = @At("HEAD"), cancellable = true, remap = false)
     private void simulated$checkDeposit(final BlockPos pos, final ItemStack stack, final CallbackInfo ci) {
         if (((BlockHarvester) this).depositItemStack(this.worldPosition, stack).isEmpty()) {
             ci.cancel();

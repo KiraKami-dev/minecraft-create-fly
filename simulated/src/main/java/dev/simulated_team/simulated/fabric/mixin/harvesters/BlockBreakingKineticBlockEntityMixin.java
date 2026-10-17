@@ -39,7 +39,7 @@ public abstract class BlockBreakingKineticBlockEntityMixin extends SmartBlockEnt
     }
 
     // the drop lambda of onBlockBroken: (stack) -> { ... new ItemEntity(...) ... }
-    @Inject(method = "lambda$onBlockBroken$0", at = @At("HEAD"), cancellable = true)
+    @Inject(method = "lambda$onBlockBroken$0", at = @At("HEAD"), cancellable = true, remap = false)
     private void simulated$checkIfDepositable(final Vec3 vec, final ItemStack stack, final CallbackInfo ci) {
         if (this.depositItemStack(this.worldPosition, stack).isEmpty()) {
             ci.cancel();

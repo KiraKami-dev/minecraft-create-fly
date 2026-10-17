@@ -84,7 +84,9 @@ platform code under `simulated/.../fabric/` (services, transfer wrappers, events
 - `harvesters.BlockBreakingTileEntityMixin` -> `BlockBreakingKineticBlockEntityMixin` (Create Fly still compiles the
   drop lambda as `lambda$onBlockBroken$0(Vec3, ItemStack)`, checked with javap); `SawTileEntityMixin` ->
   `SawBlockEntityMixin#dropItemFromCutTree`; `SableHarvesterMixin` -> `HarvesterBlockEntityMixin`.
-- `SableHarvesterTickerMixin`: PORT-TODO, Sable's Create harvester compat (`HarvesterTicker`) isn't ported.
+- `SableHarvesterTickerMixin` -> `HarvesterTickerMixin` (`@WrapMethod` on Sable's
+  `fabric.mixinhelper.compatibility.create.harvester.HarvesterTicker#dropItem`). Name-only selectors on Create/Sable
+  methods use `remap = false` (sable-create's rule). Non-harvester BEs now still drop (upstream dropped nothing).
 - `self_mixins.HoneyGlueEntityMixin` (`IEntityWithComplexSpawn`, spawn data = bounds) -> no mixin:
   `EntityTrackingEvents.START_TRACKING` sends a `HoneyGlueSyncBoundsPacket` right after the add-entity bundle.
   Don't return a bundle from `getAddEntityPacket`: `ServerEntity#addPairing` already puts it in a bundle (nested
@@ -120,11 +122,12 @@ platform code under `simulated/.../fabric/` (services, transfer wrappers, events
 - `fabric/menu/LinkedTypewriterMenuImpl`: needs `LinkedTypewriterMenuCommon(MenuType<LinkedTypewriterBlockEntity>, int,
   Inventory, LinkedTypewriterBlockEntity)` with Create Fly's `MenuType` (like `GhostItemMenu`); register the type as
   `LinkedTypewriterMenuCommon::create` and the screen with `AllMenuScreens.register`.
-- `compat/.../TorsionSpringPeripheral`, `network/packets/SteeringWheelPacket`: `angleInput` must become a
-  `ServerScrollValueBehaviour` (has `setValue/getValue`).
-- `mixin_interface/diagram/VisualManagerExtension`: Sable's Flywheel `SubLevelEmbedding` isn't ported.
 - `SimpleSubLevelGroupRenderer.renderChain/renderGroup` take a vanilla `RenderTarget` (callers: `DiagramScreen`,
   `EndSeaShadowRenderer`).
+- `VisualManagerExtension` now returns Sable's `fabric.mixinhelper.compatibility.create.flywheel.SubLevelEmbedding`.
+- Block entity storages: `SimBlockEntityTypes.register()` (registry agent) calls `SimInventoryService` for the docking
+  connector (inventory, tank, battery), portable engine, navigation table and auger shaft; don't register them twice
+  (Fabric's lookup keeps the first provider per block and logs a warning).
 
 ## PORT-TODOs
 - `fabric/service/FabricSimInventoryService#registerBattery`: no Fabric energy API (Team Reborn Energy would be the
@@ -132,5 +135,4 @@ platform code under `simulated/.../fabric/` (services, transfer wrappers, events
 - `util/SimpleSubLevelGroupRenderer#renderGroup`: offscreen sub-level rendering (contraption diagram, end sea shadow
   map) only clears the target; needs an offscreen entry point in Sable's `SubLevelRenderDispatcher`. Takes a vanilla
   `RenderTarget` now (was Veil `AdvancedFbo`).
-- `fabric/mixin/harvesters/HarvesterBlockEntityMixin`: Sable `HarvesterTicker#dropItem` wrap (SableHarvesterTickerMixin).
 - `compat/jei/SimulatedJEI`: portable engine dyeing recipes not shown (the special dyeing recipe isn't ported).
