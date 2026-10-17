@@ -1,0 +1,7 @@
+<task-notification>
+<task-id>b8yk7g5nf</task-id>
+<tool-use-id>REDACTED</tool-use-id>
+<output-file>/private/tmp/claude-501/-Users-akshatkhair-Documents-Projects-minecraft-create-fly/9d5f7982-a2e8-4c32-8fdd-758e962ff6b1/tasks/b8yk7g5nf.output</output-file>
+<status>completed</status>
+<summary>Background command "Run full suite incl. Sodium water/shadows" completed (exit code 0)</summary>
+</task-notification>
