@@ -2,9 +2,9 @@ package dev.simulated_team.simulated.index;
 
 import com.zurrtum.create.api.behaviour.display.DisplaySource;
 import com.zurrtum.create.content.redstone.displayLink.source.ItemThroughputDisplaySource;
-import com.tterrag.registrate.util.entry.RegistryEntry;
 import dev.simulated_team.simulated.Simulated;
 import dev.simulated_team.simulated.content.display_sources.*;
+import net.minecraft.world.level.block.Block;
 
 import java.util.function.Supplier;
 
@@ -20,8 +20,19 @@ public class SimDisplaySources {
     public static final LinkedTypewriterDisplaySource LINKED_TYPEWRITER__DISPLAY = simple("linked_typewriter_display", LinkedTypewriterDisplaySource::new);
     public static final NavigationTableDisplaySource NAV_TABLE_DISPLAY = simple("nav_table_display", NavigationTableDisplaySource::new);
 
-    private static <T extends DisplaySource> RegistryEntry<DisplaySource, T> simple(final String name, final Supplier<T> supplier) {
-        return Simulated.getRegistrate().displaySource(name, supplier).register();
+    private static <T extends DisplaySource> T simple(final String name, final Supplier<T> supplier) {
+        return Simulated.getRegistrate().displaySource(name, supplier);
     }
 
+    /**
+     * Attaches a display source to blocks (Registrate's {@code DisplaySource.displaySource(...)} transform).
+     */
+    public static void assign(final DisplaySource source, final Block... blocks) {
+        for (final Block block : blocks) {
+            DisplaySource.BY_BLOCK.add(block, source);
+        }
+    }
+
+    public static void register() {
+    }
 }
