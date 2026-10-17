@@ -197,7 +197,7 @@ public class SpringItemHandler implements InteractCallback {
                 final Vec3 globalFirstPoint = Sable.HELPER.projectOutOfSubLevel(level, linkAABB.getCenter());
                 final Vec3 globalTarget = Sable.HELPER.projectOutOfSubLevel(level, hitAABB.getCenter());
 
-                final DustParticleOptions data = new DustParticleOptions(new com.zurrtum.create.catnip.theme.Color(color).asVectorF(), 1);
+                final DustParticleOptions data = new DustParticleOptions(color, 1);
                 final double totalFlyingTicks = 10;
                 final int segments = (((int) totalFlyingTicks) / 3) + 1;
 

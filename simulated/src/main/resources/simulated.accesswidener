@@ -27,9 +27,6 @@ accessible field net/minecraft/world/inventory/Slot y I
 accessible field net/minecraft/world/inventory/AbstractContainerMenu lastSlots Lnet/minecraft/core/NonNullList;
 accessible field net/minecraft/world/inventory/AbstractContainerMenu remoteSlots Lnet/minecraft/core/NonNullList;
 
-# Particles
-accessible class net/minecraft/client/particle/ParticleEngine$SpriteParticleRegistration
-
 # End Sea
 accessible field net/minecraft/client/renderer/RenderStateShard name Ljava/lang/String;
 
@@ -45,3 +42,7 @@ accessible field net/minecraft/server/network/ServerGamePacketListenerImpl above
 
 # Physics Staff
 accessible method net/minecraft/client/renderer/GameRenderer getFov (Lnet/minecraft/client/Camera;FZ)D
+
+# items-misc
+# plunger launcher item renderer: hand projection FOV
+accessible method net/minecraft/client/renderer/GameRenderer getFov (Lnet/minecraft/client/Camera;FZ)F
