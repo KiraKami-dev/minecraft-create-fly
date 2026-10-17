@@ -21,7 +21,7 @@ import org.spongepowered.asm.mixin.injection.Redirect;
 @Mixin(ContraptionControlsMovementRender.class)
 public class ContraptionControlsMovementRenderMixin {
     @Redirect(method = "getRenderState",
-            at = @At(value = "FIELD", target = "Lcom/zurrtum/create/content/contraptions/behaviour/MovementContext;position:Lnet/minecraft/world/phys/Vec3;", opcode = Opcodes.GETFIELD),
+            at = @At(value = "FIELD", target = "Lcom/zurrtum/create/content/contraptions/behaviour/MovementContext;position:Lnet/minecraft/world/phys/Vec3;", opcode = Opcodes.GETFIELD, remap = true),
             remap = false)
     private Vec3 sable$distanceRemix(final MovementContext instance) {
         if (instance.position == null) {

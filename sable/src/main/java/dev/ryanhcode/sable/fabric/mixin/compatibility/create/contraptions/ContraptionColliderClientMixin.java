@@ -37,12 +37,12 @@ public class ContraptionColliderClientMixin {
         return ContraptionColliderHelper.contraptionPosition(instance, contraptionSubLevel);
     }
 
-    @Redirect(method = "collideEntities", at = @At(value = "INVOKE", target = "Lcom/zurrtum/create/content/contraptions/AbstractContraptionEntity;getPrevPositionVec()Lnet/minecraft/world/phys/Vec3;"), remap = false)
+    @Redirect(method = "collideEntities", at = @At(value = "INVOKE", target = "Lcom/zurrtum/create/content/contraptions/AbstractContraptionEntity;getPrevPositionVec()Lnet/minecraft/world/phys/Vec3;", remap = true), remap = false)
     private static Vec3 sable$getPrevPositionVec(final AbstractContraptionEntity instance, @Share("subLevel") final LocalRef<SubLevel> contraptionSubLevel) {
         return ContraptionColliderHelper.getPrevPositionVec(instance, contraptionSubLevel);
     }
 
-    @Redirect(method = "collideEntities", at = @At(value = "INVOKE", target = "Lcom/zurrtum/create/content/contraptions/AbstractContraptionEntity;getAnchorVec()Lnet/minecraft/world/phys/Vec3;"), remap = false)
+    @Redirect(method = "collideEntities", at = @At(value = "INVOKE", target = "Lcom/zurrtum/create/content/contraptions/AbstractContraptionEntity;getAnchorVec()Lnet/minecraft/world/phys/Vec3;", remap = true), remap = false)
     private static Vec3 sable$getAnchorVec(final AbstractContraptionEntity instance, @Share("subLevel") final LocalRef<SubLevel> contraptionSubLevel) {
         return ContraptionColliderHelper.getAnchorVec(instance, contraptionSubLevel);
     }
@@ -52,12 +52,12 @@ public class ContraptionColliderClientMixin {
         return ContraptionColliderHelper.rotationMatrix(rotationState, contraptionSubLevel);
     }
 
-    @Redirect(method = "collideEntities", at = @At(value = "INVOKE", target = "Lcom/zurrtum/create/content/contraptions/AbstractContraptionEntity;toLocalVector(Lnet/minecraft/world/phys/Vec3;F)Lnet/minecraft/world/phys/Vec3;"), remap = false)
+    @Redirect(method = "collideEntities", at = @At(value = "INVOKE", target = "Lcom/zurrtum/create/content/contraptions/AbstractContraptionEntity;toLocalVector(Lnet/minecraft/world/phys/Vec3;F)Lnet/minecraft/world/phys/Vec3;", remap = true), remap = false)
     private static Vec3 sable$toLocalVector(final AbstractContraptionEntity instance, final Vec3 localVec, final float partialTicks, @Share("subLevel") final LocalRef<SubLevel> contraptionSubLevel) {
         return ContraptionColliderHelper.toLocalVector(instance, localVec, partialTicks, contraptionSubLevel);
     }
 
-    @Redirect(method = "collideEntities", at = @At(value = "INVOKE", target = "Lcom/zurrtum/create/content/contraptions/AbstractContraptionEntity;getContactPointMotion(Lnet/minecraft/world/phys/Vec3;)Lnet/minecraft/world/phys/Vec3;"), remap = false)
+    @Redirect(method = "collideEntities", at = @At(value = "INVOKE", target = "Lcom/zurrtum/create/content/contraptions/AbstractContraptionEntity;getContactPointMotion(Lnet/minecraft/world/phys/Vec3;)Lnet/minecraft/world/phys/Vec3;", remap = true), remap = false)
     private static Vec3 sable$getContactPointMotion(final AbstractContraptionEntity instance, final Vec3 globalContactPoint, @Share("subLevel") final LocalRef<SubLevel> contraptionSubLevel) {
         return ContraptionColliderHelper.getContactPointMotion(instance, globalContactPoint, contraptionSubLevel);
     }

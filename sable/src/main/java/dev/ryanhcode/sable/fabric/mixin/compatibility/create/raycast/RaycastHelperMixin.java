@@ -50,7 +50,7 @@ public class RaycastHelperMixin {
 
     @Inject(method = "rayTraceUntil(Lnet/minecraft/world/entity/player/Player;DLjava/util/function/Predicate;)Lcom/zurrtum/create/client/foundation/utility/RaycastHelper$PredicateTraceResult;",
             at = @At(value = "HEAD"),
-            remap = false, cancellable = true)
+            remap = true, cancellable = true)
     private static void sable$rayTraceSublevels(final Player playerIn, final double range, final Predicate<BlockPos> predicate, final CallbackInfoReturnable<RaycastHelper.PredicateTraceResult> cir) {
         final Vec3 start = playerIn.getEyePosition();
         final Vec3 end = RaycastHelper.getTraceTarget(playerIn, range, start);

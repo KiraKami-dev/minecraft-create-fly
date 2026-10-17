@@ -50,7 +50,7 @@ public class BigOutlinesMixin {
         return original.call(worldHitPos, origin);
     }
 
-    @Redirect(method = "pick", at = @At(value = "INVOKE", target = "Lcom/zurrtum/create/client/foundation/utility/RaycastHelper;rayTraceUntil(Lnet/minecraft/world/phys/Vec3;Lnet/minecraft/world/phys/Vec3;Ljava/util/function/Predicate;)Lcom/zurrtum/create/client/foundation/utility/RaycastHelper$PredicateTraceResult;"), remap = false)
+    @Redirect(method = "pick", at = @At(value = "INVOKE", target = "Lcom/zurrtum/create/client/foundation/utility/RaycastHelper;rayTraceUntil(Lnet/minecraft/world/phys/Vec3;Lnet/minecraft/world/phys/Vec3;Ljava/util/function/Predicate;)Lcom/zurrtum/create/client/foundation/utility/RaycastHelper$PredicateTraceResult;", remap = true), remap = false)
     private static RaycastHelper.PredicateTraceResult sable$useSubLevelInclusiveCast(final Vec3 worldOrigin,
                                                                                      final Vec3 worldTarget,
                                                                                      final Predicate<BlockPos> predicate,

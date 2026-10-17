@@ -29,7 +29,7 @@ public abstract class BlockEntityBehaviourMixin {
     }
 
     @Inject(method = "get(Lnet/minecraft/world/level/BlockGetter;Lnet/minecraft/core/BlockPos;Lcom/zurrtum/create/foundation/blockEntity/behaviour/BehaviourType;)Lcom/zurrtum/create/api/behaviour/BlockEntityBehaviour;",
-            at = @At(value = "HEAD"), remap = false, cancellable = true)
+            at = @At(value = "HEAD"), remap = true, cancellable = true)
     private static <T extends BlockEntityBehaviour<?>> void sable$accountForSubLevels(final BlockGetter reader, final BlockPos pos, final BehaviourType<T> type, final CallbackInfoReturnable<T> cir) {
         if (reader instanceof final Level level && BlockEntityBehaviourMixin.sable$checkType(type)) {
             final ActiveSableCompanion helper = Sable.HELPER;

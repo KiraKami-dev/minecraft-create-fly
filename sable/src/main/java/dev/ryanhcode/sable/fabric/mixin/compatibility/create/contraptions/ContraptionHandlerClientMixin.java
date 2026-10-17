@@ -38,7 +38,7 @@ public abstract class ContraptionHandlerClientMixin {
     }
 
     @Redirect(method = "rayTraceContraption",
-            at = @At(value = "INVOKE", target = "Lcom/zurrtum/create/content/contraptions/AbstractContraptionEntity;toLocalVector(Lnet/minecraft/world/phys/Vec3;F)Lnet/minecraft/world/phys/Vec3;"),
+            at = @At(value = "INVOKE", target = "Lcom/zurrtum/create/content/contraptions/AbstractContraptionEntity;toLocalVector(Lnet/minecraft/world/phys/Vec3;F)Lnet/minecraft/world/phys/Vec3;", remap = true),
             remap = false)
     private static Vec3 sable$projectedContraptionClip(final AbstractContraptionEntity abce, Vec3 localVec, final float partialTicks) {
         final ActiveSableCompanion helper = Sable.HELPER;

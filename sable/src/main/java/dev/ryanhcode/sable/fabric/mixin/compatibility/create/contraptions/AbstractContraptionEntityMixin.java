@@ -77,7 +77,7 @@ public abstract class AbstractContraptionEntityMixin extends Entity implements K
     @Shadow(remap = false)
     public abstract Vec3 getAnchorVec();
 
-    @Redirect(method = "moveCollidedEntitiesOnDisassembly", at = @At(value = "INVOKE", target = "Lcom/zurrtum/create/content/contraptions/AbstractContraptionEntity;toLocalVector(Lnet/minecraft/world/phys/Vec3;F)Lnet/minecraft/world/phys/Vec3;"), remap = false)
+    @Redirect(method = "moveCollidedEntitiesOnDisassembly", at = @At(value = "INVOKE", target = "Lcom/zurrtum/create/content/contraptions/AbstractContraptionEntity;toLocalVector(Lnet/minecraft/world/phys/Vec3;F)Lnet/minecraft/world/phys/Vec3;", remap = true), remap = false)
     private Vec3 sable$applyTransform(final AbstractContraptionEntity instance, final Vec3 localVec, final float partialTicks) {
         final SubLevel subLevel = Sable.HELPER.getContaining(instance);
 
