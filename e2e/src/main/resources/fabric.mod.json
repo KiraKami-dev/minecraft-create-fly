@@ -12,5 +12,6 @@
       "dev.mcf.e2e.gametest.SableAssemblyTest"
     ]
   },
+  "mixins": ["mcf_e2e.mixins.json"],
   "depends": { "fabric-api": "*", "sable": "*" }
 }

@@ -123,9 +123,10 @@ public final class SablePhysicsTest {
                     }
                 }).thenFail(() -> {
                     final Vector3dc position = subLevel.logicalPose().position();
-                    final BlockPos globalPos = BlockPos.containing(position.x(), position.y(), position.z());
-                    return new GameTestAssertPosException(Component.literal("Sub-level got stuck at local " + SubLevelProbe.format(localPosition(helper, position))),
-                            globalPos, helper.relativePos(globalPos), (int) helper.getTick());
+                    final Vector3d localPos = localPosition(helper, position);
+                    // (vanilla's helper.relativePos mirrors positions of unrotated tests)
+                    return new GameTestAssertPosException(Component.literal("Sub-level got stuck at local " + SubLevelProbe.format(localPos)),
+                            BlockPos.containing(position.x(), position.y(), position.z()), BlockPos.containing(localPos.x, localPos.y, localPos.z), (int) helper.getTick());
                 });
     }
 

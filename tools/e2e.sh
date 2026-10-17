@@ -55,6 +55,12 @@ if [ "$MODE" = gametest ] || [ "$MODE" = all ]; then
     exit 1
   fi
   echo "  report: $GT/gametest-report.xml"
+  # every test reports exactly once (multi-attempt tests after their last attempt)
+  total=$(grep -m1 -E "GAME TESTS COMPLETE" "$log" | sed 's/^.*=\{9\} \([0-9]*\) GAME.*$/\1/')
+  reported=$(grep -cE "E2E: GAMETEST (PASS|FAIL)" "$log")
+  if [ "$reported" != "$total" ]; then
+    echo "  FAILED: only $reported of $total tests reported a result"; exit 1
+  fi
   if [ "$rc" -ne 0 ] || [ "$failed" -ne 0 ]; then
     echo "  FAILED: $failed required test(s) failed (exit $rc)"; exit 1
   fi
