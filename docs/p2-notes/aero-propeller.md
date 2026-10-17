@@ -14,8 +14,9 @@ split), then finished the potato cannon and the client registration. 0 compile e
   `SMART_PROPELLER`.
 - `dev.eriksonn.aeronautics.content.blocks.mounted_potato_cannon.MountedPotatoCannonClient#registerClient()`: goggle
   tooltip (`MountedPotatoCannonTooltipBehaviour`) for `MOUNTED_POTATO_CANNON`.
-- The tooltip behaviours replace the default `KineticTooltipBehaviour` (same `TooltipBehaviour.TYPE`, last one wins).
-  Every one of these BE types still wants the default `KineticAudioBehaviour`.
+- The tooltip behaviours replace the default `KineticTooltipBehaviour` (same `TooltipBehaviour.TYPE`, last one wins),
+  so call both after `AeroBlockEntityBehaviours.register()` (which gives every one of these types the default
+  `KineticAudioBehaviour` + `KineticTooltipBehaviour`).
 
 ## Renderers / visuals (registration: aero-core)
 All renderer ctors are `(BlockEntityRendererProvider.Context)`; BE ctors stay `(BlockEntityType, BlockPos, BlockState)`.
@@ -27,6 +28,13 @@ All renderer ctors are `(BlockEntityRendererProvider.Context)`; BE ctors stay `(
 | `SMART_PROPELLER` | `SmartPropellerRenderer` | none | BER only |
 | `MOUNTED_POTATO_CANNON` | `MountedPotatoCannonRenderer` | `MountedPotatoCannonVisual::new` | **keep** (`normal`): barrel, bellows and the loaded item are only drawn by the BER |
 | entity `PROPELLER_CONTROLLED_CONTRAPTION` | `PropellerBearingContraptionEntityRenderer::new` (`EntityRendererProvider.Context`) | `PropellerBearingContraptionVisual::new` | upstream used Create's `ContraptionEntityRenderer`/`ContraptionVisual`; these subclasses carry the tilt + spin transform |
+
+`AeroBlockEntityRenders` (aero-core, merged) matches the table. **`AeroEntityRenders` still registers Create Fly's
+`ControlledContraptionEntityRenderer::new` / `ControlledContraptionVisual::new`** for `PROPELLER_CONTROLLED_CONTRAPTION`:
+those drop the gyroscopic bearing's tilt (`tiltQuat` about the bearing face) and the renderer also ignores the
+disassembly-slowdown angle (it lerps `entity.angle` instead of the overridden `getAngle`). Swap the two factories for
+`PropellerBearingContraptionEntityRenderer::new` / `PropellerBearingContraptionVisual::new`
+(`dev.eriksonn.aeronautics.content.blocks.propeller.bearing.contraption`), keeping `skipVanillaRender(entity -> false)`.
 
 ## API mappings (1.21.1 / Create -> 1.21.11 / Create Fly)
 - `AbstractContraptionEntity#applyLocalTransforms(PoseStack, float)` (client) is gone: Create Fly puts the transform in
@@ -68,8 +76,8 @@ All renderer ctors are `(BlockEntityRendererProvider.Context)`; BE ctors stay `(
   never loads the client particle class.
 
 ## Expectations on other areas
-- aero-core: registrations above; keep `.onRegister(SimInventoryService.INSTANCE.registerInventory((be, dir) -> be.getInventory()))`
-  for the cannon; `AeroLang`, `AeroSoundDistUtil.tickPropellerSounds(PropellerBearingBlockEntity, Object)`,
+- aero-core: only the `AeroEntityRenders` factory swap above is missing (BE types, renders, default behaviours and the
+  cannon's `SimInventoryService` registration are wired); `AeroLang`, `AeroSoundDistUtil.tickPropellerSounds(PropellerBearingBlockEntity, Object)`,
   `AeroConfig.server().physics.*`, `AeroAdvancements.*.awardToNearby(pos, level)`, `AeroBlockShapes.*`,
   `AeroPartialModels.*` used with their upstream signatures.
 - aero-render: `BearingContraptionExtension#aeronautics$setPropeller` (mixin on `BearingContraption`) and
