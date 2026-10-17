@@ -44,7 +44,7 @@ public class PropellerRotateInstruction extends PonderInstruction {
         this.direction = direction;
         originalSpeed = this.targetSpeed = targetSpeed;
         originalSails = this.sailSmoothingAmount = sailSmoothingAmount;
-        Vec3i n = direction.getNormal();
+        Vec3i n = direction.getUnitVec3i();
         normal = new Vec3(Math.abs(n.getX()),Math.abs(n.getY()),Math.abs(n.getZ()));
     }
 
@@ -66,7 +66,7 @@ public class PropellerRotateInstruction extends PonderInstruction {
 
     @Override
     public void tick(PonderScene scene) {
-        if(scene.getWorld().getBlockEntity(pos) instanceof PropellerBearingBlockEntity bearing)
+        if(scene.getLevel().getBlockEntity(pos) instanceof PropellerBearingBlockEntity bearing)
         {
             float angle = bearing.getInterpolatedAngle(0);
 
@@ -99,7 +99,7 @@ public class PropellerRotateInstruction extends PonderInstruction {
     public void addSection(PonderScene scene,ElementLink<WorldSectionElement> section)
     {
         contraptions.add(section);
-        if(scene.getWorld().getBlockEntity(pos) instanceof PropellerBearingBlockEntity bearing)
+        if(scene.getLevel().getBlockEntity(pos) instanceof PropellerBearingBlockEntity bearing)
         {
             float angle = bearing.getInterpolatedAngle(0);
             WorldSectionElement link = scene.resolve(section);

@@ -3,6 +3,7 @@ package dev.eriksonn.aeronautics.mixin.item_converter;
 import dev.eriksonn.aeronautics.content.components.Converter;
 import dev.eriksonn.aeronautics.content.components.Levitating;
 import dev.eriksonn.aeronautics.index.AeroDataComponents;
+import dev.eriksonn.aeronautics.index.AeroItems;
 import dev.eriksonn.aeronautics.index.AeroTags;
 import net.minecraft.core.component.DataComponentPatch;
 import net.minecraft.world.entity.item.ItemEntity;
@@ -28,7 +29,8 @@ public abstract class ItemEntityMixin {
 			Converter.tick(level, entity, item, converter);
 		}
 
-		if(level.dimension().equals(Level.OVERWORLD) && item.is(AeroTags.ItemTags.CONVERTS_TO_CLOUD_SKIPPER)) {
+		// the tag removes the disc itself with NeoForge's "remove" list, which Fabric ignores
+		if(level.dimension().equals(Level.OVERWORLD) && item.is(AeroTags.ItemTags.CONVERTS_TO_CLOUD_SKIPPER) && !item.is(AeroItems.MUSIC_DISC_CLOUD_SKIPPER)) {
 			// magic cloud number, i have no idea where its actually defined
 			if(entity.getY() >= 192 && entity.getY() <= 196 && !item.has(AeroDataComponents.CONVERTER)) {
 				final DataComponentPatch patch = DataComponentPatch.builder()

@@ -6,6 +6,6 @@ import org.spongepowered.asm.mixin.gen.Accessor;
 
 @Mixin(TickingInstruction.class)
 public interface TickingInstructionAccessor {
-    @Accessor
+    @Accessor(remap = false)
     void setRemainingTicks(int time);
 }

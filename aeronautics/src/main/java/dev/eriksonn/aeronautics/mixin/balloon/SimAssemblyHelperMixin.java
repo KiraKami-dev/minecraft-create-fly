@@ -20,7 +20,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(SimAssemblyHelper.class)
 public class SimAssemblyHelperMixin {
 
-    @Inject(method = "disassembleSubLevel", at = @At(value = "INVOKE", target = "Ldev/ryanhcode/sable/sublevel/SubLevel;getPlot()Ldev/ryanhcode/sable/sublevel/plot/LevelPlot;", ordinal = 1))
+    @Inject(method = "disassembleSubLevel", at = @At(value = "INVOKE", target = "Ldev/ryanhcode/sable/sublevel/SubLevel;getPlot()Ldev/ryanhcode/sable/sublevel/plot/LevelPlot;", ordinal = 1), remap = false)
     private static void aeronautics$needsBitSet(final Level level,
                                                 final SubLevel toDisassemble,
                                                 final BlockPos subLevelAnchor,
