@@ -434,7 +434,8 @@ public class GimbalSensorBlockEntity extends SmartBlockEntity {
         private boolean isRandom = false;
 
         public void update(final Vec3 pos, final Level level) {
-            this.isRandom = !level.dimensionType().natural();
+            // DimensionType#natural is gone on 1.21.11; like the vanilla compass, the needle spins outside the spawn dimension
+            this.isRandom = level.getRespawnData().globalPos().dimension() != level.dimension();
             if (!this.isRandom) {
                 this.target.set(0, 0, -1);
             } else {
