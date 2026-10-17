@@ -34,7 +34,10 @@ import dev.simulated_team.simulated.content.blocks.torsion_spring.TorsionSpringB
 import dev.simulated_team.simulated.content.blocks.velocity_sensor.VelocitySensorBlockEntity;
 import dev.simulated_team.simulated.registrate.SimulatedRegistrate;
 import dev.simulated_team.simulated.service.SimInventoryService;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntityType;
+
+import java.util.Arrays;
 
 
 /**
@@ -139,8 +142,8 @@ public class SimBlockEntityTypes {
     public static final BlockEntityType<DirectionalGearshiftBlockEntity> DIRECTIONAL_GEARSHIFT = REGISTRATE.blockEntity(
             "directional_gearshift", DirectionalGearshiftBlockEntity::new, SimBlocks.DIRECTIONAL_GEARSHIFT);
 
-    private static net.minecraft.world.level.block.Block[] concat(final net.minecraft.world.level.block.Block[] blocks, final net.minecraft.world.level.block.Block... more) {
-        final net.minecraft.world.level.block.Block[] result = java.util.Arrays.copyOf(more, more.length + blocks.length);
+    private static Block[] concat(final Block[] blocks, final Block... more) {
+        final Block[] result = Arrays.copyOf(more, more.length + blocks.length);
         System.arraycopy(blocks, 0, result, more.length, blocks.length);
         return result;
     }
