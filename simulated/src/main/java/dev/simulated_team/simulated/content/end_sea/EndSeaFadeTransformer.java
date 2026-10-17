@@ -15,6 +15,8 @@ import net.minecraft.resources.Identifier;
  * unused {@code SubLevelParams.w} component of Sable's per sub-level uniform block
  * ({@link dev.simulated_team.simulated.mixin.end_sea.VanillaSubLevelRenderDispatcherMixin}); 0 disables the fade.
  */
+// PORT-TODO(1.21.11): single-block sub-levels are drawn by Sable as vanilla moving blocks (shared block shader), so they
+//  don't fade into the end sea; upstream patched every chunk layer shader and faded them too.
 public class EndSeaFadeTransformer {
 
     /**

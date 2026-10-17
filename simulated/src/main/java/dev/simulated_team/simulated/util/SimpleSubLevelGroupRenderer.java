@@ -229,7 +229,8 @@ public class SimpleSubLevelGroupRenderer {
             modelViewStack.popMatrix();
             RenderSystem.setProjectionMatrix(previousProjection, previousProjectionType);
 
-            lightTexture.updateLightTexture(partialTicks);
+            // restores the regular light texture (the update flag is set); GameRenderer#renderLevel updates it with 1.0
+            lightTexture.updateLightTexture(1.0f);
         }
     }
 
