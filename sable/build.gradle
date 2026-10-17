@@ -12,10 +12,12 @@ dependencies {
     // present, so projects running Sable from source (e2e, simulated) need it on their runtime classpath too
     include(api('org.apache.maven:maven-artifact:3.8.5'))
     include(modApi("fuzs.forgeconfigapiport:forgeconfigapiport-fabric:${forgeconfigapiport_version}"))
-    // Optional ImGui (debug inspectors only); Modrinth version id of imguimc 2.0.5+mc1.21.11 (fabric)
-    modCompileOnly("maven.modrinth:imguimc:5h3ujBwr")
-    // imguimc bundles the imgui-java binding as a nested jar, which is not on the compile classpath
-    compileOnly files('libs/imgui-java-binding-1.92.7.1.jar')
+    // ImGui for the debug inspectors (client only, off until /sableinspector); Modrinth version id of imguimc
+    // 2.0.5+mc1.21.11 (fabric). It brings the imgui-java binding, natives and a GL backend, and is bundled as jar-in-jar
+    include(modImplementation("maven.modrinth:imguimc:5h3ujBwr"))
+    // Loom strips imguimc's own nested jars when remapping it, so the imgui-java binding and natives are nested here
+    include(implementation("io.github.spair:imgui-java-binding:${imgui_java_version}"))
+    ['linux', 'macos', 'windows'].each { include(runtimeOnly("io.github.spair:imgui-java-natives-${it}:${imgui_java_version}")) }
 
     // Optional compat targets (compileOnly; mixins are gated by SableMixinPlugin on mod presence)
     modCompileOnly("maven.modrinth:sodium:mc1.21.11-0.8.14-fabric")

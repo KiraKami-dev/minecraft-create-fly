@@ -71,7 +71,7 @@ public class SubLevelContainerInspector extends SingleWindowInspector {
             for (int z = 0; z < sideLength; z++) {
                 final BitSet occupancy = plotContainer.getOccupancy();
                 final boolean isOccupied = occupancy.get(plotContainer.getIndex(x, z));
-                final boolean hasSubLevel = plotContainer.getAllSubLevels().get(plotContainer.getIndex(x, z)) != null;
+                final boolean hasSubLevel = plotContainer.getSubLevel(x, z) != null;
 
                 final float xStart = buttonStartX + x * (sizePixels / sideLength);
                 final float zStart = buttonStartY + z * (sizePixels / sideLength);
