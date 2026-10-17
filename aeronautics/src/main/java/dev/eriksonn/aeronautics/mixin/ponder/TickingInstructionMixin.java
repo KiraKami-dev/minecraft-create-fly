@@ -17,7 +17,7 @@ public class TickingInstructionMixin implements TickingInstructionExtension {
     public void aeronautics$stopInstruction() {
         aeronautics$isStopped = true;
     }
-    @Inject(method = "isComplete",at = @At("HEAD"), cancellable = true)
+    @Inject(method = "isComplete",at = @At("HEAD"), cancellable = true, remap = false)
     public void isComplete(CallbackInfoReturnable<Boolean> cir)
     {
         if(aeronautics$isStopped)

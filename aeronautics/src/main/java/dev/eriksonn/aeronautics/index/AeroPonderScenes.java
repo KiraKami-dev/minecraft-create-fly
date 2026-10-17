@@ -1,21 +1,19 @@
 package dev.eriksonn.aeronautics.index;
 
-import com.tterrag.registrate.util.entry.ItemProviderEntry;
-import dev.eriksonn.aeronautics.Aeronautics;
-import dev.eriksonn.aeronautics.content.ponder.scenes.*;
+import com.zurrtum.create.catnip.registry.RegisteredObjectsHelper;
 import com.zurrtum.create.client.ponder.api.registration.PonderSceneRegistrationHelper;
-import net.minecraft.core.registries.Registries;
-import net.minecraft.resources.ResourceKey;
+import dev.eriksonn.aeronautics.content.ponder.scenes.*;
+import dev.eriksonn.aeronautics.service.AeroLevititeService;
 import net.minecraft.resources.Identifier;
-import net.minecraft.world.item.Item;
-import net.neoforged.neoforge.registries.DeferredHolder;
+import net.minecraft.world.level.ItemLike;
 
 public class AeroPonderScenes {
 
     public static void register(final PonderSceneRegistrationHelper<Identifier> registry) {
-        final PonderSceneRegistrationHelper<ItemProviderEntry<?, ?>> helper = registry.withKeyFunction(DeferredHolder::getId);
+        // registry fields are the blocks/items themselves (no Registrate entries): key them by registry id
+        final PonderSceneRegistrationHelper<ItemLike> helper = registry.withKeyFunction(RegisteredObjectsHelper::getKeyOrThrow);
 
-        helper.forComponents(aeroItemProvider("levitite_blend_bucket"))
+        helper.forComponents(AeroLevititeService.INSTANCE.getBucket())
                 .addStoryBoard("levitite/blend", LevititeScenes::levititeBlend)
                 .addStoryBoard("levitite/levitite",(builder,util) -> LevititeScenes.levitite(builder,util,false));
         helper.forComponents(AeroBlocks.LEVITITE)
@@ -52,12 +50,5 @@ public class AeroPonderScenes {
         helper.forComponents(AeroBlocks.WOODEN_PROPELLER)
                 .addStoryBoard("propeller_bearing/thrust", (builder,util) -> PropellerScenes.propellerBearingThrust(builder,util,true))
                 .addStoryBoard("airpressure/miniprop",(builder,util) -> AirPressureScenes.airPressure(builder,util,new AirPressureScenes.Miniprop()));
-    }
-
-    private static ItemProviderEntry<Item, Item> aeroItemProvider(final String id) {
-        return new ItemProviderEntry<>(
-                Aeronautics.getRegistrate(),
-                DeferredHolder.create(ResourceKey.create(Registries.ITEM, Aeronautics.path(id)))
-        );
     }
 }

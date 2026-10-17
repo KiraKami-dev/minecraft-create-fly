@@ -25,7 +25,7 @@ import java.util.List;
 @Mixin(SubLevelAssemblyHelper.class)
 public class SubLevelAssemblyHelperMixin {
 
-    @Inject(method = "needsBitSet", at = @At("HEAD"), cancellable = true)
+    @Inject(method = "needsBitSet", at = @At("HEAD"), cancellable = true, remap = false)
     private static void aeronautics$needsBitSet(final ServerLevel level, final BoundingBox3ic bounds, final List<Entity> entities, final CallbackInfoReturnable<Boolean> cir) {
         final BalloonMap balloonMap = BalloonMap.MAP.get(level);
 
@@ -37,7 +37,7 @@ public class SubLevelAssemblyHelperMixin {
         }
     }
 
-    @Inject(method = "moveOtherStuff", at = @At("TAIL"))
+    @Inject(method = "moveOtherStuff", at = @At("TAIL"), remap = false)
     private static void aeronautics$assemble(final ServerLevel level,
                                              final SubLevelAssemblyHelper.AssemblyTransform transform,
                                              final Iterable<BlockPos> blocks,

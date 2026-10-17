@@ -15,6 +15,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtOps;
+import net.minecraft.world.entity.EntitySpawnReason;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
@@ -166,7 +167,7 @@ public class MountedPotatoCannonScenes {
 
 	private static ElementLink<EntityElement> spawnPotatoCannonProjectile(final SceneBuilder scene, final ItemStack stack, final Vec3 pos, final Vec3 aiming, final boolean physics) {
 		return scene.world().createEntity(level -> {
-			final PotatoProjectileEntity entity = Objects.requireNonNull(AllEntityTypes.POTATO_PROJECTILE.create(level), "entity");
+			final PotatoProjectileEntity entity = Objects.requireNonNull(AllEntityTypes.POTATO_PROJECTILE.create(level, EntitySpawnReason.LOAD), "entity");
 			entity.setItem(stack);
 			entity.setPos(pos);
 			entity.xo = pos.x;
