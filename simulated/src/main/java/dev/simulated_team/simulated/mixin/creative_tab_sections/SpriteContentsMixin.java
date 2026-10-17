@@ -1,6 +1,7 @@
 package dev.simulated_team.simulated.mixin.creative_tab_sections;
 
 import dev.simulated_team.simulated.mixin_interface.SpriteContentsExtension;
+import dev.simulated_team.simulated.mixin_interface.TickerExtension;
 import net.minecraft.client.renderer.texture.SpriteContents;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
@@ -15,8 +16,9 @@ public class SpriteContentsMixin implements SpriteContentsExtension {
     private SpriteContents.AnimationState simulated$ticker = null;
 
     @Override
-    public SpriteContents.AnimationState simulated$getTicker() {
-        return this.simulated$ticker;
+    public TickerExtension simulated$getTicker() {
+        // every AnimationState implements TickerExtension (SpriteContentsAnimationStateMixin)
+        return (TickerExtension) (Object) this.simulated$ticker;
     }
 
     @Override

@@ -1,7 +1,7 @@
 package dev.simulated_team.simulated.mixin.creative_tab_sections;
 
-import dev.simulated_team.simulated.client.sections.SimulatedSectionRenderer;
 import dev.simulated_team.simulated.mixin.accessor.CreativeModeInventoryScreenSelectedTabAccessor;
+import dev.simulated_team.simulated.registrate.simulated_tab.SimulatedCreativeTab;
 import dev.simulated_team.simulated.service.SimTabService;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
@@ -21,7 +21,7 @@ public class AbstractContainerScreenMixin {
 	private void simulated$renderSectionBanners(final GuiGraphics guiGraphics, final int mouseX, final int mouseY, final float partialTick, final CallbackInfo ci) {
 		if ((Object) this instanceof final CreativeModeInventoryScreen screen
 				&& CreativeModeInventoryScreenSelectedTabAccessor.simulated$getSelectedTab() == SimTabService.INSTANCE.getCreativeTab()) {
-			SimulatedSectionRenderer.renderBanners(screen, guiGraphics, mouseX, mouseY);
+			SimulatedCreativeTab.renderBanners(screen, guiGraphics, mouseX, mouseY);
 		}
 	}
 }
