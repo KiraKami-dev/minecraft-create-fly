@@ -5,6 +5,7 @@
 #   playtest: client, scripted assemble/collide/stand-on/push/rotate checks with PASS/FAIL lines (no default scene)
 #   play:   same scene as client, but the game stays open for manual testing
 #   scenario: optional, e.g. 'flywheel' = Create Fly + Create blocks assembled into a sub-level (default: Create-free scene)
+#   E2E_SODIUM=1 tools/e2e.sh ...: run with Sodium installed
 # Results: e2e/run/<side>/logs/latest.log, screenshots in e2e/run/client/screenshots/
 set -uo pipefail
 ROOT=$(cd "$(dirname "$0")/.." && pwd); cd "$ROOT"
@@ -14,6 +15,7 @@ SCENARIO=${2:-}
 [ "$MODE" = playtest ] && SCENARIO=playtest
 SCEN=(); [ -n "$SCENARIO" ] && SCEN=("-Pe2eScenario=$SCENARIO")
 SRV=e2e/run/server; CLI=e2e/run/client
+SODIUM_ARG=${E2E_SODIUM:+-Pe2eSodium}
 
 report() { # <log> <side>
   local log=$1
@@ -33,7 +35,7 @@ if [ "$MODE" = server ] || [ "$MODE" = all ]; then
   rm -rf "$SRV/world"; mkdir -p "$SRV"
   echo "eula=true" > "$SRV/eula.txt"
   printf 'level-type=minecraft\\:flat\nonline-mode=false\nlevel-name=world\nspawn-protection=0\nmax-tick-time=-1\n' > "$SRV/server.properties"
-  ./gradlew :e2e:runServer ${SCEN[@]+"${SCEN[@]}"} --console=plain > "$SRV/gradle.log" 2>&1 \
+  ./gradlew :e2e:runServer $SODIUM_ARG ${SCEN[@]+"${SCEN[@]}"} --console=plain > "$SRV/gradle.log" 2>&1 \
     || { echo "server run failed, see $SRV/gradle.log"; exit 1; }
   report "$SRV/logs/latest.log" server
 fi
@@ -55,11 +57,11 @@ if [ "$MODE" = client ] || [ "$MODE" = all ] || [ "$MODE" = play ] || [ "$MODE" 
   # keep simulating while the window is unfocused; skip onboarding screens
   printf 'pauseOnLostFocus:false\nonboardAccessibility:false\ntutorialStep:none\nskipMultiplayerWarning:true\njoinedFirstServer:true\n' > "$CLI/options.txt"
   if [ "$MODE" = play ]; then
-    ./gradlew :e2e:runClient -Pe2ePlay ${SCEN[@]+"${SCEN[@]}"} --console=plain > "$CLI/gradle.log" 2>&1
+    ./gradlew :e2e:runClient $SODIUM_ARG -Pe2ePlay ${SCEN[@]+"${SCEN[@]}"} --console=plain > "$CLI/gradle.log" 2>&1
     exit 0
   fi
   rm -rf "$CLI/screenshots"
-  ./gradlew :e2e:runClient ${SCEN[@]+"${SCEN[@]}"} --console=plain > "$CLI/gradle.log" 2>&1 \
+  ./gradlew :e2e:runClient $SODIUM_ARG ${SCEN[@]+"${SCEN[@]}"} --console=plain > "$CLI/gradle.log" 2>&1 \
     || { echo "client run failed, see $CLI/gradle.log"; exit 1; }
   report "$CLI/logs/latest.log" client
   ls "$CLI/screenshots" 2>/dev/null | sed 's/^/  screenshot: /'
