@@ -38,6 +38,27 @@ Upstream Sable kept all of its Create compat in the NeoForge module
 - Redstone contacts: Sable registers a `create:redstone_contact` block entity type (as upstream did through
   Registrate) from a `<clinit>` TAIL inject on Create Fly's `AllBlockEntityTypes`, so a client also needs Sable when
   the server has Sable + Create (same as upstream).
+- `sable/build.gradle`: `maven-artifact` is now `include(api(...))` (was `implementation`). `SableMixinPlugin`'s
+  `MixinConstraints` (version constraints) links against it as soon as any compat mod is loaded; with Create present,
+  every from-source run (e2e, simulated, aeronautics) crashed at startup with `NoClassDefFoundError: ArtifactVersion`.
+
+## Testing
+- `:sable:compileJava` 0 errors, `:sable:validateAccessWidener` passes; `tools/e2e.sh server` (no Create): mixin audit
+  passed, 0 mixin errors, 0 exceptions (the Create mixins are skipped by the plugin).
+- Server e2e **with Create Fly** on the e2e runtime classpath: mixin audit passed (all 82 common Create mixins applied to
+  Create Fly), 0 mixin errors/exceptions, sub-levels spawn and the server runs 600 ticks. Done without editing
+  `e2e/build.gradle`, via an init script passed to Gradle (`-I e2e-create.gradle :e2e:runServer`, same setup as
+  `tools/e2e.sh server`):
+  ```groovy
+  allprojects {
+      plugins.withId('net.fabricmc.fabric-loom-remap') {
+          if (path == ':e2e') dependencies.add('modRuntimeOnly', "maven.modrinth:create-fly:${property('create_fly_version')}")
+      }
+  }
+  ```
+- Not run: a client e2e with Create (it opens a game window on the desktop). The 57 client mixins are verified against
+  Create Fly bytecode (javap) and compile, but have not been runtime-audited; the same init script with `:e2e:runClient`
+  does that. Nothing was play-tested in game.
 
 <!-- generated below -->
 
