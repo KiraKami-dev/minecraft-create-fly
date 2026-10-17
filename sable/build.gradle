@@ -22,6 +22,8 @@ dependencies {
     modCompileOnly("maven.modrinth:jade:21.1.6+fabric")
     // CC: Tweaked 1.117.1 (fabric) by Modrinth version id
     modCompileOnly("maven.modrinth:cc-tweaked:IikPYYtH")
+    // Create Fly (Fabric port of Create, bundles flywheel/catnip/ponder); the sable-create mixins are gated on `create`
+    modCompileOnly "maven.modrinth:create-fly:${create_fly_version}"
 }
 
 processResources {
