@@ -7,6 +7,7 @@
   "client": [
     "block_outline_render.LevelRendererMixin",
     "camera_rotation.CameraMixin",
+    "dynamic_directional_shading.IndigoRenderContextMixin",
     "dynamic_directional_shading.SectionCompilerMixin",
     "fix_bundle_packet.ClientPacketListenerMixin",
     "sound.MovingSoundInstanceDelegateMixin"

@@ -26,6 +26,7 @@
     "dynamic_directional_shading.AmbientOcclusionFaceMixin",
     "dynamic_directional_shading.ModelBlockRendererCacheMixin",
     "dynamic_directional_shading.ModelBlockRendererMixin",
+    "dynamic_directional_shading.RenderSectionRegionMixin",
     "entity.entities_stick_sublevels.ClientPacketListenerMixin",
     "entity.entities_stick_sublevels.EntityHitboxDebugRendererMixin",
     "entity.entities_stick_sublevels.effects.LocalPlayerMixin",

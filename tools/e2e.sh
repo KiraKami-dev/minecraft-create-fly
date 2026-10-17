@@ -1,5 +1,5 @@
 #!/bin/bash
-# End-to-end tests of the port (see e2e/). Usage: tools/e2e.sh [server|gametest [filter [verify]]|client|flight|all|play]
+# End-to-end tests of the port (see e2e/). Usage: tools/e2e.sh [server|gametest [filter [verify]]|client|flight|all|play|playtest] [scenario]
 #   server:   headless dedicated server — mixin audit + spawn sub-levels + stay alive 600 ticks
 #   gametest: headless GameTest server — runs the @GameTest suite (e2e/src/main/java/dev/mcf/e2e/gametest),
 #             prints one line per test and exits non-zero if a required test failed. The optional filter is a
@@ -8,8 +8,10 @@
 #   client:   real game window in a flat world — spawns sub-levels in view, screenshots, quits
 #   flight:   real game window: an airship (propeller bearing, burner, levitite) is built in view, assembled and
 #             flies up; screenshots e2e/run/client/screenshots/flight-*.png, quits
+#   playtest: client, scripted assemble/collide/stand-on/push/rotate checks with PASS/FAIL lines (no default scene)
 #   play:     same scene as client, but the game stays open for manual testing
 #   all:      server, gametest, then client
+#   scenario: optional second argument of server/client/play, e.g. 'flywheel' = Create blocks assembled into a yawed sub-level
 # Results: e2e/run/<side>/logs/latest.log, screenshots in e2e/run/client/screenshots/,
 #          JUnit report in e2e/run/gametest/gametest-report.xml
 # GRADLEW overrides the Gradle command (default: ./gradlew --console=plain), e.g. a wrapper that queues builds.
@@ -21,11 +23,18 @@ GRADLEW=${GRADLEW:-./gradlew --console=plain}
 SRV=e2e/run/server; CLI=e2e/run/client; GT=e2e/run/gametest
 # vanilla's default flat world spelled out (an empty generator-settings makes the server log "No key layers")
 FLAT='{"layers":[{"block":"minecraft:bedrock","height":1},{"block":"minecraft:dirt","height":2},{"block":"minecraft:grass_block","height":1}],"biome":"minecraft:plains","structure_overrides":["minecraft:strongholds","minecraft:villages"]}'
+SCENARIO=; [ "$MODE" != gametest ] && SCENARIO=${2:-}
+[ "$MODE" = playtest ] && SCENARIO=playtest
+SCEN=(); [ -n "$SCENARIO" ] && SCEN=("-Pe2eScenario=$SCENARIO")
 
 report() { # <log> <side>
   local log=$1
   echo "== $2 =="
-  grep -E "E2E:" "$log" | sed 's/^.*E2E:/  E2E:/' | sort -u | head -30
+  if [ "$MODE" = playtest ]; then # scripted, order matters
+    grep -E "E2E:" "$log" | sed 's/^.*E2E:/  E2E:/'
+  else
+    grep -E "E2E:" "$log" | sed 's/^.*E2E:/  E2E:/' | sort -u | head -30
+  fi
   local mixin_err; mixin_err=$(grep -cE "Mixin apply.*failed|InvalidInjectionException|InvalidMixinException|MixinTransformerError|Critical injection failure" "$log")
   local exc; exc=$(grep -cE "^\S*(Exception|Error)\b|Exception in|Caused by:" "$log")
   echo "  mixin errors: $mixin_err   exception lines: $exc"
@@ -36,7 +45,7 @@ if [ "$MODE" = server ] || [ "$MODE" = all ]; then
   rm -rf "$SRV/world"; mkdir -p "$SRV"
   echo "eula=true" > "$SRV/eula.txt"
   printf 'level-type=minecraft\\:flat\ngenerator-settings=%s\nonline-mode=false\nlevel-name=world\nspawn-protection=0\nmax-tick-time=-1\n' "$FLAT" > "$SRV/server.properties"
-  $GRADLEW :e2e:runServer > "$SRV/gradle.log" 2>&1 \
+  $GRADLEW :e2e:runServer ${SCEN[@]+"${SCEN[@]}"} > "$SRV/gradle.log" 2>&1 \
     || { echo "server run failed, see $SRV/gradle.log"; exit 1; }
   report "$SRV/logs/latest.log" server
 fi
@@ -77,7 +86,7 @@ if [ "$MODE" = gametest ] || [ "$MODE" = all ]; then
   fi
 fi
 
-if [ "$MODE" = client ] || [ "$MODE" = all ] || [ "$MODE" = play ] || [ "$MODE" = flight ]; then
+if [ "$MODE" = client ] || [ "$MODE" = all ] || [ "$MODE" = play ] || [ "$MODE" = flight ] || [ "$MODE" = playtest ]; then
   # Every run starts from a copy of a clean template world. The server run saves the sub-levels it
   # spawned (in sublevels/, data/ and the plot chunks), so its world can't be reused.
   TEMPLATE=e2e/run/template-world
@@ -94,12 +103,12 @@ if [ "$MODE" = client ] || [ "$MODE" = all ] || [ "$MODE" = play ] || [ "$MODE" 
   # keep simulating while the window is unfocused; skip onboarding screens
   printf 'pauseOnLostFocus:false\nonboardAccessibility:false\ntutorialStep:none\nskipMultiplayerWarning:true\njoinedFirstServer:true\n' > "$CLI/options.txt"
   if [ "$MODE" = play ]; then
-    $GRADLEW :e2e:runClient -Pe2ePlay > "$CLI/gradle.log" 2>&1
+    $GRADLEW :e2e:runClient -Pe2ePlay ${SCEN[@]+"${SCEN[@]}"} > "$CLI/gradle.log" 2>&1
     exit 0
   fi
   rm -rf "$CLI/screenshots"
   SCENE=; [ "$MODE" = flight ] && SCENE=-Pe2eScene=flight
-  $GRADLEW :e2e:runClient $SCENE > "$CLI/gradle.log" 2>&1 \
+  $GRADLEW :e2e:runClient $SCENE ${SCEN[@]+"${SCEN[@]}"} > "$CLI/gradle.log" 2>&1 \
     || { echo "client run failed, see $CLI/gradle.log"; exit 1; }
   report "$CLI/logs/latest.log" "$MODE"
   [ "$MODE" = flight ] && grep -E "E2E: flight" "$CLI/logs/latest.log" | sed 's/^.*E2E:/  E2E:/' | head -40
