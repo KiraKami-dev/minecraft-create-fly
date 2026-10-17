@@ -33,7 +33,7 @@ import net.minecraft.world.phys.BlockHitResult;
  */
 public class AnalogTransmissionBlock extends RotatedPillarKineticBlock implements IBE<AnalogTransmissionBlockEntity>, ExtraKinetics.ExtraKineticsBlock {
 
-    public static final int placementHelperId = PlacementHelpers.register(new CogwheelPlacementExtension((i) -> i.getItem() instanceof CogwheelBlockItem, SimBlocks.ANALOG_TRANSMISSION::has));
+    public static final int placementHelperId = PlacementHelpers.register(new CogwheelPlacementExtension((i) -> i.getItem() instanceof CogwheelBlockItem, (s) -> s.is(SimBlocks.ANALOG_TRANSMISSION)));
 
     public static final BooleanProperty POWERED = BlockStateProperties.POWERED;
 
@@ -49,7 +49,7 @@ public class AnalogTransmissionBlock extends RotatedPillarKineticBlock implement
         if (helper.matchesItem(heldItem)) {
             return helper
                     .getOffset(player, level, blockState, blockPos, blockHitResult)
-                    .placeInWorld(level, (BlockItem) heldItem.getItem(), player, interactionHand, blockHitResult);
+                    .placeInWorld(level, (BlockItem) heldItem.getItem(), player, interactionHand);
         }
 
         return super.useItemOn(itemStack, blockState, level, blockPos, player, interactionHand, blockHitResult);
