@@ -13,11 +13,12 @@ import dev.simulated_team.simulated.content.blocks.rope.RopeStrandHolderBlockEnt
 import dev.simulated_team.simulated.content.blocks.rope.rope_connector.RopeConnectorBlockEntity;
 import dev.simulated_team.simulated.content.blocks.rope.strand.client.ClientRopeStrand;
 import dev.simulated_team.simulated.content.blocks.rope.strand.server.ServerRopeStrand;
-import dev.simulated_team.simulated.data.SimLang;
+import dev.simulated_team.simulated.Simulated;
 import dev.simulated_team.simulated.index.SimSoundEvents;
 import dev.simulated_team.simulated.service.SimConfigService;
 import com.zurrtum.create.catnip.animation.LerpedFloat;
 import net.minecraft.core.BlockPos;
+import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.Mth;
@@ -201,6 +202,7 @@ public class RopeWinchBlockEntity extends KineticBlockEntity implements RopeStra
 
     @Override
     public MutableComponent format(final int value) {
-        return SimLang.translate("gui.threshold_switch.rope_winch_length", value).component();
+        // same component as SimLang.translate(...).component(), without the client-only LangBuilder (as Create Fly's pulley)
+        return Component.translatable(Simulated.MOD_ID + ".gui.threshold_switch.rope_winch_length", value);
     }
 }

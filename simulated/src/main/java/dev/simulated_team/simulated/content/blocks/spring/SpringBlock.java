@@ -7,13 +7,14 @@ import com.zurrtum.create.foundation.block.WrenchableDirectionalBlock;
 import dev.ryanhcode.sable.Sable;
 import dev.ryanhcode.sable.api.block.BlockSubLevelAssemblyListener;
 import dev.ryanhcode.sable.sublevel.SubLevel;
-import dev.simulated_team.simulated.data.SimLang;
+import dev.simulated_team.simulated.Simulated;
 import dev.simulated_team.simulated.index.SimBlockEntityTypes;
 import dev.simulated_team.simulated.index.SimBlockShapes;
 import dev.simulated_team.simulated.index.SimItems;
 import dev.simulated_team.simulated.util.SimColors;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.RandomSource;
 import net.minecraft.util.StringRepresentable;
@@ -89,9 +90,10 @@ public class SpringBlock extends WrenchableDirectionalBlock implements IBE<Sprin
     }
 
     private static void sendLengthMessage(final String suffix, final int color, final SpringBlockEntity spring, Player player) {
-        SimLang.translate("spring." + suffix, String.format("%.2f", spring.desiredLength))
-                .color(color)
-                .sendStatus(player);
+        // runs on the server: same component as SimLang.translate(...).color(color).sendStatus(player), whose
+        // LangBuilder is client-only in Create Fly
+        player.displayClientMessage(Component.translatable(Simulated.MOD_ID + ".spring." + suffix, String.format("%.2f", spring.desiredLength))
+                .withColor(color), true);
     }
 
     @Override
