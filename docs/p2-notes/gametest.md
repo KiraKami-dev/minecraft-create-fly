@@ -235,3 +235,16 @@ assembled deck; motor started on the ship; lifts > 1 block, reversing the motor 
 - APIs they use: `AeroBlocks.LEVITITE/PROPELLER_BEARING/HOT_AIR_BURNER/WHITE_ENVELOPE_BLOCK` (block instances,
   `PROPELLER_BEARING` with `BlockStateProperties.FACING`), Create Fly `AllBlocks.SAIL/CREATIVE_MOTOR`,
   `CreativeMotorBlockEntity.generatedSpeed`.
+
+## Steering wheel + flight scene (p2-playtest-steering)
+- `SimulatedSteeringWheelTest.steering_wheel_turns_shaft` (required): floor steering wheel over a vertical shaft; a fake
+  player's `SteeringWheelPacket(false, 90, pos)` (handler run directly, like the assembler) makes the wheel output
+  +-16 RPM down the shaft until its angle reaches 90, then 0; release packet `(true, 0)` winds it back with the
+  opposite speed to angle 0. PASS 400/400 in verify mode; full suite 22 required pass, 0 fail (gravity optional fail as before).
+- `tools/e2e.sh flight` (`-Pe2eScene=flight`, `E2EFlight`): propeller-bearing ship (as `AeronauticsPropellerTest`) plus an
+  adjustable burner and levitite, built 8 blocks in front of the camera, assembled by its physics assembler, motor 256 RPM
+  (reversed after 60 ticks if no climb: +256 does not lift here, -256 does). Screenshots `flight-*.png`.
+- Findings: ship, rotor sails, burner (underside) and levitite render while moving. The ship climbs ~1.5 blocks/tick
+  (~30 m/s, above the ~25.6 m/s airflow cap the propeller test assumes) and tumbles. The rotor bearing assembles
+  before the motor turns (22 -> 13 plot blocks at t=30). Client and server tick counters are not aligned, so
+  lift-off lands between the flight-190 and flight-260 shots; the camera ends up pitched upward (cause unknown).

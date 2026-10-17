@@ -23,6 +23,7 @@ public final class E2E implements ModInitializer {
 
     private int ticks;
     private int commandTick = -1;
+    private final E2EFlight flight = E2EFlight.enabled() ? new E2EFlight() : null;
 
     @Override
     public void onInitialize() {
@@ -64,6 +65,9 @@ public final class E2E implements ModInitializer {
         }
 
         final int since = this.ticks - this.commandTick;
+        if (this.flight != null) {
+            this.flight.tick(server.overworld(), since);
+        }
         if (since % 100 == 0) {
             // sub-levels in chunks that aren't ticking are unloaded into holding chunks (ROADMAP S8a)
             final SubLevelContainer container = SubLevelContainer.getContainer(server.overworld());

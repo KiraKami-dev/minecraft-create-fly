@@ -61,7 +61,7 @@ public final class SimulatedTestHelper {
      * The fake player that "presses" physics assemblers. Fabric's {@link FakePlayer} is a {@link ServerPlayer} that
      * is not in the player list (does not load chunks, ignores stats).
      */
-    private static final GameProfile ASSEMBLING_PLAYER = new GameProfile(UUID.fromString("6d63665f-6532-4565-a173-73656d626c79"), "mcf_e2e_assembler");
+    static final GameProfile ASSEMBLING_PLAYER = new GameProfile(UUID.fromString("6d63665f-6532-4565-a173-73656d626c79"), "mcf_e2e_assembler");
 
     private SimulatedTestHelper() {
     }
@@ -324,7 +324,7 @@ public final class SimulatedTestHelper {
     /**
      * A server packet context for running a packet handler with a fake player (nothing is sent back).
      */
-    private record FakePlayerPacketContext(ServerPlayer player) implements ServerPacketContext {
+    record FakePlayerPacketContext(ServerPlayer player) implements ServerPacketContext {
         @Override
         public Packet<?> createPacket(final CustomPacketPayload payload) {
             throw new UnsupportedOperationException("The GameTest fake player has no connection");

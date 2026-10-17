@@ -11,7 +11,8 @@
       "dev.mcf.e2e.gametest.SablePhysicsTest",
       "dev.mcf.e2e.gametest.SableAssemblyTest",
       "dev.mcf.e2e.gametest.SimulatedExtraKineticsTest",
-      "dev.mcf.e2e.gametest.SimulatedShipTest"${aeroGameTests}
+      "dev.mcf.e2e.gametest.SimulatedShipTest",
+      "dev.mcf.e2e.gametest.SimulatedSteeringWheelTest"${aeroGameTests}
     ]
   },
   "mixins": ["mcf_e2e.mixins.json"],

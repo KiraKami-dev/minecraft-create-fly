@@ -45,14 +45,23 @@ def e2eCommands = [
         'execute positioned -5 -45 14 run sable spawn platform 4 minecraft:oak_planks',
 ].join(';')
 
+// -Pe2eScene=flight (tools/e2e.sh flight): only the camera set-up; E2EFlight builds, assembles and flies an airship
+def e2eFlightCommands = [
+        'time set noon', 'gamerule advance_time false', 'gamerule spawn_mobs false',
+        'forceload add -32 -16 31 47',
+        'tp @a 0 -60 0 0 -12',
+].join(';')
+def e2eFlight = project.findProperty('e2eScene') == 'flight'
+
 def e2eSceneArgs = [
         '-De2e.enabled=true',
         // -Pe2ePrepare: boot without spawning anything (tools/e2e.sh uses it to make a clean template world)
-        "-De2e.commands=${project.hasProperty('e2ePrepare') ? '' : e2eCommands}".toString(),
+        "-De2e.commands=${project.hasProperty('e2ePrepare') ? '' : e2eFlight ? e2eFlightCommands : e2eCommands}".toString(),
         '-Dmixin.debug.verify=true',
 ]
 // -Pe2ePlay: same scene, but no screenshots and the client stays open (tools/e2e.sh play)
 if (project.hasProperty('e2ePlay')) e2eSceneArgs += '-De2e.play=true'
+if (e2eFlight) e2eSceneArgs += '-De2e.scene=flight'
 
 loom {
     runs {
