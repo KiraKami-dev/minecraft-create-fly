@@ -6,12 +6,11 @@ import com.mojang.math.Axis;
 import com.mojang.serialization.MapCodec;
 import com.zurrtum.create.client.catnip.animation.AnimationTickHolder;
 import com.zurrtum.create.client.flywheel.lib.util.ShadersModHelper;
-import com.zurrtum.create.client.foundation.render.AllRenderPipelines;
-import com.zurrtum.create.client.foundation.render.CreateRenderTypes;
 import dev.ryanhcode.sable.companion.math.JOMLConversion;
 import dev.ryanhcode.sable.sublevel.ClientSubLevel;
 import dev.simulated_team.simulated.Simulated;
 import dev.simulated_team.simulated.SimulatedClient;
+import dev.simulated_team.simulated.index.SimRenderTypes;
 import dev.simulated_team.simulated.util.SimDistUtil;
 import dev.simulated_team.simulated.util.SimMathUtils;
 import net.minecraft.client.Camera;
@@ -26,7 +25,6 @@ import net.minecraft.client.renderer.item.ItemModel;
 import net.minecraft.client.renderer.item.ItemModelResolver;
 import net.minecraft.client.renderer.item.ItemStackRenderState;
 import net.minecraft.client.renderer.item.ModelRenderProperties;
-import net.minecraft.client.renderer.rendertype.RenderSetup;
 import net.minecraft.client.renderer.rendertype.RenderType;
 import net.minecraft.client.renderer.rendertype.RenderTypes;
 import net.minecraft.client.renderer.special.SpecialModelRenderer;
@@ -92,7 +90,7 @@ public class PhysicsStaffItemRenderer implements ItemModel, SpecialModelRenderer
     private final List<BakedQuad> outerCube;
     private final Supplier<Vector3fc[]> extents;
     private final Identifier atlas;
-    private @Nullable StaffRenderTypes renderTypes;
+    private @Nullable RenderType cutout;
 
     public PhysicsStaffItemRenderer(final ModelRenderProperties settings,
                                     final List<BakedQuad> item,
@@ -222,9 +220,9 @@ public class PhysicsStaffItemRenderer implements ItemModel, SpecialModelRenderer
         final Quaternionf utilQuat = new Quaternionf();
 
         final boolean shadersActive = ShadersModHelper.isShaderPackInUse();
-        final StaffRenderTypes types = this.getRenderTypes();
-        final RenderType glowingSolid = shadersActive ? types.shaderSolid() : types.glowingSolid();
-        final RenderType glowingTranslucent = shadersActive ? types.shaderTranslucent() : types.glowingTranslucent();
+        final RenderType cutout = this.getCutoutRenderType();
+        final RenderType glowingSolid = SimRenderTypes.itemGlowingSolid(shadersActive);
+        final RenderType glowingTranslucent = SimRenderTypes.itemGlowingTranslucent(shadersActive);
 
         ms.pushPose();
         // the upstream renderer worked from the item center, 1.21.11 hands special renderers the model corner
@@ -249,14 +247,14 @@ public class PhysicsStaffItemRenderer implements ItemModel, SpecialModelRenderer
             ms.mulPose(utilQuat.identity().rotateZ((float) Math.toRadians((tiltAmount * 0.5 + 0.5) * -61.0f) * tiltMultiplier));
         }
 
-        renderPart(ms, queue, context, light, overlay, outlineColor, this.item, types.cutout());
+        renderPart(ms, queue, context, light, overlay, outlineColor, this.item, cutout);
 
         renderPart(ms, queue, context, LightTexture.FULL_BRIGHT, overlay, outlineColor, this.core, glowingSolid);
         renderPart(ms, queue, context, LightTexture.FULL_BRIGHT, overlay, outlineColor, this.coreGlow, glowingTranslucent);
 
         ms.pushPose();
         ms.translate(0, 6.5 / 16.0, 0);
-        renderPart(ms, queue, context, light, overlay, outlineColor, this.ring, types.cutout());
+        renderPart(ms, queue, context, light, overlay, outlineColor, this.ring, cutout);
         ms.popPose();
 
         ms.translate(0, 9 / 16.0, 0);
@@ -265,7 +263,7 @@ public class PhysicsStaffItemRenderer implements ItemModel, SpecialModelRenderer
             ms.mulPose(Axis.YP.rotationDegrees(i * 180));
             ms.translate(-3 / 16.0, 0, 0);
             ms.mulPose(Axis.ZP.rotationDegrees(openAmount * 20));
-            renderPart(ms, queue, context, light, overlay, outlineColor, this.sigma, types.cutout());
+            renderPart(ms, queue, context, light, overlay, outlineColor, this.sigma, cutout);
             ms.popPose();
         }
         ms.translate(0, 6 / 16.0, 0);
@@ -326,13 +324,6 @@ public class PhysicsStaffItemRenderer implements ItemModel, SpecialModelRenderer
         ms.popPose();
     }
 
-    private StaffRenderTypes getRenderTypes() {
-        if (this.renderTypes == null) {
-            this.renderTypes = StaffRenderTypes.forAtlas(this.atlas);
-        }
-        return this.renderTypes;
-    }
-
     @Override
     public void getExtents(final Consumer<Vector3fc> output) {
         for (final Vector3fc extent : this.extents.get()) {
@@ -349,33 +340,14 @@ public class PhysicsStaffItemRenderer implements ItemModel, SpecialModelRenderer
     }
 
     /**
-     * The render types for the staff parts. 1.21.1 had a single block/item atlas; on 1.21.11 the staff textures can
-     * live on the item atlas, so the glowing render types are recreated for whichever atlas the quads use.
+     * The cutout render type for the staff parts. 1.21.1 had a single block/item atlas; on 1.21.11 the staff textures
+     * live on the item atlas, so {@code Sheets.cutoutBlockSheet()} is only used if the quads are on the block atlas.
      */
-    private record StaffRenderTypes(RenderType cutout, RenderType glowingSolid, RenderType glowingTranslucent,
-                                    RenderType shaderSolid, RenderType shaderTranslucent) {
-
-        private static StaffRenderTypes forAtlas(final Identifier atlas) {
-            if (atlas.equals(TextureAtlas.LOCATION_BLOCKS)) {
-                return new StaffRenderTypes(Sheets.cutoutBlockSheet(),
-                        CreateRenderTypes.itemGlowingSolid(),
-                        CreateRenderTypes.itemGlowingTranslucent(),
-                        Sheets.solidBlockSheet(),
-                        Sheets.translucentBlockItemSheet());
-            }
-
-            return new StaffRenderTypes(RenderTypes.entityCutout(atlas),
-                    RenderType.create(Simulated.MOD_ID + ":physics_staff_glowing_solid", RenderSetup.builder(AllRenderPipelines.GLOWING)
-                            .bufferSize(256).affectsCrumbling()
-                            .withTexture("Sampler0", atlas).useLightmap().useOverlay()
-                            .setOutline(RenderSetup.OutlineProperty.AFFECTS_OUTLINE).createRenderSetup()),
-                    RenderType.create(Simulated.MOD_ID + ":physics_staff_glowing_translucent", RenderSetup.builder(AllRenderPipelines.GLOWING_TRANSLUCENT)
-                            .bufferSize(256).affectsCrumbling().sortOnUpload()
-                            .withTexture("Sampler0", atlas).useLightmap().useOverlay()
-                            .setOutline(RenderSetup.OutlineProperty.AFFECTS_OUTLINE).createRenderSetup()),
-                    RenderTypes.entitySolid(atlas),
-                    RenderTypes.itemEntityTranslucentCull(atlas));
+    private RenderType getCutoutRenderType() {
+        if (this.cutout == null) {
+            this.cutout = this.atlas.equals(TextureAtlas.LOCATION_BLOCKS) ? Sheets.cutoutBlockSheet() : RenderTypes.entityCutout(this.atlas);
         }
+        return this.cutout;
     }
 
     public static class Unbaked implements ItemModel.Unbaked {
