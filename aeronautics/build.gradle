@@ -14,7 +14,8 @@ dependencies {
     modImplementation "fuzs.forgeconfigapiport:forgeconfigapiport-fabric:${forgeconfigapiport_version}"
     compileOnly 'com.google.code.findbugs:jsr305:3.0.2'
 
-    // Optional compat targets (compileOnly; mixins are gated on mod presence)
+    // Optional compat targets (compileOnly; mixins are gated on mod presence, JEI loads the plugin itself)
+    modCompileOnly "maven.modrinth:jei:${jei_version_id}"
     modCompileOnly "maven.modrinth:sodium:mc1.21.11-0.8.14-fabric"
     modCompileOnly "maven.modrinth:iris:1.10.8+1.21.11-fabric"
 }

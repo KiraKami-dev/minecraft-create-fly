@@ -6,7 +6,7 @@
   },
   "display": {
     "announce_to_chat": false,
-    "background": "aeronautics:textures/gui/advancement.png",
+    "background": "aeronautics:gui/advancement",
     "description": {
       "color": "#DBA213",
       "translate": "advancement.aeronautics.root.desc"
