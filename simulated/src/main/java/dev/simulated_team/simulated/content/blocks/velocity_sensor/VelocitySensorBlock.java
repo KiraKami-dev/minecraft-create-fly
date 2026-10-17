@@ -93,6 +93,7 @@ public class VelocitySensorBlock extends AbstractDirectionalAxisBlock implements
         return direction != null && getAxis(state) == direction.getAxis();
     }
 
+
     @Override
     protected boolean isSignalSource(final BlockState blockState) {
         return true;

@@ -25,8 +25,9 @@ import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.BooleanProperty;
 import net.minecraft.world.phys.BlockHitResult;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
-public class OpticalSensorBlock extends DirectedDirectionalBlock implements IBE<OpticalSensorBlockEntity>, CommonRedstoneBlock  {
+public class OpticalSensorBlock extends DirectedDirectionalBlock implements IBE<OpticalSensorBlockEntity>, CommonRedstoneBlock {
 
     public static final BooleanProperty POWERED = BlockStateProperties.POWERED;
 
@@ -75,13 +76,6 @@ public class OpticalSensorBlock extends DirectedDirectionalBlock implements IBE<
                 .getOpposite();
     }
 
-    @Override
-    public void onRemove(final BlockState state, final @NotNull Level level, final @NotNull BlockPos pos, final @NotNull BlockState newState, final boolean isMoving) {
-        if (state.hasBlockEntity() && state.getBlock() != newState.getBlock()) {
-            IBE.onRemove(state, level, pos, newState);
-            level.removeBlockEntity(pos);
-        }
-    }
 
     @Override
     public boolean isSignalSource(final BlockState state) {

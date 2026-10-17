@@ -15,7 +15,6 @@ import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
-import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.DyeColor;
 import net.minecraft.world.item.DyeItem;
@@ -36,7 +35,9 @@ import net.minecraft.world.level.block.state.properties.BooleanProperty;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.VoxelShape;
+import net.minecraft.world.level.redstone.Orientation;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 public class LaserPointerBlock extends DirectionalBlock implements IBE<LaserPointerBlockEntity>, IWrenchable {
     public static final MapCodec<LaserPointerBlock> CODEC = simpleCodec(LaserPointerBlock::new);
@@ -75,8 +76,8 @@ public class LaserPointerBlock extends DirectionalBlock implements IBE<LaserPoin
     }
 
     @Override
-    public void neighborChanged(final BlockState state, final Level world, final BlockPos pos, final Block neighborBlock, final BlockPos fromPos, final boolean moving) {
-        super.neighborChanged(state, world, pos, neighborBlock, fromPos, moving);
+    protected void neighborChanged(final BlockState state, final Level world, final BlockPos pos, final Block neighborBlock, @Nullable final Orientation orientation, final boolean moving) {
+        super.neighborChanged(state, world, pos, neighborBlock, orientation, moving);
         if (!world.isClientSide()) {
             final boolean powered = world.hasNeighborSignal(pos);
             world.setBlock(pos, state.setValue(POWERED, powered), 7);

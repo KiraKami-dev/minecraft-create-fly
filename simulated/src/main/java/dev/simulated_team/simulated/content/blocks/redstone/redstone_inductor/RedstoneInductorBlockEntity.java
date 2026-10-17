@@ -1,35 +1,29 @@
 package dev.simulated_team.simulated.content.blocks.redstone.redstone_inductor;
 
-import com.mojang.blaze3d.vertex.PoseStack;
-import com.zurrtum.create.client.api.goggles.IHaveGoggleInformation;
+import com.mojang.serialization.Codec;
+import com.zurrtum.create.api.behaviour.BlockEntityBehaviour;
+import com.zurrtum.create.catnip.animation.LerpedFloat;
 import com.zurrtum.create.content.equipment.clipboard.ClipboardCloneable;
 import com.zurrtum.create.foundation.blockEntity.SmartBlockEntity;
-import com.zurrtum.create.api.behaviour.BlockEntityBehaviour;
-import com.zurrtum.create.client.foundation.blockEntity.behaviour.ValueBoxTransform;
-import com.zurrtum.create.client.foundation.blockEntity.behaviour.scrollValue.ScrollValueBehaviour;
-import com.zurrtum.create.client.foundation.utility.CreateLang;
-import com.zurrtum.create.client.flywheel.lib.transform.TransformStack;
-import com.zurrtum.create.catnip.animation.LerpedFloat;
-import com.zurrtum.create.catnip.math.AngleHelper;
+import com.zurrtum.create.foundation.blockEntity.behaviour.scrollValue.ServerScrollValueBehaviour;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.core.HolderLookup;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.level.block.state.properties.BlockStateProperties;
-import net.minecraft.world.phys.Vec3;
-import org.jetbrains.annotations.NotNull;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
 
 import java.util.List;
+import java.util.Optional;
 
-public class RedstoneInductorBlockEntity extends SmartBlockEntity implements IHaveGoggleInformation, ClipboardCloneable {
+public class RedstoneInductorBlockEntity extends SmartBlockEntity implements ClipboardCloneable {
 
-    protected ScrollValueBehaviour inputDelay;
+    /**
+     * Server half of the interval setting, the value box is {@link RedstoneInductorValueBehaviour} on the client
+     */
+    protected ServerScrollValueBehaviour inputDelay;
     int delayTicks;
     int outputSignal;
     LerpedFloat lerpedState;
@@ -48,11 +42,10 @@ public class RedstoneInductorBlockEntity extends SmartBlockEntity implements IHa
     }
 
     @Override
-    public void addBehaviours(final List<BlockEntityBehaviour> behaviours) {
-        this.inputDelay = new RedstoneInductorValueBehaviour(CreateLang.translateDirect("logistics.redstone_interval"), this, new RedstoneInductorValueBoxTransform());
+    public void addBehaviours(final List<BlockEntityBehaviour<?>> behaviours) {
+        this.inputDelay = new ServerRedstoneInductorValueBehaviour(this);
         this.inputDelay.between(0, 60 * 20 * 60);
-        this.inputDelay.value = 10;
-        this.inputDelay.withFormatter(this::format);
+        this.inputDelay.setValue(10);
         this.inputDelay.withCallback(this::inputDelayChanged);
         behaviours.add(this.inputDelay);
     }
@@ -111,37 +104,33 @@ public class RedstoneInductorBlockEntity extends SmartBlockEntity implements IHa
     }
 
     private void updateFacingBlock(final RedstoneInductorBlock block, final Level levelIn) {
+        if (levelIn == null) {
+            return;
+        }
         levelIn.updateNeighborsAt(this.worldPosition, block);
         levelIn.updateNeighborsAt(this.worldPosition.relative(this.getBlockState().getValue(RedstoneInductorBlock.FACING).getOpposite()), block);
     }
 
-    private String format(final int value) {
-        if (value == 0) {
-            return Component.translatable("block.simulated.redstone_inductor." +
-                    (this.getBlockState().getValue(RedstoneInductorBlock.INVERTED) ? "invert" : "copy")).getString();
-        }
-        if (value <= 60) {
-            return value + "t";
-        }
-        if (value < 20 * 60) {
-            return (value / 20) + "s";
-        }
-        return (value / 20 / 60) + "m";
-    }
-
     @Override
-    protected void read(final CompoundTag tag, final HolderLookup.Provider registries, final boolean clientPacket) {
-        this.outputSignal = tag.getInt("OutputSignal");
-        this.delayTicks = tag.getInt("DelayTicks");
+    protected void read(final ValueInput view, final boolean clientPacket) {
+        this.outputSignal = view.getIntOr("OutputSignal", 0);
+        this.delayTicks = view.getIntOr("DelayTicks", 0);
         this.lerpedState.chase(this.outputSignal, 0.4, LerpedFloat.Chaser.EXP);
-        super.read(tag, registries, clientPacket);
+        super.read(view, clientPacket);
     }
 
     @Override
-    protected void write(final CompoundTag tag, final HolderLookup.Provider registries, final boolean clientPacket) {
-        tag.putInt("OutputSignal", this.outputSignal);
-        tag.putInt("DelayTicks", this.delayTicks);
-        super.write(tag, registries, clientPacket);
+    protected void write(final ValueOutput view, final boolean clientPacket) {
+        view.putInt("OutputSignal", this.outputSignal);
+        view.putInt("DelayTicks", this.delayTicks);
+        super.write(view, clientPacket);
+    }
+
+    /**
+     * @return The lerped output signal, for rendering
+     */
+    public float getLerpedState(final float partialTicks) {
+        return this.lerpedState.getValue(partialTicks);
     }
 
     @Override
@@ -150,14 +139,15 @@ public class RedstoneInductorBlockEntity extends SmartBlockEntity implements IHa
     }
 
     @Override
-    public boolean readFromClipboard(final HolderLookup.@NotNull Provider provider, final CompoundTag tag, final Player player, final Direction direction, final boolean simulate) {
-        if (!tag.contains("Inverted")) {
+    public boolean readFromClipboard(final ValueInput view, final Player player, final Direction direction, final boolean simulate) {
+        final Optional<Boolean> inverted = view.read("Inverted", Codec.BOOL);
+        if (inverted.isEmpty()) {
             return false;
         } else if (simulate) {
             return true;
         } else {
             final BlockState blockState = this.getBlockState();
-            if (blockState.getValue(RedstoneInductorBlock.INVERTED) != tag.getBoolean("Inverted")) {
+            if (blockState.getValue(RedstoneInductorBlock.INVERTED) != inverted.get()) {
                 this.level.setBlockAndUpdate(this.worldPosition, blockState.cycle(RedstoneInductorBlock.INVERTED));
             }
 
@@ -166,29 +156,8 @@ public class RedstoneInductorBlockEntity extends SmartBlockEntity implements IHa
     }
 
     @Override
-    public boolean writeToClipboard(final HolderLookup.@NotNull Provider provider, final CompoundTag tag, final Direction direction) {
-        tag.putBoolean("Inverted", this.getBlockState().getOptionalValue(RedstoneInductorBlock.INVERTED).orElse(false));
+    public boolean writeToClipboard(final ValueOutput view, final Direction direction) {
+        view.store("Inverted", Codec.BOOL, this.getBlockState().getValueOrElse(RedstoneInductorBlock.INVERTED, false));
         return true;
-    }
-
-    private static class RedstoneInductorValueBoxTransform extends ValueBoxTransform {
-
-        @Override
-        public Vec3 getLocalOffset(final LevelAccessor levelAccessor, final BlockPos blockPos, final BlockState blockState) {
-            return new Vec3(0.5, 5.5f / 16.0f, 0.5);
-        }
-
-        @Override
-        public void rotate(final LevelAccessor levelAccessor, final BlockPos blockPos, final BlockState blockState, final PoseStack poseStack) {
-            final float yRot = AngleHelper.horizontalAngle(blockState.getValue(BlockStateProperties.HORIZONTAL_FACING)) + 180;
-            TransformStack.of(poseStack)
-                    .rotateYDegrees(yRot)
-                    .rotateXDegrees(90);
-        }
-
-        @Override
-        public float getScale() {
-            return 0.5f;
-        }
     }
 }

@@ -7,6 +7,7 @@
     "accessor.CreativeModeInventoryScreenAccessor",
     "accessor.CreativeModeInventoryScreenSelectedTabAccessor",
     "accessor.KeyMappingsAccessor",
+    "accessor.LinkBehaviourAccessor",
     "accessor.ParrotElementAccessor",
     "accessor.WorldSectionElementAccessor",
     "conditional_display_target.DisplayLinkScreenMixin",

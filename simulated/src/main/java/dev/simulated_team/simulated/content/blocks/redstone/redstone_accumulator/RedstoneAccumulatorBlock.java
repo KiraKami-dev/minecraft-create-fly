@@ -31,7 +31,6 @@ import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.VoxelShape;
 import org.jetbrains.annotations.Nullable;
-import org.joml.Vector3f;
 
 public class RedstoneAccumulatorBlock extends AbstractDiodeBlock implements IBE<RedstoneAccumulatorBlockEntity>, CommonRedstoneBlock {
     public static final MapCodec<RedstoneAccumulatorBlock> CODEC = simpleCodec(RedstoneAccumulatorBlock::new);
@@ -82,8 +81,8 @@ public class RedstoneAccumulatorBlock extends AbstractDiodeBlock implements IBE<
         final Direction facing = state.getValue(RedstoneAccumulatorBlock.FACING).getOpposite();
         final BlockPos offset = pos.relative(facing.getOpposite());
 
-        final BlockPos leftSide = pos.offset(facing.getCounterClockWise().getNormal());
-        final BlockPos rightSide = pos.offset(facing.getClockWise().getNormal());
+        final BlockPos leftSide = pos.relative(facing.getCounterClockWise());
+        final BlockPos rightSide = pos.relative(facing.getClockWise());
 
         final boolean leftSignal = level.getSignal(leftSide, facing.getClockWise().getOpposite()) > 0;
         final boolean rightSignal = level.getSignal(rightSide, facing.getCounterClockWise().getOpposite()) > 0;
@@ -120,6 +119,8 @@ public class RedstoneAccumulatorBlock extends AbstractDiodeBlock implements IBE<
         return direction != null;
     }
 
+
+    @Override
     protected int getOutputSignal(final BlockGetter pLevel, final BlockPos pPos, final BlockState pState) {
         final RedstoneAccumulatorBlockEntity be = (RedstoneAccumulatorBlockEntity) pLevel.getBlockEntity(pPos);
         if(be != null) {
@@ -143,7 +144,7 @@ public class RedstoneAccumulatorBlock extends AbstractDiodeBlock implements IBE<
     }
 
     private static void addParticles(final BlockState state, final LevelAccessor level, final BlockPos pos, final float alpha) {
-        level.addParticle(new DustParticleOptions(new Vector3f(1.0F, 0.0F, 0.0F), alpha), pos.getX() + 0.5f, pos.getY() + 0.5f, pos.getZ() + 0.5f, 0.0D, 0.0D,
+        level.addParticle(new DustParticleOptions(0xFF0000, alpha), pos.getX() + 0.5f, pos.getY() + 0.5f, pos.getZ() + 0.5f, 0.0D, 0.0D,
                 0.0D);
     }
 

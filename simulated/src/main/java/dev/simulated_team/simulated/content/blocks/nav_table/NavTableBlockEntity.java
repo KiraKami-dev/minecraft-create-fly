@@ -10,19 +10,16 @@ import dev.simulated_team.simulated.util.SimMathUtils;
 import com.zurrtum.create.catnip.animation.LerpedFloat;
 import com.zurrtum.create.catnip.data.Iterate;
 import com.zurrtum.create.catnip.math.AngleHelper;
-import com.zurrtum.create.catnip.math.VecHelper;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.core.HolderLookup;
 import net.minecraft.core.Vec3i;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.ListTag;
-import net.minecraft.nbt.Tag;
 import net.minecraft.world.Clearable;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
 import net.minecraft.world.phys.Vec3;
 import org.joml.Quaterniond;
 import org.joml.Quaternionf;
@@ -30,6 +27,7 @@ import javax.annotation.Nullable;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 public class NavTableBlockEntity extends SmartBlockEntity implements Clearable {
 
@@ -64,7 +62,7 @@ public class NavTableBlockEntity extends SmartBlockEntity implements Clearable {
     }
 
     @Override
-    public void addBehaviours(final List<BlockEntityBehaviour> behaviours) {
+    public void addBehaviours(final List<BlockEntityBehaviour<?>> behaviours) {
 
     }
 
@@ -189,13 +187,13 @@ public class NavTableBlockEntity extends SmartBlockEntity implements Clearable {
         // ponder rendering logic where only the visual arrow direction is cared about
         if (this.level.isClientSide() && this.isVirtual()) {
             final Direction facing = this.getBlockState().getValue(NavTableBlock.FACING);
-            final Vec3i normal = facing.getNormal();
+            final Vec3i normal = facing.getUnitVec3i();
 
             final double andleRad = Math.toRadians(this.lerpedAngleDegrees.getValue());
             Vec3 targetPos = new Vec3(Math.cos(andleRad), 0, Math.sin(andleRad));
             targetPos = NavigationTarget.getPlaneProjectedPos(targetPos, normal);
 
-            final double dot = -targetPos.dot(Vec3.atLowerCornerOf(direction.getNormal()));
+            final double dot = -targetPos.dot(Vec3.atLowerCornerOf(direction.getUnitVec3i()));
             return (int) (Math.asin(dot) / Math.PI * 30 + 0.5);
         }
 
@@ -249,46 +247,53 @@ public class NavTableBlockEntity extends SmartBlockEntity implements Clearable {
     }
 
     @Override
-    protected void write(final CompoundTag tag, final HolderLookup.Provider registries, final boolean clientPacket) {
-        tag.put("CurrentStack", this.getHeldItem().saveOptional(registries));
+    protected void write(final ValueOutput view, final boolean clientPacket) {
+        view.store("CurrentStack", ItemStack.OPTIONAL_CODEC, this.getHeldItem());
 
         if (this.currentTarget != null) {
-            this.writeCurrentTarget(tag);
+            this.writeCurrentTarget(view);
         }
 
-        tag.putFloat("RelativeAngle", this.relativeAngle);
+        view.putFloat("RelativeAngle", this.relativeAngle);
 
-        super.write(tag, registries, clientPacket);
+        super.write(view, clientPacket);
     }
 
     @Override
-    protected void read(final CompoundTag tag, final HolderLookup.Provider registries, final boolean clientPacket) {
-        final ItemStack stack = ItemStack.parseOptional(registries, tag.getCompound("CurrentStack"));
+    protected void read(final ValueInput view, final boolean clientPacket) {
+        final ItemStack stack = view.read("CurrentStack", ItemStack.OPTIONAL_CODEC).orElse(ItemStack.EMPTY);
         this.inventory.slot.setStack(stack);
 
-        if (tag.contains("CurrentTarget")) {
-            this.currentTarget = this.readCurrentTarget(tag);
+        final Optional<Vec3> currentTarget = this.readCurrentTarget(view);
+        if (currentTarget.isPresent()) {
+            this.currentTarget = currentTarget.get();
             this.isPowering = true;
         } else {
             this.isPowering = false;
         }
 
-        this.relativeAngle = tag.getFloat("RelativeAngle");
+        this.relativeAngle = view.getFloatOr("RelativeAngle", 0);
         if (clientPacket) {
             this.lerpedAngleDegrees.chase(this.relativeAngle, 0.8f, LerpedFloat.Chaser.EXP);
         }
 
-        super.read(tag, registries, clientPacket);
+        super.read(view, clientPacket);
     }
 
-    private void writeCurrentTarget(final CompoundTag tag) {
-        final ListTag currentTarget = VecHelper.writeNBT(this.currentTarget);
-        tag.put("CurrentTarget", currentTarget);
+    // a list of three doubles, as VecHelper#writeNBT wrote it
+    private void writeCurrentTarget(final ValueOutput view) {
+        view.store("CurrentTarget", Vec3.CODEC, this.currentTarget);
     }
 
-    private Vec3 readCurrentTarget(final CompoundTag tag) {
-        final ListTag targetList = tag.getList("CurrentTarget", Tag.TAG_DOUBLE);
-        return VecHelper.readNBT(targetList);
+    private Optional<Vec3> readCurrentTarget(final ValueInput view) {
+        return view.read("CurrentTarget", Vec3.CODEC);
+    }
+
+    @Override
+    public void preRemoveSideEffects(final BlockPos pos, final BlockState oldState) {
+        // was NavTableBlock#onRemove
+        this.dropHeldItem();
+        super.preRemoveSideEffects(pos, oldState);
     }
 
     private boolean selectivelyUpdateNeighbors() {

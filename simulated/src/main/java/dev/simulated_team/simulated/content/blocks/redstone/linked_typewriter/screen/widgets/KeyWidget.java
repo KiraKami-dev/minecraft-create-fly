@@ -1,16 +1,18 @@
 package dev.simulated_team.simulated.content.blocks.redstone.linked_typewriter.screen.widgets;
 
 import com.mojang.blaze3d.platform.InputConstants;
-import com.mojang.blaze3d.systems.RenderSystem;
+import com.zurrtum.create.catnip.data.Couple;
+import com.zurrtum.create.client.catnip.gui.element.ScreenElement;
+import com.zurrtum.create.client.catnip.gui.widget.AbstractSimiWidget;
+import com.zurrtum.create.client.foundation.gui.AllIcons;
 import com.zurrtum.create.content.redstone.link.RedstoneLinkNetworkHandler;
 import dev.simulated_team.simulated.content.blocks.redstone.linked_typewriter.LinkedTypewriterEntries;
 import dev.simulated_team.simulated.content.blocks.redstone.linked_typewriter.screen.LinkedTypewriterScreen;
 import dev.simulated_team.simulated.index.SimGUITextures;
-import com.zurrtum.create.catnip.data.Couple;
-import com.zurrtum.create.client.catnip.gui.element.ScreenElement;
-import com.zurrtum.create.client.catnip.gui.widget.AbstractSimiWidget;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.input.KeyEvent;
+import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.DyeColor;
@@ -18,6 +20,9 @@ import org.jetbrains.annotations.NotNull;
 import org.lwjgl.glfw.GLFW;
 
 public class KeyWidget extends AbstractSimiWidget {
+
+    private static final int BOUND_ICON_COLOR = 0xFF724731;
+    private static final int UNBOUND_ICON_COLOR = 0xFF512018;
 
     private final LinkedTypewriterEntries.KeyboardEntry EMPTY = new LinkedTypewriterEntries.KeyboardEntry(RedstoneLinkNetworkHandler.Frequency.EMPTY, RedstoneLinkNetworkHandler.Frequency.EMPTY, this.keyNum, BlockPos.ZERO);
 
@@ -67,10 +72,13 @@ public class KeyWidget extends AbstractSimiWidget {
         end.render(graphics, this.getX() + endX, y);
 
         if (this.icon != null) {
-            if (this.bound) RenderSystem.setShaderColor(0.447f, 0.278f, 0.192f, 1.0f);
-                else RenderSystem.setShaderColor(0.318f, 0.125f, 0.094f, 1.0f);
-            this.icon.render(graphics, this.getX() + 3, y + 4);
-            RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
+            // tinted like the key legend (was RenderSystem#setShaderColor)
+            final int color = this.bound ? BOUND_ICON_COLOR : UNBOUND_ICON_COLOR;
+            if (this.icon instanceof final AllIcons icons) {
+                icons.render(graphics, this.getX() + 3, y + 4, color);
+            } else {
+                this.icon.render(graphics, this.getX() + 3, y + 4);
+            }
         }
 
         if (this.isHovered) {
@@ -114,17 +122,18 @@ public class KeyWidget extends AbstractSimiWidget {
             pGuiGraphics.renderItem(coupled.getFirst().getStack(), this.getX() + freqX + 1, this.getY() - yOffset - bgHeight + 5);
             pGuiGraphics.renderItem(coupled.getSecond().getStack(), this.getX() + freqX + 19, this.getY() - yOffset - bgHeight + 5);
 
-            pGuiGraphics.drawString(Minecraft.getInstance().font, keyName.getString(), this.getX() + textX - 1, this.getY() - yOffset - textHeight - 2, DyeColor.BLACK.getTextColor(), false);
+            pGuiGraphics.drawString(Minecraft.getInstance().font, keyName.getString(), this.getX() + textX - 1, this.getY() - yOffset - textHeight - 2, 0xFF000000 | DyeColor.BLACK.getTextColor(), false);
         }
     }
 
     private Component keyName() {
-        return InputConstants.getKey(this.keyNum, GLFW.glfwGetKeyScancode(this.keyNum))
+        return InputConstants.getKey(new KeyEvent(this.keyNum, GLFW.glfwGetKeyScancode(this.keyNum), 0))
                 .getDisplayName();
     }
 
     private void renderBackground(@NotNull final GuiGraphics pGuiGraphics, final int x, final int y, final int w, final int h) {
         final SimGUITextures bg = SimGUITextures.LINKED_TYPEWRITER_TOOLTIP_BACKGROUND;
-        pGuiGraphics.blitSprite(bg.location, x, y, 0, w, h);
+        // a nine-sliced gui sprite (textures/gui/sprites/widgets/item_background.png)
+        pGuiGraphics.blitSprite(RenderPipelines.GUI_TEXTURED, bg.location, x, y, w, h);
     }
 }

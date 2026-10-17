@@ -78,6 +78,7 @@ public class LaserSensorBlock extends DirectedDirectionalBlock implements IBE<La
         return direction != state.getValue(FACING).getOpposite();
     }
 
+
     @Override
     public Class<LaserSensorBlockEntity> getBlockEntityClass() {
         return LaserSensorBlockEntity.class;
