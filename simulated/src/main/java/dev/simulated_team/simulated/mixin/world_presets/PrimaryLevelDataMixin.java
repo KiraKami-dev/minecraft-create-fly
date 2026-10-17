@@ -27,9 +27,12 @@ public class PrimaryLevelDataMixin implements PrimaryLevelDataExtension {
 	private static final String simulated$WORLD_PRESET_KEY = "simulated:world_preset";
 
 	@Shadow private EndDragonFight.Data endDragonFightData;
-	private Identifier simulated$worldPresetKey = WorldPresets.NORMAL.location();
+	@Unique
+	private Identifier simulated$worldPresetKey = WorldPresets.NORMAL.identifier();
 
-	@Inject(method = "parse", at = @At("RETURN"), remap = false)
+	// parse and setTagData are Minecraft methods: upstream's remap = false only worked on NeoForge (Mojang names at
+	// runtime) and would miss the intermediary names in a Fabric production jar
+	@Inject(method = "parse", at = @At("RETURN"))
 	private static <T> void simulated$parse(final Dynamic<T> dynamic, final LevelSettings levelSettings, final PrimaryLevelData.SpecialWorldProperty specialWorldProperty, final WorldOptions worldOptions, final Lifecycle lifecycle, final CallbackInfoReturnable<PrimaryLevelData> cir) {
 		final DataResult<String> string = dynamic.get(simulated$WORLD_PRESET_KEY).asString();
 		if(string.isSuccess()) {
@@ -37,7 +40,7 @@ public class PrimaryLevelDataMixin implements PrimaryLevelDataExtension {
 		}
 	}
 
-	@Inject(method = "setTagData", at = @At("TAIL"), remap = false)
+	@Inject(method = "setTagData", at = @At("TAIL"))
 	private void simulated$setTagData(final RegistryAccess registryAccess, final CompoundTag compoundTag, final CompoundTag compoundTag2, final CallbackInfo ci) {
 		compoundTag.putString(simulated$WORLD_PRESET_KEY, this.getPreset().toString());
 	}

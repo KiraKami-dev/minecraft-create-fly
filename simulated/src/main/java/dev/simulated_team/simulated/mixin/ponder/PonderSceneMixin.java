@@ -5,7 +5,8 @@ import dev.simulated_team.simulated.mixin_interface.ponder.PonderSceneExtension;
 import com.zurrtum.create.catnip.animation.LerpedFloat;
 import com.zurrtum.create.client.catnip.render.SuperRenderTypeBuffer;
 import com.zurrtum.create.client.ponder.foundation.PonderScene;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.renderer.SubmitNodeStorage;
 import net.minecraft.util.Mth;
 import net.minecraft.world.phys.Vec3;
 import org.spongepowered.asm.mixin.Mixin;
@@ -95,17 +96,19 @@ public class PonderSceneMixin implements PonderSceneExtension {
         return Mth.lerp(pt, this.simulated$oldYOffset, this.yOffset);
     }
 
-    @Inject(method = "tick", at = @At("HEAD"))
+    @Inject(method = "tick", at = @At("HEAD"), remap = false)
     private void recordOldValues(final CallbackInfo ci) {
         this.simulated$oldYOffset = this.yOffset;
         this.simulated$oldScaleFactor = this.scaleFactor;
     }
 
     //todo: pr this to ponder
-    @Shadow
+    @Shadow(remap = false)
     private PonderScene.SceneTransform transform;
-    @Redirect(remap=false,method="renderScene",at = @At(value="INVOKE",target="Lnet/createmod/ponder/foundation/PonderScene$SceneCamera;set(FF)V"))
-    public void onCameraSet(PonderScene.SceneCamera instance, float xRotation, float yRotation, SuperRenderTypeBuffer buffer, GuiGraphics graphics, float pt)
+    // Create Fly: renderScene(Minecraft, SuperRenderTypeBuffer, SubmitNodeStorage, PoseStack, float) sets the camera
+    // first and copies its rotation into the CameraRenderState used for entities and particles; same wrong pitch
+    @Redirect(remap = false, method = "renderScene", at = @At(value = "INVOKE", target = "Lcom/zurrtum/create/client/ponder/foundation/PonderScene$SceneCamera;set(FF)V"))
+    public void onCameraSet(final PonderScene.SceneCamera instance, final float xRotation, final float yRotation, final Minecraft mc, final SuperRenderTypeBuffer buffer, final SubmitNodeStorage queue, final PoseStack ms, final float pt)
     {
         instance.set( -transform.xRotation.getValue(pt), transform.yRotation.getValue(pt) + 180);
     }

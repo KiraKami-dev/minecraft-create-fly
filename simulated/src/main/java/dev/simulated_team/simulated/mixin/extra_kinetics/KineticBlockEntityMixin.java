@@ -1,6 +1,7 @@
 package dev.simulated_team.simulated.mixin.extra_kinetics;
 
 import com.llamalad7.mixinextras.sugar.Local;
+import com.mojang.serialization.Codec;
 import com.zurrtum.create.content.kinetics.base.GeneratingKineticBlockEntity;
 import com.zurrtum.create.content.kinetics.base.KineticBlockEntity;
 import com.zurrtum.create.foundation.blockEntity.SmartBlockEntity;
@@ -8,12 +9,12 @@ import dev.simulated_team.simulated.mixin_interface.extra_kinetics.KineticBlockE
 import dev.simulated_team.simulated.util.extra_kinetics.ExtraBlockPos;
 import dev.simulated_team.simulated.util.extra_kinetics.ExtraKinetics;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.HolderLookup;
-import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
@@ -141,44 +142,43 @@ public abstract class KineticBlockEntityMixin extends SmartBlockEntity implement
         this.simulated$extraKineticsConnected = false;
     }
 
+    // Create Fly: write(ValueOutput, boolean) / read(ValueInput, boolean). The extra kinetics block entity is still
+    // stored as a child compound under its save name; saveCustomOnly/loadCustomOnly are the public equivalents of
+    // saveAdditional/loadAdditional.
     @Inject(method = "write", at = @At("TAIL"), remap = false)
-    public void simulated$saveConnected(final CompoundTag compound, final HolderLookup.Provider registries, final boolean clientPacket, final CallbackInfo ci) {
+    public void simulated$saveConnected(final ValueOutput view, final boolean clientPacket, final CallbackInfo ci) {
         if (this instanceof final ExtraKinetics ek) {
             final KineticBlockEntity extraKinetics = ek.getExtraKinetics();
             if (extraKinetics != null) {
-                final CompoundTag internalTag = new CompoundTag();
+                final ValueOutput internalView = view.child(ek.getExtraKineticsSaveName());
                 if (clientPacket) {
-                    extraKinetics.writeClient(internalTag, registries);
+                    extraKinetics.writeClient(internalView);
                 } else {
-                    extraKinetics.saveAdditional(internalTag, registries);
+                    extraKinetics.saveCustomOnly(internalView);
                 }
-
-                compound.put(ek.getExtraKineticsSaveName(), internalTag);
             }
         }
 
         if (this.hasSource()) {
-            compound.putBoolean("ConnectedToExtraKinetics", this.simulated$extraKineticsConnected);
+            view.putBoolean("ConnectedToExtraKinetics", this.simulated$extraKineticsConnected);
         }
     }
 
     @Inject(method = "read", at = @At("TAIL"), remap = false)
-    public void simulated$readConnected(final CompoundTag compound, final HolderLookup.Provider registries, final boolean clientPacket, final CallbackInfo ci) {
+    public void simulated$readConnected(final ValueInput view, final boolean clientPacket, final CallbackInfo ci) {
         if (this instanceof final ExtraKinetics ek) {
             final KineticBlockEntity extraKinetics = ek.getExtraKinetics();
             if (extraKinetics != null) {
-                final CompoundTag extraKineticsTag = compound.getCompound(ek.getExtraKineticsSaveName());
+                final ValueInput extraKineticsView = view.childOrEmpty(ek.getExtraKineticsSaveName());
                 if (clientPacket) {
-                    extraKinetics.readClient(extraKineticsTag, registries);
+                    extraKinetics.readClient(extraKineticsView);
                 } else {
-                    extraKinetics.loadCustomOnly(extraKineticsTag, registries);
+                    extraKinetics.loadCustomOnly(extraKineticsView);
                 }
             }
         }
 
-        if (compound.contains("ConnectedToExtraKinetics")) {
-            this.simulated$extraKineticsConnected = compound.getBoolean("ConnectedToExtraKinetics");
-        }
+        view.read("ConnectedToExtraKinetics", Codec.BOOL).ifPresent(connected -> this.simulated$extraKineticsConnected = connected);
     }
 
     @Override

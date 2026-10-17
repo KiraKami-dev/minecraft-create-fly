@@ -15,7 +15,8 @@ import org.spongepowered.asm.mixin.injection.At;
 
 @Mixin(PonderTooltipHandler.class)
 public class PonderTooltipHandlerMixin {
-	@WrapOperation(method = "makeProgressBar", at = @At(value = "INVOKE", target = "Lnet/createmod/catnip/lang/LangBuilder;component()Lnet/minecraft/network/chat/MutableComponent;"))
+	// MutableComponent (Minecraft) is in the target descriptor, so remapping stays on
+	@WrapOperation(method = "makeProgressBar", at = @At(value = "INVOKE", target = "Lcom/zurrtum/create/client/catnip/lang/LangBuilder;component()Lnet/minecraft/network/chat/MutableComponent;"))
 	private static MutableComponent simulated$addToTooltip(final LangBuilder instance, final Operation<MutableComponent> original) {
 		final MutableComponent component = original.call(instance);
 		final ItemStack stack = PonderTooltipHandlerAccessor.getTrackingStack();

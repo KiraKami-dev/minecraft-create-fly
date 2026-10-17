@@ -41,53 +41,53 @@ public abstract class RotationPropagatorMixin {
     }
 
     @WrapOperation(method = "getRotationSpeedModifier", at = {
-            @At(value = "INVOKE", target = "Lcom/simibubi/create/content/kinetics/simpleRelays/ICogWheel;isSmallCog(Lnet/minecraft/world/level/block/state/BlockState;)Z", ordinal = 0),
-            @At(value = "INVOKE", target = "Lcom/simibubi/create/content/kinetics/simpleRelays/ICogWheel;isSmallCog(Lnet/minecraft/world/level/block/state/BlockState;)Z", ordinal = 3)
+            @At(value = "INVOKE", target = "Lcom/zurrtum/create/content/kinetics/simpleRelays/ICogWheel;isSmallCog(Lnet/minecraft/world/level/block/state/BlockState;)Z", ordinal = 0),
+            @At(value = "INVOKE", target = "Lcom/zurrtum/create/content/kinetics/simpleRelays/ICogWheel;isSmallCog(Lnet/minecraft/world/level/block/state/BlockState;)Z", ordinal = 3)
     })
     private static boolean testSmallCogFrom1(final BlockState state, final Operation<Boolean> original, @Local(argsOnly = true, ordinal = 0) final KineticBlockEntity fromBE) {
         return simulated$checkCogStateSmall(original.call(state), fromBE);
     }
 
     @WrapOperation(method = "getRotationSpeedModifier", at = {
-            @At(value = "INVOKE", target = "Lcom/simibubi/create/content/kinetics/simpleRelays/ICogWheel;isSmallCog(Lnet/minecraft/world/level/block/state/BlockState;)Z", ordinal = 1),
-            @At(value = "INVOKE", target = "Lcom/simibubi/create/content/kinetics/simpleRelays/ICogWheel;isSmallCog(Lnet/minecraft/world/level/block/state/BlockState;)Z", ordinal = 2)
+            @At(value = "INVOKE", target = "Lcom/zurrtum/create/content/kinetics/simpleRelays/ICogWheel;isSmallCog(Lnet/minecraft/world/level/block/state/BlockState;)Z", ordinal = 1),
+            @At(value = "INVOKE", target = "Lcom/zurrtum/create/content/kinetics/simpleRelays/ICogWheel;isSmallCog(Lnet/minecraft/world/level/block/state/BlockState;)Z", ordinal = 2)
     })
     private static boolean testSmallCogTo(final BlockState state, final Operation<Boolean> original, @Local(argsOnly = true, ordinal = 1) final KineticBlockEntity toBE) {
         return simulated$checkCogStateSmall(original.call(state), toBE);
     }
 
-    @WrapOperation(method = "getRotationSpeedModifier", at = @At(value = "INVOKE", target = "Lcom/simibubi/create/content/kinetics/simpleRelays/ICogWheel;isLargeCog(Lnet/minecraft/world/level/block/state/BlockState;)Z", ordinal = 0))
+    @WrapOperation(method = "getRotationSpeedModifier", at = @At(value = "INVOKE", target = "Lcom/zurrtum/create/content/kinetics/simpleRelays/ICogWheel;isLargeCog(Lnet/minecraft/world/level/block/state/BlockState;)Z", ordinal = 0))
     private static boolean testLargeCogFrom(final BlockState state, final Operation<Boolean> original, @Local(argsOnly = true, ordinal = 0) final KineticBlockEntity fromBE) {
         return simulated$checkCogStateLarge(original.call(state), fromBE);
     }
 
     @WrapOperation(method = "getRotationSpeedModifier", at = {
-            @At(value = "INVOKE", target = "Lcom/simibubi/create/content/kinetics/simpleRelays/ICogWheel;isLargeCog(Lnet/minecraft/world/level/block/state/BlockState;)Z", ordinal = 1),
-            @At(value = "INVOKE", target = "Lcom/simibubi/create/content/kinetics/simpleRelays/ICogWheel;isLargeCog(Lnet/minecraft/world/level/block/state/BlockState;)Z", ordinal = 2)
+            @At(value = "INVOKE", target = "Lcom/zurrtum/create/content/kinetics/simpleRelays/ICogWheel;isLargeCog(Lnet/minecraft/world/level/block/state/BlockState;)Z", ordinal = 1),
+            @At(value = "INVOKE", target = "Lcom/zurrtum/create/content/kinetics/simpleRelays/ICogWheel;isLargeCog(Lnet/minecraft/world/level/block/state/BlockState;)Z", ordinal = 2)
     })
     private static boolean testLargeCogTo(final BlockState state, final Operation<Boolean> original, @Local(argsOnly = true, ordinal = 1) final KineticBlockEntity toBE) {
         return simulated$checkCogStateLarge(original.call(state), toBE);
     }
 
-    @ModifyReceiver(method = "getRotationSpeedModifier", at = @At(value = "INVOKE", target = "Lcom/simibubi/create/content/kinetics/base/IRotate;hasShaftTowards(Lnet/minecraft/world/level/LevelReader;Lnet/minecraft/core/BlockPos;Lnet/minecraft/world/level/block/state/BlockState;Lnet/minecraft/core/Direction;)Z", ordinal = 0))
+    @ModifyReceiver(method = "getRotationSpeedModifier", at = @At(value = "INVOKE", target = "Lcom/zurrtum/create/content/kinetics/base/IRotate;hasShaftTowards(Lnet/minecraft/world/level/LevelReader;Lnet/minecraft/core/BlockPos;Lnet/minecraft/world/level/block/state/BlockState;Lnet/minecraft/core/Direction;)Z", ordinal = 0))
     private static IRotate changeIRotateShaftFrom(final IRotate instance, final LevelReader levelReader, final BlockPos blockPos, final BlockState state, final Direction direction, @Local(argsOnly = true, ordinal = 0) final KineticBlockEntity fromBE) {
         return simulated$getNewIRotate(instance, fromBE);
     }
 
-    @ModifyReceiver(method = "getRotationSpeedModifier", at = @At(value = "INVOKE", target = "Lcom/simibubi/create/content/kinetics/base/IRotate;hasShaftTowards(Lnet/minecraft/world/level/LevelReader;Lnet/minecraft/core/BlockPos;Lnet/minecraft/world/level/block/state/BlockState;Lnet/minecraft/core/Direction;)Z", ordinal = 1))
+    @ModifyReceiver(method = "getRotationSpeedModifier", at = @At(value = "INVOKE", target = "Lcom/zurrtum/create/content/kinetics/base/IRotate;hasShaftTowards(Lnet/minecraft/world/level/LevelReader;Lnet/minecraft/core/BlockPos;Lnet/minecraft/world/level/block/state/BlockState;Lnet/minecraft/core/Direction;)Z", ordinal = 1))
     private static IRotate changeIRotateShaftTo(final IRotate instance, final LevelReader levelReader, final BlockPos blockPos, final BlockState state, final Direction direction, @Local(argsOnly = true, ordinal = 1) final KineticBlockEntity toBe) {
         return simulated$getNewIRotate(instance, toBe);
     }
 
     @ModifyReceiver(method = "getRotationSpeedModifier", at = {
-            @At(value = "INVOKE", target = "Lcom/simibubi/create/content/kinetics/base/IRotate;getRotationAxis(Lnet/minecraft/world/level/block/state/BlockState;)Lnet/minecraft/core/Direction$Axis;", ordinal = 0),
-            @At(value = "INVOKE", target = "Lcom/simibubi/create/content/kinetics/base/IRotate;getRotationAxis(Lnet/minecraft/world/level/block/state/BlockState;)Lnet/minecraft/core/Direction$Axis;", ordinal = 1)
+            @At(value = "INVOKE", target = "Lcom/zurrtum/create/content/kinetics/base/IRotate;getRotationAxis(Lnet/minecraft/world/level/block/state/BlockState;)Lnet/minecraft/core/Direction$Axis;", ordinal = 0),
+            @At(value = "INVOKE", target = "Lcom/zurrtum/create/content/kinetics/base/IRotate;getRotationAxis(Lnet/minecraft/world/level/block/state/BlockState;)Lnet/minecraft/core/Direction$Axis;", ordinal = 1)
     })
     private static IRotate changeIRotateAxisFrom(final IRotate instance, final BlockState state, @Local(argsOnly = true, ordinal = 0) final KineticBlockEntity fromBE) {
         return simulated$getNewIRotate(instance, fromBE);
     }
 
-    @ModifyReceiver(method = "getRotationSpeedModifier", at = @At(value = "INVOKE", target = "Lcom/simibubi/create/content/kinetics/base/IRotate;getRotationAxis(Lnet/minecraft/world/level/block/state/BlockState;)Lnet/minecraft/core/Direction$Axis;", ordinal = 2))
+    @ModifyReceiver(method = "getRotationSpeedModifier", at = @At(value = "INVOKE", target = "Lcom/zurrtum/create/content/kinetics/base/IRotate;getRotationAxis(Lnet/minecraft/world/level/block/state/BlockState;)Lnet/minecraft/core/Direction$Axis;", ordinal = 2))
     private static IRotate changeIRotateAxisTo(final IRotate instance, final BlockState state, @Local(argsOnly = true, ordinal = 1) final KineticBlockEntity toBe) {
         return simulated$getNewIRotate(instance, toBe);
     }

@@ -18,15 +18,17 @@ import org.spongepowered.asm.mixin.injection.At;
 
 @Mixin(DisplayLinkScreen.class)
 public class DisplayLinkScreenMixin {
-    @Shadow private DisplayLinkBlockEntity blockEntity;
+    @Shadow(remap = false) private DisplayLinkBlockEntity blockEntity;
 
-    @Shadow private Label targetLineLabel;
+    @Shadow(remap = false) Label targetLineLabel;
 
-    @WrapOperation(method = "initGathererOptions", at = @At(value = "INVOKE", target = "Lcom/simibubi/create/api/behaviour/display/DisplayTarget;getLineOptionText(I)Lnet/minecraft/network/chat/Component;"))
-    private Component simulated$displayConditionalError(final DisplayTarget instance, final int line, final Operation<Component> original, @Local(name = "level") final ClientLevel level) {
+    // Component (a Minecraft class) is in the target descriptor, so this keeps remapping on
+    @WrapOperation(method = "initGathererOptions", at = @At(value = "INVOKE", target = "Lcom/zurrtum/create/api/behaviour/display/DisplayTarget;getLineOptionText(I)Lnet/minecraft/network/chat/Component;"))
+    private Component simulated$displayConditionalError(final DisplayTarget instance, final int line, final Operation<Component> original, @Local final ClientLevel level) {
         final DisplayLinkContext context = new DisplayLinkContext(level, this.blockEntity);
         if (instance instanceof final ConditionalDisplayTarget cdt && !cdt.allowsWriting(context)) {
-            this.targetLineLabel.colored(ChatFormatting.GRAY.getColor());
+            // 1.21.11 text colours need an alpha channel
+            this.targetLineLabel.colored(0xFF000000 | ChatFormatting.GRAY.getColor());
             return cdt.getErrorMessage(context);
         }
         return original.call(instance, line);
