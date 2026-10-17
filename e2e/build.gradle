@@ -1,7 +1,7 @@
 // Dev-only end-to-end harness: boots a server/client with the ported mods, applies every mixin
 // (audit), spawns physics sub-levels, and takes screenshots. Never shipped.
 dependencies {
-    runtimeOnly project(path: ':sable', configuration: 'namedElements')
+    implementation project(path: ':sable', configuration: 'namedElements')
     modRuntimeOnly "fuzs.forgeconfigapiport:forgeconfigapiport-fabric:${forgeconfigapiport_version}"
 }
 
@@ -9,6 +9,8 @@ dependencies {
 def e2eCommands = [
         'time set noon', 'gamerule advance_time false', 'gamerule spawn_mobs false',
         'tp @a 0 -60 0 0 15',
+        // a dedicated server has no player keeping the chunks loaded, and sub-levels unload with their chunk
+        'forceload add -16 0 15 31',
         'execute positioned 0 -59 12 run sable spawn jenga 12',
         'execute positioned 5 -40 14 run sable spawn sphere 3 minecraft:stone',
         'execute positioned -5 -45 14 run sable spawn platform 4 minecraft:oak_planks',
