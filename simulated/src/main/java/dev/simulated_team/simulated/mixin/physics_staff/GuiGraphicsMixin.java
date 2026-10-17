@@ -2,66 +2,47 @@ package dev.simulated_team.simulated.mixin.physics_staff;
 
 import com.llamalad7.mixinextras.injector.wrapmethod.WrapMethod;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
-import com.mojang.blaze3d.platform.Window;
-import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.vertex.PoseStack;
 import dev.simulated_team.simulated.index.SimItems;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
-import org.joml.Matrix4fc;
-import org.joml.Vector3f;
-import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 
+/**
+ * Clips the physics staff to its slot when drawn in GUIs.
+ * <p>
+ * GUI items are deferred render states on 1.21.11, which capture the GUI scissor area when they are submitted, so the
+ * slot is pushed onto the GUI scissor stack instead of enabling a GL scissor.
+ */
 @Mixin(GuiGraphics.class)
 public abstract class GuiGraphicsMixin {
 
-    @Shadow public abstract int guiWidth();
+    @Shadow
+    public abstract void enableScissor(int minX, int minY, int maxX, int maxY);
 
-    @Shadow @Final private Minecraft minecraft;
+    @Shadow
+    public abstract void disableScissor();
 
-    @Shadow @Final private PoseStack pose;
-
-    @Shadow public abstract void fill(int minX, int minY, int maxX, int maxY, int color);
-
-    @WrapMethod(method = "renderItem(Lnet/minecraft/world/entity/LivingEntity;Lnet/minecraft/world/level/Level;Lnet/minecraft/world/item/ItemStack;IIII)V")
+    @WrapMethod(method = "renderItem(Lnet/minecraft/world/entity/LivingEntity;Lnet/minecraft/world/level/Level;Lnet/minecraft/world/item/ItemStack;III)V")
     private void simulated$renderPhysicsStaff(final LivingEntity entity,
                                               final Level level,
                                               final ItemStack stack,
                                               final int x,
                                               final int y,
                                               final int seed,
-                                              final int guiOffset,
                                               final Operation<Void> original) {
         final boolean isStaff = stack.is(SimItems.PHYSICS_STAFF);
 
-
         if (isStaff) {
-            final Window window = Minecraft.getInstance().getWindow();
-            final float scale = (float) window.getGuiScale();
-
-            final Matrix4fc pose = this.pose.last().pose();
-            final Vector3f position = pose.transformPosition(new Vector3f(x, y, 0));
-            final Vector3f corner = pose.transformPosition(new Vector3f(x + 16, y + 16, 0));
-
-            position.mul(scale);
-            corner.mul(scale);
-
-            final int slotHeight = (int) (corner.y - position.y);
-            RenderSystem.enableScissor((int) position.x,
-                    window.getHeight() - (int) position.y - slotHeight,
-                    (int) (corner.x - position.x),
-                    slotHeight);
+            this.enableScissor(x, y, x + 16, y + 16);
         }
 
-        original.call(entity, level, stack, x, y, seed, guiOffset);
+        original.call(entity, level, stack, x, y, seed);
 
         if (isStaff) {
-            RenderSystem.disableScissor();
+            this.disableScissor();
         }
     }
 

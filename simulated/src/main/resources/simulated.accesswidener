@@ -11,18 +11,19 @@ accessible field net/minecraft/world/level/entity/PersistentEntitySectionManager
 # (also META-INF/accesstransformer.cfg upstream) SimAssemblyHelper
 accessible field net/minecraft/world/entity/Entity levelCallback Lnet/minecraft/world/level/entity/EntityInLevelCallback;
 
-# Contraption Diagram
+# SimAssemblyHelper (hanging entities moved by assembly); DiagramEntity overrides it
 accessible method net/minecraft/world/entity/decoration/HangingEntity recalculateBoundingBox ()V
 
 # Rope
 accessible field net/minecraft/server/network/ServerGamePacketListenerImpl aboveGroundTickCount I
 accessible field net/minecraft/server/network/ServerGamePacketListenerImpl aboveGroundVehicleTickCount I
 
-# Physics Staff
-# (was META-INF/accesstransformer.cfg) PhysicsStaffClientHandler
-accessible field net/minecraft/client/Camera eyeHeight F
-accessible field net/minecraft/client/Camera eyeHeightOld F
-
 # items-misc
 # plunger launcher item renderer: hand projection FOV
 accessible method net/minecraft/client/renderer/GameRenderer getFov (Lnet/minecraft/client/Camera;FZ)F
+
+# entities-render
+accessible method net/minecraft/client/renderer/GameRenderer getFov (Lnet/minecraft/client/Camera;FZ)F
+accessible field net/minecraft/client/Camera eyeHeight F
+accessible field net/minecraft/client/Camera eyeHeightOld F
+extendable method net/minecraft/world/entity/Entity moveOrInterpolateTo (Lnet/minecraft/world/phys/Vec3;FF)V
