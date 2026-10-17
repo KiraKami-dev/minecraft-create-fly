@@ -1,7 +1,9 @@
 package dev.simulated_team.simulated.multiloader.tanks;
 
 import com.mojang.datafixers.util.Pair;
+import com.mojang.serialization.Codec;
 import com.mojang.serialization.DataResult;
+import com.mojang.serialization.codecs.RecordCodecBuilder;
 import dev.simulated_team.simulated.Simulated;
 import net.minecraft.core.component.DataComponentPatch;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -22,6 +24,14 @@ public record CFluidType(Fluid fluid, DataComponentPatch data) {
 
     public static final CFluidType BLANK = new CFluidType(Fluids.EMPTY, DataComponentPatch.EMPTY);
 
+    /**
+     * Same layout as {@link #write()}.
+     */
+    public static final Codec<CFluidType> CODEC = RecordCodecBuilder.create(instance -> instance.group(
+            BuiltInRegistries.FLUID.byNameCodec().fieldOf("Fluid").forGetter(CFluidType::fluid),
+            DataComponentPatch.CODEC.optionalFieldOf("data", DataComponentPatch.EMPTY).forGetter(CFluidType::data)
+    ).apply(instance, CFluidType::new));
+
     public CompoundTag write() {
         final CompoundTag tag = new CompoundTag();
         tag.putString("Fluid", BuiltInRegistries.FLUID.getKey(this.fluid).toString());
@@ -37,10 +47,12 @@ public record CFluidType(Fluid fluid, DataComponentPatch data) {
     }
 
     public static CFluidType read(final CompoundTag tag) {
-        final Fluid fluid = BuiltInRegistries.FLUID.get(Identifier.parse(tag.getString("Fluid")));
+        final Identifier fluidId = Identifier.tryParse(tag.getStringOr("Fluid", ""));
+        final Fluid fluid = fluidId != null ? BuiltInRegistries.FLUID.getValue(fluidId) : Fluids.EMPTY;
         DataComponentPatch data = DataComponentPatch.EMPTY;
-        if (tag.contains("data")) {
-            final DataResult<Pair<DataComponentPatch, Tag>> result = DataComponentPatch.CODEC.decode(NbtOps.INSTANCE, tag.getCompound("data"));
+        final Tag dataTag = tag.get("data");
+        if (dataTag != null) {
+            final DataResult<Pair<DataComponentPatch, Tag>> result = DataComponentPatch.CODEC.decode(NbtOps.INSTANCE, dataTag);
             if (result.isError()) {
                 Simulated.LOGGER.warn(result.error().get().message());
             } else {

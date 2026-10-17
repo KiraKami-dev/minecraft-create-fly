@@ -37,7 +37,7 @@ public record BlockFrictionItemAttribute(double friction) implements ItemAttribu
 
 	@Override
 	public ItemAttributeType getType() {
-		return SimItemAttributeTypes.BLOCK_FRICTION.get();
+		return SimItemAttributeTypes.BLOCK_FRICTION;
 	}
 
 	@Override
@@ -73,7 +73,7 @@ public record BlockFrictionItemAttribute(double friction) implements ItemAttribu
 		}
 
 		@Override
-		public StreamCodec<? super RegistryFriendlyByteBuf, ? extends ItemAttribute> streamCodec() {
+		public StreamCodec<? super RegistryFriendlyByteBuf, ? extends ItemAttribute> packetCodec() {
 			return STREAM_CODEC;
 		}
 	}

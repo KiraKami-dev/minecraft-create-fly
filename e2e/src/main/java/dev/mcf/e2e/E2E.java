@@ -1,5 +1,7 @@
 package dev.mcf.e2e;
 
+import dev.mcf.e2e.gametest.E2ETestReporter;
+import dev.ryanhcode.sable.api.sublevel.SubLevelContainer;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
@@ -11,6 +13,7 @@ import org.spongepowered.asm.mixin.MixinEnvironment;
 /**
  * Applies every mixin up front (so broken injections fail loudly at start-up instead of
  * silently later), then runs the configured commands and, on a dedicated server, shuts down.
+ * On the GameTest server (e2e.gametest) it only installs the test reporter; the tests run by themselves.
  * Log lines are prefixed "E2E:" so tools/e2e.sh can grep them.
  */
 public final class E2E implements ModInitializer {
@@ -23,7 +26,9 @@ public final class E2E implements ModInitializer {
 
     @Override
     public void onInitialize() {
-        if (!Boolean.getBoolean("e2e.enabled")) {
+        final boolean scene = Boolean.getBoolean("e2e.enabled");
+        final boolean gameTests = Boolean.getBoolean("e2e.gametest");
+        if (!scene && !gameTests) {
             return;
         }
 
@@ -35,6 +40,11 @@ public final class E2E implements ModInitializer {
                 LOG.error("E2E: mixin audit FAILED", t);
             }
         });
+
+        if (gameTests) {
+            E2ETestReporter.install(System.getProperty("e2e.gametest.report"));
+            return;
+        }
 
         ServerTickEvents.END_SERVER_TICK.register(this::tick);
     }
@@ -55,7 +65,9 @@ public final class E2E implements ModInitializer {
 
         final int since = this.ticks - this.commandTick;
         if (since % 100 == 0) {
-            LOG.info("E2E: {} ticks after spawn, server alive", since);
+            // sub-levels in chunks that aren't ticking are unloaded into holding chunks (ROADMAP S8a)
+            final SubLevelContainer container = SubLevelContainer.getContainer(server.overworld());
+            LOG.info("E2E: {} ticks after spawn, server alive, {} sub-levels loaded", since, container == null ? 0 : container.getLoadedCount());
         }
         if (server.isDedicatedServer() && this.ticks >= DEDICATED_STOP_TICK) {
             LOG.info("E2E: done, stopping server");

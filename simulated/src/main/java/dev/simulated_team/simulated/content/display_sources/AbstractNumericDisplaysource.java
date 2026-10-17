@@ -2,22 +2,15 @@ package dev.simulated_team.simulated.content.display_sources;
 
 import com.zurrtum.create.content.redstone.displayLink.DisplayLinkContext;
 import com.zurrtum.create.content.redstone.displayLink.source.NumericSingleLineDisplaySource;
-import com.zurrtum.create.client.foundation.gui.ModularGuiLineBuilder;
 import net.minecraft.network.chat.Component;
 
 import java.util.List;
 
+/**
+ * The configuration widgets (selection scroll input built from {@link #getOptions()}, {@link #getWidth()} and
+ * {@link #getSelectionKey()}) are client-side, see {@link SimDisplaySourceRenders}.
+ */
 public abstract class AbstractNumericDisplaysource extends NumericSingleLineDisplaySource {
-
-    @Override
-    public void initConfigurationWidgets(final DisplayLinkContext context, final ModularGuiLineBuilder builder, final boolean isFirstLine) {
-        super.initConfigurationWidgets(context, builder, isFirstLine);
-        if (isFirstLine) {
-            return;
-        }
-
-        builder.addSelectionScrollInput(0, this.getWidth(), ((selectionScrollInput, label) -> selectionScrollInput.forOptions(this.getOptions())), this.getSelectionKey());
-    }
 
     public int getWidth() {
         return 100;
@@ -33,7 +26,7 @@ public abstract class AbstractNumericDisplaysource extends NumericSingleLineDisp
     }
 
     @Override
-    protected boolean allowsLabeling(final DisplayLinkContext displayLinkContext) {
+    public boolean allowsLabeling(final DisplayLinkContext displayLinkContext) {
         return true;
     }
 }

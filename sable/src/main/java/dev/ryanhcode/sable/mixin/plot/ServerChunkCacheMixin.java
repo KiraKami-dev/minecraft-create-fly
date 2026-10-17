@@ -43,6 +43,10 @@ public class ServerChunkCacheMixin {
     @Final
     private Set<ChunkHolder> chunkHoldersToBroadcast;
 
+    @Shadow
+    @Final
+    Thread mainThread;
+
     @Unique
     private EmptyLevelChunk sable$emptyChunk;
 
@@ -61,6 +65,25 @@ public class ServerChunkCacheMixin {
             throw new IllegalStateException("Plot container not found in level");
         }
         return container;
+    }
+
+    /**
+     * Plot chunks bypass vanilla's 4-entry chunk lookup cache. A plot freed and re-allocated within one tick would
+     * otherwise be served the removed plot's chunk from the cache, losing the new sub-level's blocks.
+     * Off-thread calls are left to vanilla, which re-dispatches them to the main thread (and back here).
+     */
+    @Inject(method = "getChunk(IILnet/minecraft/world/level/chunk/status/ChunkStatus;Z)Lnet/minecraft/world/level/chunk/ChunkAccess;", at = @At("HEAD"), cancellable = true)
+    private void getChunk(final int x, final int z, final ChunkStatus chunkStatus, final boolean load, final CallbackInfoReturnable<ChunkAccess> cir) {
+        if (Thread.currentThread() != this.mainThread) {
+            return;
+        }
+
+        final SubLevelContainer container = this.sable$getPlotContainer();
+        if (container.inBounds(x, z)) {
+            final LevelChunk chunk = container.getChunk(new ChunkPos(x, z));
+
+            cir.setReturnValue(chunk != null ? chunk : this.sable$emptyChunk);
+        }
     }
 
     @Inject(method = "getChunkNow", at = @At("HEAD"), cancellable = true)

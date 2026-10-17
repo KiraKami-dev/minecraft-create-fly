@@ -30,7 +30,6 @@ import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.VoxelShape;
 import org.jetbrains.annotations.Nullable;
-import org.joml.Vector3f;
 
 public class ThrottleLeverBlock extends FaceAttachedHorizontalDirectionalBlock implements IBE<ThrottleLeverBlockEntity>, IWrenchable, CommonRedstoneBlock {
     public static MapCodec<ThrottleLeverBlock> CODEC = simpleCodec(ThrottleLeverBlock::new);
@@ -51,7 +50,7 @@ public class ThrottleLeverBlock extends FaceAttachedHorizontalDirectionalBlock i
                 (double) pos.getY() + 0.5D + 0.1D * (double) direction.getStepY() + 0.2D * (double) direction1.getStepY();
         final double d2 =
                 (double) pos.getZ() + 0.5D + 0.1D * (double) direction.getStepZ() + 0.2D * (double) direction1.getStepZ();
-        level.addParticle(new DustParticleOptions(new Vector3f(1.0F, 0.0F, 0.0F), alpha), d0, d1, d2, 0.0D, 0.0D,
+        level.addParticle(new DustParticleOptions(0xFF0000, alpha), d0, d1, d2, 0.0D, 0.0D,
                 0.0D);
     }
 
@@ -130,18 +129,9 @@ public class ThrottleLeverBlock extends FaceAttachedHorizontalDirectionalBlock i
         });
     }
 
-    @Override
-    public void onRemove(final BlockState state, final Level level, final BlockPos pos, final BlockState newState, final boolean isMoving) {
-        if (isMoving || state.getBlock() == newState.getBlock())
-            return;
-        this.withBlockEntityDo(level, pos, be -> {
-            if (be.state != 0)
-                updateNeighbors(state, level, pos);
-            level.removeBlockEntity(pos);
-        });
-    }
+    // upstream onRemove (neighbour update when removed while emitting) is ThrottleLeverBlockEntity#preRemoveSideEffects:
+    // on 1.21.11 the block entity is already gone when affectNeighborsAfterRemoval runs
 
-    @SuppressWarnings("deprecation")
     @Override
     public VoxelShape getShape(final BlockState state, final BlockGetter level, final BlockPos pos, final CollisionContext context) {
         if (state.getValue(FACE) != AttachFace.WALL && state.getValue(FACING).getAxis() == Direction.Axis.X)

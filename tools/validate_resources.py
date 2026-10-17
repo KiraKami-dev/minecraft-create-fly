@@ -48,7 +48,8 @@ for rel, d in jsons.items():
     kind, ns = parts[4], parts[5]
     sub = '/'.join(parts[6:])
     if kind == 'assets' and sub.startswith('models/'):
-        if 'loader' in d: errors.append(f'{rel}: custom loader {d["loader"]}')
+        # neoforge:obj is supported on Fabric by Create Fly's OBJ loader (client BlockModelMixin)
+        if 'loader' in d and d['loader'] != 'neoforge:obj': errors.append(f'{rel}: custom loader {d["loader"]}')
         if 'parent' in d and not d['parent'].startswith('builtin/'): check_asset(d['parent'], 'models', '.json', rel)
         for t, v in d.get('textures', {}).items():
             if isinstance(v, str) and not v.startswith('#'): check_asset(v, 'textures', '.png', rel)

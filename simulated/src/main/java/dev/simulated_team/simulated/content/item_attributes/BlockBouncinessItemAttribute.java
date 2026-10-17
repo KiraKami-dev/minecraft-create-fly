@@ -37,7 +37,7 @@ public record BlockBouncinessItemAttribute(double bounciness) implements ItemAtt
 
 	@Override
 	public ItemAttributeType getType() {
-		return SimItemAttributeTypes.BLOCK_BOUNCINESS.get();
+		return SimItemAttributeTypes.BLOCK_BOUNCINESS;
 	}
 
 	@Override
@@ -73,7 +73,7 @@ public record BlockBouncinessItemAttribute(double bounciness) implements ItemAtt
 		}
 
 		@Override
-		public StreamCodec<? super RegistryFriendlyByteBuf, ? extends ItemAttribute> streamCodec() {
+		public StreamCodec<? super RegistryFriendlyByteBuf, ? extends ItemAttribute> packetCodec() {
 			return STREAM_CODEC;
 		}
 	}

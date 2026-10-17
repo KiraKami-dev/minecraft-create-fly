@@ -1,7 +1,5 @@
 package dev.simulated_team.simulated.content.blocks.rope;
 
-import com.mojang.datafixers.util.Pair;
-import com.mojang.serialization.DataResult;
 import com.zurrtum.create.AllBlocks;
 import com.zurrtum.create.foundation.blockEntity.SmartBlockEntity;
 import com.zurrtum.create.foundation.blockEntity.behaviour.BehaviourType;
@@ -28,12 +26,9 @@ import dev.simulated_team.simulated.service.SimConfigService;
 import dev.ryanhcode.sable.veillite.api.network.VeilPacketManager;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.HolderLookup;
+import net.minecraft.core.UUIDUtil;
 import net.minecraft.core.particles.BlockParticleOption;
 import net.minecraft.core.particles.ParticleTypes;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.NbtOps;
-import net.minecraft.nbt.Tag;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
@@ -45,6 +40,8 @@ import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.gamerules.GameRules;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
 import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
@@ -54,7 +51,7 @@ import org.joml.Vector3dc;
 
 import java.util.*;
 
-public class RopeStrandHolderBehavior extends BlockEntityBehaviour {
+public class RopeStrandHolderBehavior extends BlockEntityBehaviour<SmartBlockEntity> {
     public static final BehaviourType<RopeStrandHolderBehavior> TYPE = new BehaviourType<>("rope_strand_holder");
 
     @Nullable
@@ -196,7 +193,7 @@ public class RopeStrandHolderBehavior extends BlockEntityBehaviour {
         final RopeAttachment endAttachment = strand.getAttachment(RopeAttachmentPoint.END);
 
         // todo: no nice way to grab a potentially causing player to check for infinite materials :p
-        final boolean tileDrops = level.getGameRules().getBoolean(GameRules.RULE_DOBLOCKDROPS);
+        final boolean tileDrops = level.getGameRules().get(GameRules.BLOCK_DROPS);
 
         if (endAttachment == null) {
             this.destroyRope(null, this.getAttachmentPoint(), tileDrops);
@@ -256,7 +253,7 @@ public class RopeStrandHolderBehavior extends BlockEntityBehaviour {
             return false;
         }
 
-        this.destroyRope(null, null, dropItem && level.getGameRules().getBoolean(GameRules.RULE_DOBLOCKDROPS));
+        this.destroyRope(null, null, dropItem && level.getGameRules().get(GameRules.BLOCK_DROPS));
 
         final double distance = ropeTarget.distanceTo(ropeStart);
         final int oneLongSegments = Mth.floor(distance);
@@ -292,7 +289,8 @@ public class RopeStrandHolderBehavior extends BlockEntityBehaviour {
         return true;
     }
 
-    private @Nullable Level getLevel() {
+    @Override
+    public @Nullable Level getLevel() {
         return this.blockEntity.getLevel();
     }
 
@@ -429,41 +427,32 @@ public class RopeStrandHolderBehavior extends BlockEntityBehaviour {
     }
 
     @Override
-    public void write(final CompoundTag nbt, final HolderLookup.Provider registries, final boolean clientPacket) {
-        super.write(nbt, registries, clientPacket);
-        nbt.putBoolean("OwnStrand", this.strandOwner);
+    public void write(final ValueOutput view, final boolean clientPacket) {
+        super.write(view, clientPacket);
+        view.putBoolean("OwnStrand", this.strandOwner);
 
         if (this.attachedRopeID != null) {
-            nbt.putUUID("HasRopeAttached", this.attachedRopeID);
+            view.store("HasRopeAttached", UUIDUtil.CODEC, this.attachedRopeID);
         }
 
         final ServerRopeStrand strand = this.getOwnedStrand();
         if (strand != null && this.strandOwner && !clientPacket) {
-            nbt.put("Strand", ServerRopeStrand.CODEC.encodeStart(NbtOps.INSTANCE, strand).getOrThrow());
+            view.store("Strand", ServerRopeStrand.CODEC, strand);
         }
     }
 
     @Override
-    public void read(final CompoundTag nbt, final HolderLookup.Provider registries, final boolean clientPacket) {
-        super.read(nbt, registries, clientPacket);
-        this.strandOwner = nbt.getBoolean("OwnStrand");
-
-        if (nbt.contains("HasRopeAttached")) {
-            this.attachedRopeID = nbt.getUUID("HasRopeAttached");
-        } else {
-            this.attachedRopeID = null;
-        }
+    public void read(final ValueInput view, final boolean clientPacket) {
+        super.read(view, clientPacket);
+        this.strandOwner = view.getBooleanOr("OwnStrand", false);
+        this.attachedRopeID = view.read("HasRopeAttached", UUIDUtil.CODEC).orElse(null);
 
         if (clientPacket) {
             if (!this.strandOwner)
                 this.removeClientStrand();
         } else {
-            if (nbt.contains("Strand")) {
-                final CompoundTag strandNBT = nbt.getCompound("Strand");
-
-                if (this.ownedServerStrand == null) {
-                    this.loadServerStrand(strandNBT);
-                }
+            if (this.ownedServerStrand == null) {
+                view.read("Strand", ServerRopeStrand.CODEC).ifPresent(this::loadServerStrand);
             }
         }
     }
@@ -551,10 +540,7 @@ public class RopeStrandHolderBehavior extends BlockEntityBehaviour {
     /**
      * Loads a strand into the level.
      */
-    private void loadServerStrand(final CompoundTag tag) {
-        final DataResult<Pair<ServerRopeStrand, Tag>> result = ServerRopeStrand.CODEC.decode(NbtOps.INSTANCE, tag);
-        final ServerRopeStrand strand = result.getOrThrow().getFirst();
-
+    private void loadServerStrand(final ServerRopeStrand strand) {
         this.ownedServerStrand = strand;
         this.queuedLevelAddition = true;
     }
@@ -571,7 +557,8 @@ public class RopeStrandHolderBehavior extends BlockEntityBehaviour {
             this.removeClientStrand();
         }
 
-        final boolean tileDrops = level.getGameRules().getBoolean(GameRules.RULE_DOBLOCKDROPS);
+        // game rules only exist on the server in 1.21.11 (client-side, no server strand is ever destroyed here)
+        final boolean tileDrops = level instanceof final ServerLevel serverLevel && serverLevel.getGameRules().get(GameRules.BLOCK_DROPS);
 
         if (!this.strandOwner && attachedStrand != null) {
             final RopeAttachment startAttachment = attachedStrand.getAttachment(RopeAttachmentPoint.START);

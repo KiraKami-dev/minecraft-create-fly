@@ -3,9 +3,8 @@ package dev.simulated_team.simulated.content.display_sources;
 import com.zurrtum.create.content.redstone.displayLink.DisplayLinkContext;
 import com.zurrtum.create.content.redstone.displayLink.source.NumericSingleLineDisplaySource;
 import com.zurrtum.create.content.redstone.displayLink.target.DisplayTargetStats;
-import com.zurrtum.create.client.foundation.gui.ModularGuiLineBuilder;
 import dev.simulated_team.simulated.content.blocks.lasers.optical_sensor.OpticalSensorBlockEntity;
-import dev.simulated_team.simulated.data.SimLang;
+import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 
 public class OpticalSensorDisplaySource extends NumericSingleLineDisplaySource {
@@ -16,37 +15,25 @@ public class OpticalSensorDisplaySource extends NumericSingleLineDisplaySource {
             return ZERO.copy();
         }
 
-        switch (context.sourceConfig().getInt("OpticalSensorSelection")) {
+        switch (context.sourceConfig().getIntOr("OpticalSensorSelection", 0)) {
             case 0 -> {
-                return be.hasHit() ? be.getHitBlock().getName() : SimLang.text("No Block Detected").component();
+                return be.hasHit() ? be.getHitBlock().getName() : Component.literal("No Block Detected");
             }
             case 1 -> {
                 if (!be.hasHit()) {
-                    return SimLang.text("No Block Detected").component();
+                    return Component.literal("No Block Detected");
                 }
                 final float rayDistance = be.getRayDistance();
-                return SimLang.number(rayDistance)
-                        .space()
-                        .text("block" + (rayDistance != 1 ? "s" : ""))
-                        .component();
+                return DisplaySourceLang.number(rayDistance)
+                        .append(" ")
+                        .append("block" + (rayDistance != 1 ? "s" : ""));
             }
         }
 
         return ZERO.copy();
     }
 
-    @Override
-    public void initConfigurationWidgets(final DisplayLinkContext context, final ModularGuiLineBuilder builder, final boolean isFirstLine) {
-        super.initConfigurationWidgets(context, builder, isFirstLine);
-        if (isFirstLine) {
-            return;
-        }
-
-        builder.addSelectionScrollInput(0, 85, (selectionScrollInput, label) -> {
-            selectionScrollInput
-                    .forOptions(SimLang.translatedOptions("display_source.optical_sensor", "detected_block", "block_distance"));
-        }, "OpticalSensorSelection");
-    }
+    // configuration widgets: SimDisplaySourceRenders (client)
 
     @Override
     protected String getTranslationKey() {
@@ -54,7 +41,7 @@ public class OpticalSensorDisplaySource extends NumericSingleLineDisplaySource {
     }
 
     @Override
-    protected boolean allowsLabeling(final DisplayLinkContext context) {
+    public boolean allowsLabeling(final DisplayLinkContext context) {
         return true;
     }
 }

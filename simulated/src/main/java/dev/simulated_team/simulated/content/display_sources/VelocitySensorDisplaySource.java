@@ -3,7 +3,6 @@ package dev.simulated_team.simulated.content.display_sources;
 import com.zurrtum.create.content.redstone.displayLink.DisplayLinkContext;
 import com.zurrtum.create.content.redstone.displayLink.target.DisplayTargetStats;
 import dev.simulated_team.simulated.content.blocks.velocity_sensor.VelocitySensorBlockEntity;
-import dev.simulated_team.simulated.data.SimLang;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 
@@ -13,7 +12,7 @@ public class VelocitySensorDisplaySource extends AbstractNumericDisplaysource {
 
     @Override
     List<Component> getOptions() {
-        return SimLang.translatedOptions("display_source.velocity_sensor", "speed");
+        return DisplaySourceLang.translatedOptions("display_source.velocity_sensor", "speed");
     }
 
     @Override
@@ -37,8 +36,8 @@ public class VelocitySensorDisplaySource extends AbstractNumericDisplaysource {
             return ZERO.copy();
         }
 
-        if (displayLinkContext.sourceConfig().getInt(this.getSelectionKey()) == 0) {
-            return SimLang.number(Math.abs(vbe.getAdjustedVelocity())).text(" m/s").component();
+        if (displayLinkContext.sourceConfig().getIntOr(this.getSelectionKey(), 0) == 0) {
+            return DisplaySourceLang.number(Math.abs(vbe.getAdjustedVelocity())).append(" m/s");
         }
 
         return ZERO.copy();
