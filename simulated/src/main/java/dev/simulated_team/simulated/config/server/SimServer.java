@@ -5,9 +5,30 @@ import dev.simulated_team.simulated.config.server.blocks.SimBlockConfigs;
 import dev.simulated_team.simulated.config.server.blocks.SimKinetics;
 import dev.simulated_team.simulated.config.server.items.SimEquipment;
 import dev.simulated_team.simulated.config.server.physics.SimPhysics;
+import com.zurrtum.create.catnip.config.Builder;
 import com.zurrtum.create.catnip.config.ConfigBase;
 
 public class SimServer extends ConfigBase {
+    private Builder builder;
+
+    @Override
+    public void registerAll(final Builder builder) {
+        super.registerAll(builder);
+        this.builder = builder;
+    }
+
+    /**
+     * Re-reads the config file (upstream: NeoForge's config reload event; Create Fly's {@code CServer#reload}).
+     */
+    public void reload() {
+        if (this.builder == null) {
+            return;
+        }
+        this.builder.read();
+        this.depth = 0;
+        super.registerAll(this.builder);
+    }
+
     public final SimKinetics kinetics = this.nested(0, SimKinetics::new, Comments.kinetics);
     public final SimAssembly assembly = this.nested(0, SimAssembly::new, Comments.assembly);
     public final SimPhysics physics = this.nested(0, SimPhysics::new, Comments.physics);

@@ -7,6 +7,9 @@ import dev.simulated_team.simulated.Simulated;
 import dev.simulated_team.simulated.config.client.SimClient;
 import dev.simulated_team.simulated.config.server.SimServer;
 import dev.simulated_team.simulated.service.SimConfigService;
+import net.fabricmc.fabric.api.resource.v1.ResourceLoader;
+import net.minecraft.server.packs.PackType;
+import net.minecraft.server.packs.resources.ResourceManagerReloadListener;
 
 /**
  * Fabric configs. The config classes extend Create Fly's catnip {@code ConfigBase}, which is backed by Create Fly's own
@@ -50,6 +53,9 @@ public class FabricSimConfigService implements SimConfigService {
         final CStress stress = server.kinetics.stressValues;
         BlockStressValues.IMPACTS.registerProvider(stress::getImpact);
         BlockStressValues.CAPACITIES.registerProvider(stress::getCapacity);
+
+        // re-read the file on /reload and world load, like Create Fly's AllConfigs.LISTENER
+        ResourceLoader.get(PackType.SERVER_DATA).registerReloader(Simulated.path("config"), (ResourceManagerReloadListener) manager -> server.reload());
     }
 
     public static void registerClient() {
