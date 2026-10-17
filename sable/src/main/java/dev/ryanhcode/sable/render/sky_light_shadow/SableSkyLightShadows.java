@@ -1,5 +1,6 @@
 package dev.ryanhcode.sable.render.sky_light_shadow;
 
+import dev.ryanhcode.sable.veillite.api.compat.SodiumCompat;
 import com.mojang.blaze3d.buffers.GpuBuffer;
 import com.mojang.blaze3d.buffers.GpuBufferSlice;
 import com.mojang.blaze3d.buffers.Std140Builder;
@@ -112,7 +113,8 @@ public class SableSkyLightShadows {
     public static void renderShadowMap() {
         active = false;
 
-        if (!isEnabled) {
+        // Sodium draws the world terrain with its own shaders, which have no shadowed variant
+        if (!isEnabled || SodiumCompat.isLoaded()) {
             return;
         }
 
