@@ -26,7 +26,7 @@ import java.util.List;
  * <p>
  * On 1.21.1 the screen rendered the block and the plates straight into the GUI with depth testing. 1.21.11 GUIs are
  * 2D, so the three models are rendered together into one picture-in-picture texture (keeping their mutual occlusion).
- * Registered through {@code SimBlocksRedstoneClient#registerClient}.
+ * Registered through {@code SimRedstoneBlocksClient#registerClient}.
  */
 public class ModulatingLinkedReceiverGuiRenderer extends PictureInPictureRenderer<ModulatingLinkedReceiverGuiRenderer.State> {
 
