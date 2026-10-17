@@ -1,16 +1,11 @@
 package dev.simulated_team.simulated.registrate.simulated_tab;
 
-import com.mojang.blaze3d.platform.Window;
-import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.vertex.PoseStack;
 import dev.simulated_team.simulated.client.sections.SimulatedSection;
 import dev.simulated_team.simulated.index.SimResourceManagers;
 import dev.simulated_team.simulated.mixin.accessor.CreativeModeInventoryScreenAccessor;
 import dev.simulated_team.simulated.mixin_interface.SpriteContentsExtension;
 import dev.simulated_team.simulated.mixin_interface.TickerExtension;
 import dev.simulated_team.simulated.registrate.SimulatedRegistrate;
-import dev.ryanhcode.sable.veillite.api.client.color.Color;
-import dev.ryanhcode.sable.veillite.api.client.color.Colorc;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.ints.IntList;
 import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
@@ -19,16 +14,15 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.inventory.CreativeModeInventoryScreen;
-import net.minecraft.client.renderer.texture.SpriteContents;
+import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
+import net.minecraft.data.AtlasIds;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
-import org.joml.Matrix4f;
-import org.joml.Vector3f;
+import org.joml.Matrix3x2fStack;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -44,14 +38,12 @@ public class SimulatedCreativeTab {
 	private static final IntList SECTION_ITEM_COUNTS = new IntArrayList();
 
 	public static void renderBanners(final CreativeModeInventoryScreen screen, final GuiGraphics graphics, int mouseX, int mouseY) {
-		final PoseStack ps = graphics.pose();
-		ps.pushPose();
+		final Matrix3x2fStack ps = graphics.pose();
+		ps.pushMatrix();
 
-		RenderSystem.enableDepthTest();
-		RenderSystem.setShaderColor(1, 1, 1, 1);
 		int left = ((CreativeModeInventoryScreenAccessor) screen).getLeftPos() + 8;
 		int top = ((CreativeModeInventoryScreenAccessor) screen).getTopPos() + 17;
-		ps.translate(left, top, 0);
+		ps.translate(left, top);
 
 		final List<SimulatedSection> sections = SimResourceManagers.SIMULATED_SECTION.sortedEntries();
 
@@ -78,53 +70,47 @@ public class SimulatedCreativeTab {
 				setPlaying(bannerTexture, isHovering);
 			}
 
-			graphics.blitSprite(bannerTexture, x, y, w, h);
+			graphics.blitSprite(RenderPipelines.GUI_TEXTURED, bannerTexture, x, y, w, h);
 
 			Component text = section.title().text();
 			int textWidth = font.width(text);
 
-			Colorc background = section.title().background();
-			graphics.fill(x + 2, y + 2, x + textWidth + 8, y + h - 2, background.argb());
+			final int background = section.title().background().getRGB();
+			graphics.fill(x + 2, y + 2, x + textWidth + 8, y + h - 2, background);
 
-			Colorc light = section.title().color();
-			Colorc dark = section.title().secondaryColor()
-					.orElse(light.darken(0.2f, new Color()));
-			drawAuraText(graphics, text, dark.argb(), light.argb(), x + 5, y + 5);
+			final int light = section.title().color().getRGB();
+			final int dark = section.title().secondaryColor()
+					.map(color -> color.getRGB())
+					.orElse(darken(light, 0.2f));
+			drawAuraText(graphics, text, dark, light, x + 5, y + 5);
 		}
-		ps.popPose();
-		RenderSystem.disableDepthTest();
+		ps.popMatrix();
 	}
 
+	/**
+	 * Draws the text in {@code color1} with a shadow, then redraws its upper part in {@code color2}.
+	 * (1.21.11: GUI scissors are given in GUI coordinates and follow the current pose.)
+	 */
 	public static void drawAuraText(GuiGraphics graphics, Component text, int color1, int color2, int x, int y) {
 		Font font = Minecraft.getInstance().font;
-		Window window = Minecraft.getInstance().getWindow();
-		float scale = (float) window.getGuiScale();
 
 		graphics.drawString(font, text, x, y, color1, true);
 
-		PoseStack ps = graphics.pose();
-		ps.pushPose();
-		ps.translate(0, 0, 1);
-		Matrix4f pose = ps.last().copy().pose();
-		Vector3f position = pose.transformPosition(new Vector3f(x, y, 0));
-		Vector3f corner = pose.transformPosition(new Vector3f(x + font.width(text), y + font.lineHeight / 1.8f, 0));
-
-		position.mul(scale);
-		corner.mul(scale);
-		int height = (int) (corner.y - position.y);
-		int width = (int) (corner.x - position.x);
-		RenderSystem.enableScissor(
-				(int) position.x,
-				window.getHeight() - (int) position.y - height,
-				width,
-				height
-		);
-
+		graphics.enableScissor(x, y, x + font.width(text), y + (int) (font.lineHeight / 1.8f));
 		graphics.drawString(font, text, x, y, color2, false);
+		graphics.disableScissor();
+	}
 
-		RenderSystem.disableScissor();
-
-		ps.popPose();
+	/**
+	 * Veil's {@code Colorc#darken}: scales the RGB channels by {@code 1 - percentage}, keeps alpha.
+	 */
+	private static int darken(final int argb, final float percentage) {
+		final float scale = 1.0f - percentage;
+		final int a = argb >>> 24;
+		final int r = (int) (((argb >> 16) & 0xFF) * scale);
+		final int g = (int) (((argb >> 8) & 0xFF) * scale);
+		final int b = (int) ((argb & 0xFF) * scale);
+		return (a << 24) | (r << 16) | (g << 8) | b;
 	}
 
 	public static void processItems(final Consumer<ItemStack> displayItems, final Consumer<ItemStack> searchItems) {
@@ -210,9 +196,13 @@ public class SimulatedCreativeTab {
 		}
 	}
 
+	/**
+	 * Starts/stops the animation of a GUI sprite (banners that only animate while hovered). The pause itself is done
+	 * by the {@code creative_tab_sections} sprite mixins.
+	 */
 	public static void setPlaying(Identifier identifier, boolean playing) {
-		TextureAtlasSprite sprite = Minecraft.getInstance().getGuiSprites().getSprite(identifier);
-		SpriteContents.Ticker ticker = ((SpriteContentsExtension) sprite.contents()).simulated$getTicker();
+		TextureAtlasSprite sprite = Minecraft.getInstance().getAtlasManager().getAtlasOrThrow(AtlasIds.GUI).getSprite(identifier);
+		final Object ticker = ((SpriteContentsExtension) sprite.contents()).simulated$getTicker();
 		if (ticker instanceof TickerExtension extension) {
 			extension.simulated$setPlaying(playing);
 		}
