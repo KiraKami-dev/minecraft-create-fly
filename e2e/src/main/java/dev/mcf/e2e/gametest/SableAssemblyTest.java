@@ -396,14 +396,13 @@ public final class SableAssemblyTest {
     }
 
     /**
-     * Known Sable bug (upstream too), optional until fixed: when a sub-level is removed and another one is created in
-     * the same tick, the new one reuses the freed plot, but vanilla's 4-entry chunk lookup cache in
-     * {@code ServerChunkCache.getChunk} still holds the removed plot's chunk object (Sable's {@code ServerChunkCacheMixin}
-     * only redirects cache misses and never clears it). Until the cache is cleared at the next level tick,
-     * {@code level.getBlockState/setBlock/getBlockEntity} in the new plot use the dead chunk: the new sub-level's blocks
-     * are written into it and vanish.
+     * Regression test for a Sable bug (upstream too): when a sub-level is removed and another one is created in the
+     * same tick, the new one reuses the freed plot. Vanilla's 4-entry chunk lookup cache in
+     * {@code ServerChunkCache.getChunk} still held the removed plot's chunk object, so
+     * {@code level.getBlockState/setBlock/getBlockEntity} in the new plot used the dead chunk and the new sub-level's
+     * blocks vanished. Fixed by letting plot chunks bypass that cache ({@code ServerChunkCacheMixin.getChunk}).
      */
-    @GameTest(structure = "sable:assemblytest.allblocks", maxTicks = 20, required = false)
+    @GameTest(structure = "sable:assemblytest.allblocks", maxTicks = 20)
     public void plotReuseInOneTick(final GameTestHelper helper) {
         final ServerLevel level = helper.getLevel();
         final ServerSubLevelContainer container = container(helper);
