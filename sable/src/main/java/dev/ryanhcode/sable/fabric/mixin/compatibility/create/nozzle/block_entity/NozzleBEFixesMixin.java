@@ -27,17 +27,17 @@ public abstract class NozzleBEFixesMixin extends SmartBlockEntity {
 		super(type, pos, state);
 	}
 
-	@Redirect(remap = false, method = "tick", at = @At(value = "INVOKE", target = "Lcom/zurrtum/create/catnip/math/VecHelper;getCenterOf(Lnet/minecraft/core/Vec3i;)Lnet/minecraft/world/phys/Vec3;"))
+	@Redirect(remap = false, method = "tick", at = @At(value = "INVOKE", target = "Lcom/zurrtum/create/catnip/math/VecHelper;getCenterOf(Lnet/minecraft/core/Vec3i;)Lnet/minecraft/world/phys/Vec3;", remap = true))
 	public Vec3 sable$nozzlePosition(final Vec3i pos) {
 		return JOMLConversion.toMojang(Sable.HELPER.projectOutOfSubLevel(this.getLevel(), JOMLConversion.atCenterOf(pos)));
 	}
 
-	@Redirect(remap = false, method = "lazyTick", at = @At(value = "INVOKE", target = "Lcom/zurrtum/create/catnip/math/VecHelper;getCenterOf(Lnet/minecraft/core/Vec3i;)Lnet/minecraft/world/phys/Vec3;"))
+	@Redirect(remap = false, method = "lazyTick", at = @At(value = "INVOKE", target = "Lcom/zurrtum/create/catnip/math/VecHelper;getCenterOf(Lnet/minecraft/core/Vec3i;)Lnet/minecraft/world/phys/Vec3;", remap = true))
 	public Vec3 sable$nozzlePositionLazy(final Vec3i pos) {
 		return JOMLConversion.toMojang(Sable.HELPER.projectOutOfSubLevel(this.getLevel(), JOMLConversion.atCenterOf(pos)));
 	}
 
-	@Redirect(method = "canSee", at = @At(value = "INVOKE", target = "Lcom/zurrtum/create/catnip/math/VecHelper;getCenterOf(Lnet/minecraft/core/Vec3i;)Lnet/minecraft/world/phys/Vec3;"), remap = false)
+	@Redirect(method = "canSee", at = @At(value = "INVOKE", target = "Lcom/zurrtum/create/catnip/math/VecHelper;getCenterOf(Lnet/minecraft/core/Vec3i;)Lnet/minecraft/world/phys/Vec3;", remap = true), remap = false)
 	private Vec3 sable$projectCenter(final Vec3i pos) {
 		return JOMLConversion.toMojang(Sable.HELPER.projectOutOfSubLevel(this.getLevel(), JOMLConversion.atCenterOf(pos)));
 	}

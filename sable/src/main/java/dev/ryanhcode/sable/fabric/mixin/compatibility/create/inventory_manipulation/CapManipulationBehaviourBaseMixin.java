@@ -46,7 +46,7 @@ public class CapManipulationBehaviourBaseMixin {
         });
     }
 
-    @WrapOperation(method = "findNewCapability", at = @At(value = "INVOKE", target = "Lcom/zurrtum/create/foundation/blockEntity/behaviour/inventory/CapManipulationBehaviourBase;getCapability(Lnet/minecraft/world/level/Level;Lnet/minecraft/core/BlockPos;Lnet/minecraft/world/level/block/entity/BlockEntity;Lnet/minecraft/core/Direction;)Ljava/lang/Object;"), remap = false)
+    @WrapOperation(method = "findNewCapability", at = @At(value = "INVOKE", target = "Lcom/zurrtum/create/foundation/blockEntity/behaviour/inventory/CapManipulationBehaviourBase;getCapability(Lnet/minecraft/world/level/Level;Lnet/minecraft/core/BlockPos;Lnet/minecraft/world/level/block/entity/BlockEntity;Lnet/minecraft/core/Direction;)Ljava/lang/Object;", remap = true), remap = false)
     public Object sable$redirectPos(final CapManipulationBehaviourBase<?, ?> instance, final Level level, final BlockPos pos, final BlockEntity blockEntity, final Direction side, final Operation<Object> original) {
         return original.call(instance, level, this.sable$caughtPos != null ? this.sable$caughtPos : pos, blockEntity, side);
     }

@@ -27,7 +27,7 @@ public class BasinBlockEntityMixin extends BlockEntity {
         super(arg, arg2, arg3);
     }
 
-    @Inject(method = "getHeatLevel", at = @At(value = "INVOKE", target = "Lcom/zurrtum/create/content/processing/basin/BasinBlockEntity;getHeatLevelOf(Lnet/minecraft/world/level/block/state/BlockState;)Lcom/zurrtum/create/content/processing/burner/BlazeBurnerBlock$HeatLevel;", shift = At.Shift.AFTER), cancellable = true, remap = false)
+    @Inject(method = "getHeatLevel", at = @At(value = "INVOKE", target = "Lcom/zurrtum/create/content/processing/basin/BasinBlockEntity;getHeatLevelOf(Lnet/minecraft/world/level/block/state/BlockState;)Lcom/zurrtum/create/content/processing/burner/BlazeBurnerBlock$HeatLevel;", shift = At.Shift.AFTER, remap = true), cancellable = true, remap = false)
     private void sable$accountForSubLevels(final CallbackInfoReturnable<BlazeBurnerBlock.HeatLevel> cir) {
         if (this.cachedHeatLevel != null && this.cachedHeatLevel != BlazeBurnerBlock.HeatLevel.NONE) {
             return;

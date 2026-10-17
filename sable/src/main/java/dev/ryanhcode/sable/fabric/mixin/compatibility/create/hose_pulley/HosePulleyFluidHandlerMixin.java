@@ -62,7 +62,7 @@ public abstract class HosePulleyFluidHandlerMixin {
 		});
 	}
 
-	@WrapOperation(method = "getStack", at = @At(value = "INVOKE", target = "Lcom/zurrtum/create/content/fluids/transfer/FluidDrainingBehaviour;getDrainableFluid(Lnet/minecraft/core/BlockPos;)Lcom/zurrtum/create/infrastructure/fluids/FluidStack;"), remap = false)
+	@WrapOperation(method = "getStack", at = @At(value = "INVOKE", target = "Lcom/zurrtum/create/content/fluids/transfer/FluidDrainingBehaviour;getDrainableFluid(Lnet/minecraft/core/BlockPos;)Lcom/zurrtum/create/infrastructure/fluids/FluidStack;", remap = true), remap = false)
 	public FluidStack sable$modifyGetDrainableFluid(final FluidDrainingBehaviour instance, final BlockPos rootPos, final Operation<FluidStack> original) {
 		if (this.sable$lastValidPos != null) {
 			return original.call(instance, this.sable$lastValidPos);
@@ -71,7 +71,7 @@ public abstract class HosePulleyFluidHandlerMixin {
 		return original.call(instance, rootPos);
 	}
 
-	@WrapOperation(method = "getStack", at = @At(value = "INVOKE", target = "Lcom/zurrtum/create/content/fluids/transfer/FluidDrainingBehaviour;pullNext(Lnet/minecraft/core/BlockPos;Z)Z"), remap = false)
+	@WrapOperation(method = "getStack", at = @At(value = "INVOKE", target = "Lcom/zurrtum/create/content/fluids/transfer/FluidDrainingBehaviour;pullNext(Lnet/minecraft/core/BlockPos;Z)Z", remap = true), remap = false)
 	public boolean sable$modifyPullNext(final FluidDrainingBehaviour instance, final BlockPos root, final boolean simulate, final Operation<Boolean> original) {
 		if (this.sable$lastValidPos != null) {
 			return original.call(instance, this.sable$lastValidPos, simulate);

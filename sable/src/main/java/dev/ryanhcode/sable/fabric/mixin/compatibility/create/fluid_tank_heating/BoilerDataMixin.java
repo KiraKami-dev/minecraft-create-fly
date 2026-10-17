@@ -35,7 +35,7 @@ public class BoilerDataMixin {
         }
     }
 
-    @WrapOperation(method = "updateTemperature", at = @At(value = "INVOKE", target = "Lcom/zurrtum/create/api/boiler/BoilerHeater;findHeat(Lnet/minecraft/world/level/Level;Lnet/minecraft/core/BlockPos;Lnet/minecraft/world/level/block/state/BlockState;)F"), remap = false)
+    @WrapOperation(method = "updateTemperature", at = @At(value = "INVOKE", target = "Lcom/zurrtum/create/api/boiler/BoilerHeater;findHeat(Lnet/minecraft/world/level/Level;Lnet/minecraft/core/BlockPos;Lnet/minecraft/world/level/block/state/BlockState;)F", remap = true), remap = false)
     public float sable$subLevelHeating(final Level level, final BlockPos pos, final BlockState state, final Operation<Float> original) {
         final float originalHeat = original.call(level, pos, state);
         if (originalHeat != BoilerHeater.NO_HEAT) {
