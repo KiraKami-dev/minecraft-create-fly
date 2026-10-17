@@ -2,10 +2,12 @@
 
 Packages: `aeronautics/.../content/blocks/propeller/**` (propeller + gyroscopic propeller bearings, their contraption
 entity, small andesite/wooden/smart propellers, `PropellerActorBehaviour`, sounds) and
-`aeronautics/.../content/blocks/mounted_potato_cannon/**`.
+`aeronautics/.../content/blocks/mounted_potato_cannon/**`, plus `content/display_sources/GasDisplaySource` and the
+propeller contraption lines of `index/AeroEntityRenders`.
 Started from the propeller/potato-cannon part of the aero-content WIP commit `9b3b41e` (render-state renderers, client
-split), then finished the potato cannon and the client registration. 0 compile errors in these packages
-(checked with `-XDshould-stop.ifError=FLOW`). Thrust/airflow/physics code is unchanged from upstream.
+split; the same code p2-port got through `89ead44`), then finished the potato cannon, the client registration and the
+gas display source. After merging p2-port (`e945711`) the whole `:aeronautics:compileJava` builds (0 errors).
+Thrust/airflow/physics code is unchanged from upstream.
 
 ## Client registration (orchestrator: call from the client entrypoint, after the default kinetic behaviours)
 - `dev.eriksonn.aeronautics.content.blocks.propeller.PropellerClient#registerClient()`: thrust-direction value box
@@ -17,6 +19,8 @@ split), then finished the potato cannon and the client registration. 0 compile e
 - The tooltip behaviours replace the default `KineticTooltipBehaviour` (same `TooltipBehaviour.TYPE`, last one wins),
   so call both after `AeroBlockEntityBehaviours.register()` (which gives every one of these types the default
   `KineticAudioBehaviour` + `KineticTooltipBehaviour`).
+- `dev.eriksonn.aeronautics.content.display_sources.GasDisplaySourceRender#registerClient()`: attaches the gas display
+  source's configuration widgets (`AeroDisplaySources.GAS_DISPLAY.attachRender`).
 
 ## Renderers / visuals (registration: aero-core)
 All renderer ctors are `(BlockEntityRendererProvider.Context)`; BE ctors stay `(BlockEntityType, BlockPos, BlockState)`.
@@ -30,12 +34,9 @@ All renderer ctors are `(BlockEntityRendererProvider.Context)`; BE ctors stay `(
 | `MOUNTED_POTATO_CANNON` | `MountedPotatoCannonRenderer` | `MountedPotatoCannonVisual::new` | **keep** (`normal`): barrel, bellows and the loaded item are only drawn by the BER |
 | entity `PROPELLER_CONTROLLED_CONTRAPTION` | `PropellerBearingContraptionEntityRenderer::new` (`EntityRendererProvider.Context`) | `PropellerBearingContraptionVisual::new` | upstream used Create's `ContraptionEntityRenderer`/`ContraptionVisual`; these subclasses carry the tilt + spin transform |
 
-`AeroBlockEntityRenders` (aero-core, merged) matches the table. **`AeroEntityRenders` still registers Create Fly's
-`ControlledContraptionEntityRenderer::new` / `ControlledContraptionVisual::new`** for `PROPELLER_CONTROLLED_CONTRAPTION`:
-those drop the gyroscopic bearing's tilt (`tiltQuat` about the bearing face) and the renderer also ignores the
-disassembly-slowdown angle (it lerps `entity.angle` instead of the overridden `getAngle`). Swap the two factories for
-`PropellerBearingContraptionEntityRenderer::new` / `PropellerBearingContraptionVisual::new`
-(`dev.eriksonn.aeronautics.content.blocks.propeller.bearing.contraption`), keeping `skipVanillaRender(entity -> false)`.
+`AeroBlockEntityRenders` (aero-core) matches the table. `AeroEntityRenders` now registers the propeller pair for
+`PROPELLER_CONTROLLED_CONTRAPTION` (aero-core had Create Fly's `ControlledContraptionEntityRenderer`/`Visual`, which drop
+the gyroscopic bearing's tilt, and whose renderer lerps `entity.angle` instead of the slowdown-aware `getAngle`).
 
 ## API mappings (1.21.1 / Create -> 1.21.11 / Create Fly)
 - `AbstractContraptionEntity#applyLocalTransforms(PoseStack, float)` (client) is gone: Create Fly puts the transform in
@@ -76,9 +77,16 @@ disassembly-slowdown angle (it lerps `entity.angle` instead of the overridden `g
 - `PropellerAirParticle.frictionScale/lifeTime` are compile-time constants, so the common `PropellerActorBehaviour`
   never loads the client particle class.
 
+- Display sources: `DisplaySource#initConfigurationWidgets(context, builder, isFirstLine)` -> client
+  `SingleLineDisplaySourceRender#initConfigurationWidgets(source, context, builder, isFirstLine)` attached through the
+  public `DisplaySource.attachRender` field (as `SimDisplaySourceRenders`); `allowsLabeling` is `public`;
+  `context.sourceConfig().getInt(k)` -> `getIntOr(k, 0)`; catnip `LangNumberFormat` is client-only, so
+  `GasDisplaySource` formats with its own root-locale `NumberFormat` (max 2 fraction digits, grouping, like Simulated's
+  `DisplaySourceLang`); `AeroLang.text(s).component()` -> `Component.literal(s)`.
+
 ## Expectations on other areas
-- aero-core: only the `AeroEntityRenders` factory swap above is missing (BE types, renders, default behaviours and the
-  cannon's `SimInventoryService` registration are wired); `AeroLang`, `AeroSoundDistUtil.tickPropellerSounds(PropellerBearingBlockEntity, Object)`,
+- aero-core: BE types, renders, default behaviours and the cannon's `SimInventoryService` registration are wired;
+  `AeroLang`, `AeroSoundDistUtil.tickPropellerSounds(PropellerBearingBlockEntity, Object)`,
   `AeroConfig.server().physics.*`, `AeroAdvancements.*.awardToNearby(pos, level)`, `AeroBlockShapes.*`,
   `AeroPartialModels.*` used with their upstream signatures.
 - aero-render: `BearingContraptionExtension#aeronautics$setPropeller` (mixin on `BearingContraption`) and
