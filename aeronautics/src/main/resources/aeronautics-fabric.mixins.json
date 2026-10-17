@@ -1,0 +1,16 @@
+{
+  "required": true,
+  "package": "dev.eriksonn.aeronautics.fabric.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "minVersion": "0.8",
+  "mixins": [
+    "levitite_blend.EntityMixin",
+    "levitite_blend.LivingEntityMixin"
+  ],
+  "client": [
+    "client.BlockRenderDispatcherMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

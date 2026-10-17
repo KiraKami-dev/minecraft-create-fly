@@ -1,27 +1,18 @@
 package dev.eriksonn.aeronautics.index;
 
-import com.zurrtum.create.AllBlocks;
-import com.zurrtum.create.foundation.data.TagGen;
-import com.tterrag.registrate.providers.ProviderType;
-import com.tterrag.registrate.providers.RegistrateItemTagsProvider;
-import com.tterrag.registrate.providers.RegistrateTagsProvider;
 import dev.eriksonn.aeronautics.Aeronautics;
+import dev.simulated_team.simulated.index.SimTags;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.Identifier;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.item.Item;
-import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.Block;
-import net.minecraft.world.level.block.Blocks;
-import net.neoforged.neoforge.common.Tags;
+import net.minecraft.world.level.material.Fluid;
 
-import static net.minecraft.tags.BlockTags.DAMPENS_VIBRATIONS;
-
+/**
+ * Tag keys. The tag contents are shipped as JSON under {@code data/} (upstream generated them from here).
+ */
 public class AeroTags {
-	public static void addGenerators() {
-		Aeronautics.getRegistrate().addDataGenerator(ProviderType.BLOCK_TAGS, BlockTags::genBlockTags);
-		Aeronautics.getRegistrate().addDataGenerator(ProviderType.ITEM_TAGS, ItemTags::genItemTags);
-	}
 
 	public static class BlockTags {
 		public static final TagKey<Block> AIRTIGHT = create("airtight");
@@ -32,45 +23,19 @@ public class AeroTags {
 		public static final TagKey<Block> LEVITITE_SOUL_CATALYZER = create("levitite_soul_catalyzer"); // blocks that start soul crystallization
 		public static final TagKey<Block> LEVITITE_ADJACENT_CATALYZER = create("levitite_adjacent_catalyzer"); // blocks that cause soul crystallization to become regular crystallization
 		public static final TagKey<Block> LEVITITE_ADJACENT_SOUL_CATALYZER = create("levitite_adjacent_soul_catalyzer"); // blocks that cause regular crystallization to become soul crystallization
+
 		private static TagKey<Block> create(final String path) {
 			return TagKey.create(Registries.BLOCK, Aeronautics.path(path));
-		}
-
-		private static void genBlockTags(final RegistrateTagsProvider<Block> provIn) {
-			final TagGen.CreateTagsProvider<Block> prov = new TagGen.CreateTagsProvider<>(provIn, Block::builtInRegistryHolder);
-
-			prov.tag(AIRTIGHT)
-					.addTag(ENVELOPE);
-			// me when i HATE method chaining grrr
-			prov.tag(AIRTIGHT)
-					.addTag(net.minecraft.tags.BlockTags.WOOL);
-
-			prov.tag(DAMPENS_VIBRATIONS)
-							.addTag(ENVELOPE);
-
-			prov.tag(LEVITITE_BREAKABLE)
-					.add(Blocks.CLAY,Blocks.MUD,Blocks.PACKED_MUD,Blocks.COARSE_DIRT);
-
-			prov.tag(LEVITITE_CATALYZER)
-					.add(Blocks.CAMPFIRE, Blocks.MAGMA_BLOCK, Blocks.TORCH, Blocks.WALL_TORCH, AllBlocks.LIT_BLAZE_BURNER, Blocks.FIRE);
-			prov.tag(LEVITITE_ADJACENT_CATALYZER)
-					.add(Blocks.NETHERRACK)
-					.addTag(Tags.Blocks.STORAGE_BLOCKS_COAL);
-
-			prov.tag(LEVITITE_SOUL_CATALYZER)
-					.add(Blocks.SOUL_CAMPFIRE, Blocks.SOUL_TORCH, Blocks.SOUL_WALL_TORCH, Blocks.SOUL_FIRE);
-			prov.tag(LEVITITE_ADJACENT_SOUL_CATALYZER)
-					.addTag(net.minecraft.tags.BlockTags.SOUL_FIRE_BASE_BLOCKS);
 		}
 	}
 
 	public static class ItemTags {
-		public static final TagKey<Item> LEATHERS = AllTags.commonItemTag("leathers");
-		public static final TagKey<Item> ARMORS = AllTags.commonItemTag("armors");
+		public static final TagKey<Item> LEATHERS = SimTags.commonItemTag("leathers");
+		public static final TagKey<Item> ARMORS = SimTags.commonItemTag("armors");
 		public static final TagKey<Item> HEAD_ARMOR = TagKey.create(Registries.ITEM, Identifier.withDefaultNamespace("head_armor"));
-		public static final TagKey<Item> IRON_SHEET = AllTags.commonItemTag("plates/iron");
-		public static final TagKey<Item> GOLD_SHEET = AllTags.commonItemTag("plates/gold");
-		public static final TagKey<Item> MUSIC_DISCS = AllTags.commonItemTag("music_discs");
+		public static final TagKey<Item> IRON_SHEET = SimTags.commonItemTag("plates/iron");
+		public static final TagKey<Item> GOLD_SHEET = SimTags.commonItemTag("plates/gold");
+		public static final TagKey<Item> MUSIC_DISCS = SimTags.commonItemTag("music_discs");
 
 		public static final TagKey<Item> ENVELOPE = create("envelope");
 		public static final TagKey<Item> SHAFTLESS_ENVELOPE = create("shaftless_envelope");
@@ -84,16 +49,13 @@ public class AeroTags {
 		private static TagKey<Item> create(final String path) {
 			return TagKey.create(Registries.ITEM, Aeronautics.path(path));
 		}
+	}
 
-		public static void genItemTags(final RegistrateItemTagsProvider provIn) {
-			final TagGen.CreateTagsProvider<Item> prov = new TagGen.CreateTagsProvider<>(provIn, Item::builtInRegistryHolder);
-
-			prov.tag(LEVITITE_CATALYZER).add(Items.FLINT_AND_STEEL, Items.FIRE_CHARGE, Items.TORCH, Items.CAMPFIRE);
-			prov.tag(LEVITITE_SOUL_CATALYZER).add(Items.SOUL_TORCH, Items.SOUL_CAMPFIRE);
-			prov.tag(LEVITITE_CATALYZER_NO_CONSUME).add(Items.TORCH, Items.CAMPFIRE, Items.SOUL_TORCH, Items.SOUL_CAMPFIRE);
-
-			prov.tag(BURNER_FIRE)
-					.add(Items.COAL_BLOCK);
-		}
+	public static class FluidTags {
+		/**
+		 * Levitite Blend (still + flowing). Fabric replacement for the NeoForge fluid type: entities track their
+		 * immersion in it through {@code Entity#updateFluidHeightAndDoFluidPushing(tag, ...)}.
+		 */
+		public static final TagKey<Fluid> LEVITITE_BLEND = TagKey.create(Registries.FLUID, Aeronautics.path("levitite_blend"));
 	}
 }
