@@ -21,6 +21,7 @@ import dev.eriksonn.aeronautics.content.blocks.hot_air.BlockEntityLiftingGasProv
 import dev.eriksonn.aeronautics.content.blocks.hot_air.balloon.Balloon;
 import dev.eriksonn.aeronautics.content.blocks.hot_air.balloon.ClientBalloon;
 import dev.eriksonn.aeronautics.content.blocks.hot_air.balloon.map.BalloonMap;
+import dev.ryanhcode.sable.veillite.api.event.VeilRenderLevelStageEvent;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.renderer.DynamicUniformStorage;
@@ -88,6 +89,18 @@ public class ClientBalloonEffectRenderer {
     @Nullable
     private static DynamicUniformStorage<HotAirUniform> uniforms;
     private static final Matrix4f modelView = new Matrix4f();
+
+    /**
+     * @deprecated veillite never fires {@code VeilRenderLevelStageEvent}: the effect is drawn from
+     * {@code mixin/levitite/VanillaSubLevelRenderDispatcherMixin} ({@link #render}). Kept so the upstream event
+     * registration in {@code AeronauticsClient} still compiles; it can be removed there.
+     */
+    @Deprecated
+    public static void onRenderLevelStage(final VeilRenderLevelStageEvent.Stage stage,
+                                          final Matrix4fc frustumMatrix,
+                                          final Matrix4fc projectionMatrix,
+                                          final int renderTick) {
+    }
 
     /**
      * Stores the world model view matrix (camera rotation) for this frame.

@@ -5,7 +5,9 @@ import com.mojang.blaze3d.pipeline.RenderPipeline;
 import com.mojang.blaze3d.platform.DepthTestFunction;
 import com.mojang.blaze3d.shaders.UniformType;
 import dev.eriksonn.aeronautics.Aeronautics;
+import dev.eriksonn.aeronautics.content.blocks.levitite.LevititeShaderManager;
 import dev.ryanhcode.sable.sublevel.render.SubLevelRenderPipelines;
+import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import net.minecraft.client.renderer.RenderPipelines;
 
 /**
@@ -49,5 +51,14 @@ public class AeroRenderTypes {
             .build();
 
     private AeroRenderTypes() {
+    }
+
+    /**
+     * Client hook (called from {@code AeronauticsClient}). The levitite layers need no chunk layer or buffer registration
+     * on 1.21.11 (they are drawn by {@code mixin/levitite/VanillaSubLevelRenderDispatcherMixin}); this only drops the
+     * per sub-level motion trackers when leaving a world.
+     */
+    public static void registerClient() {
+        ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> LevititeShaderManager.managers.clear());
     }
 }

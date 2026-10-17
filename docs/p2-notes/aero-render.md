@@ -6,11 +6,13 @@ Also touched (outside the list, single consumer): `index/AeroPonderScenes` (pond
 `mixinterface/BoilerDataExtension`, new `content/blocks/levitite/render/LevititeRenderer`. 0 compile errors in these files;
 `:aeronautics:validateAccessWidener` passes. Not run in game yet (module does not compile as a whole).
 
-## Client hooks to wire / remove (aero-core, `AeronauticsClient`)
-- Remove `onVeilRenderLevelStage(... ClientBalloonEffectRenderer.onRenderLevelStage ...)`: the balloon effect is drawn from
-  `mixin/levitite/VanillaSubLevelRenderDispatcherMixin` (after the opaque section group = upstream `AFTER_SOLID_BLOCKS`).
-- Remove `onVeilRegisterBlockLayers` / `onVeilRegisterFixedBuffers` (`AeroRenderTypes.levitite()/levititeGhosts()` are gone:
-  there are no custom chunk layers on 1.21.11). Keep `LevititeShaderManager.tick()` in the client tick.
+## Client hooks (`AeronauticsClient`)
+- Call `dev.eriksonn.aeronautics.index.client.AeroRenderTypes#registerClient()` (only clears the levitite motion trackers on
+  disconnect: the levitite + ghost layers need no chunk layer/buffer registration, they are drawn by
+  `mixin/levitite/VanillaSubLevelRenderDispatcherMixin`). Keep `LevititeShaderManager.tick()` in the client tick.
+- `ClientBalloonEffectRenderer.onRenderLevelStage(...)` is a deprecated no-op (veillite never fires the stage event); the
+  balloon effect is drawn from the same mixin after the opaque section group (= upstream `AFTER_SOLID_BLOCKS`). The
+  `onVeilRenderLevelStage` registration can be dropped.
 - `AeroMixinPlugin`: the `render.vanilla/sodium/iris` packages are empty now (see below); the gating can stay.
 
 ## Levitite rendering (Veil tessellation shader -> blaze3d)
@@ -68,7 +70,7 @@ Also touched (outside the list, single consumer): `index/AeroPonderScenes` (pond
 | custom_situational_music.MinecraftMixin (client) | `getSituationalMusic` `Optional#orElse` | **retargeted** (was GETSTATIC `Musics.GAME`) |
 | custom_situational_music.MusicManagerAccessor (client) | `nextSongDelay`, `currentMusic` | verified |
 | flywheel_block_entity.FlywheelBlockEntityMixin | Create Fly `read(ValueInput,Z)` HEAD | retargeted, remap=false |
-| item_converter.ItemEntityMixin | `ItemEntity#tick` TAIL | verified |
+| item_converter.ItemEntityMixin | `ItemEntity#tick` TAIL | verified; skips the cloud skipper disc itself (the tag's NeoForge `remove` list is ignored on Fabric) |
 | levitite.BlockMixin | `Block#shouldRenderFace(BlockState,BlockState,Direction)` HEAD | **rewritten** (see above) |
 | levitite.ItemEntityMixin | `getDefaultGravity` HEAD, `tick` `ItemEntity#move` | verified |
 | levitite.TerrainParticleMixin (client) | `<init>(ClientLevel,DDDDDD,BlockState,BlockPos)` TAIL + `tick` override | superclass -> `SingleQuadParticle` |
