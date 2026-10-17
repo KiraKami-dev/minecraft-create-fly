@@ -2,6 +2,7 @@ package dev.simulated_team.simulated.content.entities.honey_glue;
 
 import com.zurrtum.create.api.schematic.requirement.SpecialEntityItemRequirement;
 import com.zurrtum.create.content.schematics.requirement.ItemRequirement;
+import com.zurrtum.create.infrastructure.packet.s2c.NbtSpawnPacket;
 import dev.simulated_team.simulated.Simulated;
 import dev.simulated_team.simulated.data.SimLang;
 import dev.simulated_team.simulated.index.SimEntityTypes;
@@ -9,15 +10,18 @@ import dev.simulated_team.simulated.index.SimItems;
 import dev.simulated_team.simulated.network.packets.honey_glue.HoneyGlueSyncBoundsPacket;
 import dev.ryanhcode.sable.veillite.api.network.VeilPacketManager;
 import com.zurrtum.create.catnip.data.Iterate;
-import com.zurrtum.create.catnip.math.VecHelper;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.particles.ItemParticleOption;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.Tag;
+import net.minecraft.network.protocol.Packet;
+import net.minecraft.network.protocol.game.ClientGamePacketListener;
+import net.minecraft.network.protocol.game.ClientboundAddEntityPacket;
 import net.minecraft.network.syncher.SynchedEntityData;
+import net.minecraft.server.level.ServerEntity;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.util.ProblemReporter;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.damagesource.DamageSource;
@@ -28,6 +32,10 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.Rotation;
 import net.minecraft.world.level.material.PushReaction;
+import net.minecraft.world.level.storage.TagValueInput;
+import net.minecraft.world.level.storage.TagValueOutput;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.NotNull;
@@ -62,7 +70,6 @@ public class HoneyGlueEntity extends Entity implements SpecialEntityItemRequirem
     public void tick() {
         this.xRotO = this.getXRot();
         this.yRotO = this.getYRot();
-        this.walkDistO = this.walkDist;
         this.xo = this.getX();
         this.yo = this.getY();
         this.zo = this.getZ();
@@ -101,21 +108,21 @@ public class HoneyGlueEntity extends Entity implements SpecialEntityItemRequirem
             final Direction.AxisDirection positive = Direction.AxisDirection.POSITIVE;
             final double max = axis.choose(extents.x, extents.y, extents.z);
             final Vec3 normal = Vec3.atLowerCornerOf(Direction.fromAxisAndDirection(axis, positive)
-                    .getNormal());
+                    .getUnitVec3i());
             for (final Direction.Axis axis2 : Iterate.axes) {
                 if (axis2 == axis) {
                     continue;
                 }
                 final double max2 = axis2.choose(extents.x, extents.y, extents.z);
                 final Vec3 normal2 = Vec3.atLowerCornerOf(Direction.fromAxisAndDirection(axis2, positive)
-                        .getNormal());
+                        .getUnitVec3i());
                 for (final Direction.Axis axis3 : Iterate.axes) {
                     if (axis3 == axis2 || axis3 == axis) {
                         continue;
                     }
                     final double max3 = axis3.choose(extents.x, extents.y, extents.z);
                     final Vec3 normal3 = Vec3.atLowerCornerOf(Direction.fromAxisAndDirection(axis3, positive)
-                            .getNormal());
+                            .getUnitVec3i());
 
                     for (int i = 0; i <= max * 2; i++) {
                         for (final int o1 : Iterate.zeroAndOne) {
@@ -163,24 +170,23 @@ public class HoneyGlueEntity extends Entity implements SpecialEntityItemRequirem
     }
 
     @Override
-    public void addAdditionalSaveData(final CompoundTag compound) {
+    public void addAdditionalSaveData(final ValueOutput view) {
         final Vec3 position = this.position();
         final AABB savedBounds = this.getBoundingBox().move(position.scale(-1));
 
-        compound.put("From", VecHelper.writeNBT(new Vec3(savedBounds.minX, savedBounds.minY, savedBounds.minZ)));
-        compound.put("To", VecHelper.writeNBT(new Vec3(savedBounds.maxX, savedBounds.maxY, savedBounds.maxZ)));
+        view.store("From", Vec3.CODEC, new Vec3(savedBounds.minX, savedBounds.minY, savedBounds.minZ));
+        view.store("To", Vec3.CODEC, new Vec3(savedBounds.maxX, savedBounds.maxY, savedBounds.maxZ));
 
-        if (!compound.contains("Pos")) {
-            compound.put("Pos", VecHelper.writeNBT(position));
-        }
+        // Entity#saveWithoutId already wrote the same position when saving, but the spawn packet only carries this data
+        view.store("Pos", Vec3.CODEC, position);
     }
 
     @Override
-    public void readAdditionalSaveData(final @NotNull CompoundTag compound) {
-        final Vec3 pos = VecHelper.readNBT(compound.getList("Pos", Tag.TAG_DOUBLE)); // we need to grab this from the NBT due to schematics
+    public void readAdditionalSaveData(final @NotNull ValueInput view) {
+        final Vec3 pos = view.read("Pos", Vec3.CODEC).orElse(this.position()); // we need to grab this from the NBT due to schematics
 
-        final Vec3 from = VecHelper.readNBT(compound.getList("From", Tag.TAG_DOUBLE));
-        final Vec3 to = VecHelper.readNBT(compound.getList("To", Tag.TAG_DOUBLE));
+        final Vec3 from = view.read("From", Vec3.CODEC).orElse(Vec3.ZERO);
+        final Vec3 to = view.read("To", Vec3.CODEC).orElse(Vec3.ZERO);
         final AABB bb = new AABB(from, to).move(pos);
 
         final Level level = this.level();
@@ -189,6 +195,32 @@ public class HoneyGlueEntity extends Entity implements SpecialEntityItemRequirem
             this.setBounds(bb);
         } else {
             this.setBoundsAndSync(bb);
+        }
+    }
+
+    /**
+     * Sends the bounds with the spawn packet
+     */
+    @Override
+    public Packet<ClientGamePacketListener> getAddEntityPacket(final ServerEntity entityTrackerEntry) {
+        try (final ProblemReporter.ScopedCollector logging = new ProblemReporter.ScopedCollector(this.problemPath(), Simulated.LOGGER)) {
+            final TagValueOutput view = TagValueOutput.createWithContext(logging, this.registryAccess());
+            this.addAdditionalSaveData(view);
+            return new NbtSpawnPacket(this, entityTrackerEntry, view.buildResult());
+        }
+    }
+
+    @Override
+    public void recreateFromPacket(final ClientboundAddEntityPacket packet) {
+        super.recreateFromPacket(packet);
+
+        if (!(packet instanceof final NbtSpawnPacket spawnPacket) || spawnPacket.getNbt() == null) {
+            return;
+        }
+
+        final CompoundTag tag = spawnPacket.getNbt();
+        try (final ProblemReporter.ScopedCollector logging = new ProblemReporter.ScopedCollector(this.problemPath(), Simulated.LOGGER)) {
+            this.readAdditionalSaveData(TagValueInput.create(logging, this.registryAccess(), tag));
         }
     }
 
@@ -252,7 +284,7 @@ public class HoneyGlueEntity extends Entity implements SpecialEntityItemRequirem
     }
 
     @Override
-    public boolean hurt(final DamageSource source, final float amount) {
+    public boolean hurtServer(final ServerLevel level, final DamageSource source, final float amount) {
         return false;
     }
 
