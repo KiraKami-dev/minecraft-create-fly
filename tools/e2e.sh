@@ -17,6 +17,8 @@ ROOT=$(cd "$(dirname "$0")/.." && pwd); cd "$ROOT"
 MODE=${1:-all}
 GRADLEW=${GRADLEW:-./gradlew --console=plain}
 SRV=e2e/run/server; CLI=e2e/run/client; GT=e2e/run/gametest
+# vanilla's default flat world spelled out (an empty generator-settings makes the server log "No key layers")
+FLAT='{"layers":[{"block":"minecraft:bedrock","height":1},{"block":"minecraft:dirt","height":2},{"block":"minecraft:grass_block","height":1}],"biome":"minecraft:plains","structure_overrides":["minecraft:strongholds","minecraft:villages"]}'
 
 report() { # <log> <side>
   local log=$1
@@ -31,7 +33,7 @@ report() { # <log> <side>
 if [ "$MODE" = server ] || [ "$MODE" = all ]; then
   rm -rf "$SRV/world"; mkdir -p "$SRV"
   echo "eula=true" > "$SRV/eula.txt"
-  printf 'level-type=minecraft\\:flat\nonline-mode=false\nlevel-name=world\nspawn-protection=0\nmax-tick-time=-1\n' > "$SRV/server.properties"
+  printf 'level-type=minecraft\\:flat\ngenerator-settings=%s\nonline-mode=false\nlevel-name=world\nspawn-protection=0\nmax-tick-time=-1\n' "$FLAT" > "$SRV/server.properties"
   $GRADLEW :e2e:runServer > "$SRV/gradle.log" 2>&1 \
     || { echo "server run failed, see $SRV/gradle.log"; exit 1; }
   report "$SRV/logs/latest.log" server
@@ -81,7 +83,7 @@ if [ "$MODE" = client ] || [ "$MODE" = all ] || [ "$MODE" = play ]; then
     echo "creating clean template world (one-off server boot without spawning)..."
     rm -rf "$SRV/world"; mkdir -p "$SRV"
     echo "eula=true" > "$SRV/eula.txt"
-    printf 'level-type=minecraft\\:flat\nonline-mode=false\nlevel-name=world\nspawn-protection=0\nmax-tick-time=-1\n' > "$SRV/server.properties"
+    printf 'level-type=minecraft\\:flat\ngenerator-settings=%s\nonline-mode=false\nlevel-name=world\nspawn-protection=0\nmax-tick-time=-1\n' "$FLAT" > "$SRV/server.properties"
     $GRADLEW :e2e:runServer -Pe2ePrepare > "$SRV/gradle-template.log" 2>&1 \
       || { echo "template world creation failed, see $SRV/gradle-template.log"; exit 1; }
     cp -r "$SRV/world" "$TEMPLATE"
