@@ -12,6 +12,7 @@
   "mixins": [
     "harvesters.BlockBreakingKineticBlockEntityMixin",
     "harvesters.HarvesterBlockEntityMixin",
+    "harvesters.HarvesterTickerMixin",
     "harvesters.SawBlockEntityMixin"
   ],
   "injectors": {
