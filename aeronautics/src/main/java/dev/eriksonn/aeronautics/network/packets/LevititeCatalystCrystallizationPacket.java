@@ -33,7 +33,7 @@ public record LevititeCatalystCrystallizationPacket(BlockPos pos, InteractionHan
 
 	public void handle(final ServerPacketContext context) {
 		final ServerPlayer player = context.player();
-		final ServerLevel level = player.serverLevel();
+		final ServerLevel level = player.level();
 
 		final ItemStack item = player.getItemInHand(this.hand);
 
@@ -50,8 +50,8 @@ public record LevititeCatalystCrystallizationPacket(BlockPos pos, InteractionHan
 		}
 		player.swing(this.hand);
 		final CrystalPropagationContext itemContext = item.is(AeroTags.ItemTags.LEVITITE_SOUL_CATALYZER) ?
-				AeroLevititeBlendPropagationContexts.SOUL_CONTEXT.get() :
-				AeroLevititeBlendPropagationContexts.STANDARD_CONTEXT.get();
+				AeroLevititeBlendPropagationContexts.SOUL_CONTEXT :
+				AeroLevititeBlendPropagationContexts.STANDARD_CONTEXT;
 		LevititeBlendHelper.addLevititeBlendTicker(level, this.pos, false, false,
 				itemContext.getContextForSpread(level, this.pos)
 		);

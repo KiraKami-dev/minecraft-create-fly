@@ -1,19 +1,18 @@
 package dev.eriksonn.aeronautics.index;
 
 import com.zurrtum.create.catnip.registry.RegisteredObjectsHelper;
-import com.zurrtum.create.client.ponder.api.registration.PonderSceneRegistrationHelper;
 import dev.eriksonn.aeronautics.content.ponder.scenes.*;
-import dev.eriksonn.aeronautics.service.AeroLevititeService;
+import com.zurrtum.create.client.ponder.api.registration.PonderSceneRegistrationHelper;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.level.ItemLike;
 
 public class AeroPonderScenes {
 
     public static void register(final PonderSceneRegistrationHelper<Identifier> registry) {
-        // registry fields are the blocks/items themselves (no Registrate entries): key them by registry id
+        // registry fields are the blocks/items themselves now (no Registrate entries): key them by registry id
         final PonderSceneRegistrationHelper<ItemLike> helper = registry.withKeyFunction(RegisteredObjectsHelper::getKeyOrThrow);
 
-        helper.forComponents(AeroLevititeService.INSTANCE.getBucket())
+        helper.forComponents(AeroItems.LEVITITE_BLEND_BUCKET)
                 .addStoryBoard("levitite/blend", LevititeScenes::levititeBlend)
                 .addStoryBoard("levitite/levitite",(builder,util) -> LevititeScenes.levitite(builder,util,false));
         helper.forComponents(AeroBlocks.LEVITITE)
