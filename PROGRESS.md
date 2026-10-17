@@ -12,7 +12,7 @@ flowchart LR
 ```
 
 ## Now
-- Phase 1 finishing with 4 parallel agents (clones in `../mcf-agents/sable-*`, shared e2e lock): S10 automated playtest, S11 Sodium, S17 compat mixins running. Open after: S12a Flywheel lighting.
+- Phase 1 finishing with 4 parallel agents (clones in `../mcf-agents/sable-*`, shared e2e lock): S11 Sodium, S17 compat mixins running. Open after: S12a Flywheel lighting, S10 manual checks (walk/jump on moving sub-levels, multiplayer).
 
 ## Next
 - Phase 2: C1 (add `simulated`/`aeronautics` to the build) → C2 Registrate replacement.
@@ -23,6 +23,7 @@ flowchart LR
 - 2026-10-17: S8a fixed: the server e2e force-loads the spawn area and logs loaded/moved sub-level counts (38/38 through 600 ticks).
 - 2026-10-17: S14 fixed: Indigo path now re-shades rotated sub-levels (`getShade` neutral + up normal on shade-less quads); verified with a flipped platform, shading on vs off.
 - 2026-10-17: S12 merged: Create Fly Flywheel visuals on sub-levels follow the sub-level pose (`tools/e2e.sh client flywheel`); lighting is S12a.
+- 2026-10-17: S10 merged: `tools/e2e.sh playtest` checks assemble, fall/rest, stacking, standing on, carried by push/rotate/translate: 14/14 pass on integration.
 
 ## Blockers
 - None. Note: this shell's `JAVA_HOME` is JDK 17 and the build needs 21; `e2e.sh` picks 21 itself; for Gradle use `JAVA_HOME=$(/usr/libexec/java_home -v 21)`.
