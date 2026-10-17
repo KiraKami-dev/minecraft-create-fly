@@ -1,8 +1,8 @@
 # Create Aeronautics on Fabric 1.21.11: roadmap and progress
 
-_Last updated: 2026-10-17 (Phase 1 S8a/S10/S12/S14 merged; Phase 2: Simulated compiles and boots on a dedicated server with Create Fly; Sable ↔ Create
-integration ported; Aeronautics in progress). Keep this file current: update the status tables when you claim, finish
-or discover a task._
+_Last updated: 2026-10-17 (Phase 1 S8a/S10/S12/S14 merged; Phase 2 ported: Simulated + Aeronautics compile and run on
+server and client with Create Fly, automated playtest passes; a hands-on playtest is left). Keep this file current:
+update the status tables when you claim, finish or discover a task._
 
 ## Goal
 
@@ -70,6 +70,8 @@ and Simulated; Aeronautics joins once it compiles):
   (Sable assembly + physics tests ported from upstream), one PASS/FAIL line per test, non-zero exit if a required test
   fails, JUnit report in `e2e/run/gametest/gametest-report.xml`. `tools/e2e.sh gametest '<selector>' verify` reruns the
   selected tests 100× per rotation to catch flakiness.
+- **flight**: real game window: builds an airship in view (deck, physics assembler, propeller bearing, burner,
+  levitite), assembles it, lets it fly and takes screenshots `e2e/run/client/screenshots/flight-*.png`, then quits.
 - **client**: opens the game in a flat world, spawns sub-levels in front of the camera, and saves 5 screenshots to
   `e2e/run/client/screenshots/` over ~20 s, then quits. Look at them.
 
@@ -110,34 +112,39 @@ Legend: ✅ done · 🔄 in progress · ⬜ todo · ⏸ deferred/gated
 ### Phase 2: Simulated + Aeronautics on Create Fly
 
 Both mods are in the Gradle build (`:simulated`, `:aeronautics`; 765 Java files, 86 + 29 mixin classes), depending on
-`:sable` and Create Fly from Modrinth maven. Work happens on `p2-port` (see Workflow). **`:simulated:compileJava` = 0
-errors** (2026-10-17); Aeronautics is being ported.
+`:sable` and Create Fly from Modrinth maven. Work happens on `p2-port` (see Workflow). **2026-10-17: both mods compile
+(0 errors), boot on a dedicated server and on the client together with Sable and Create Fly (all mixins apply, no
+data errors), the GameTest playtest suite passes (22/22 required), and an airship flies in the real client
+(`tools/e2e.sh flight`).** Next: merge into `integration` (after Akshat's `merge-integration-p2`), then a human playtest.
 
 | ID | Task | Status | Owner | Notes |
 |---|---|---|---|---|
 | R1 | Convert all JSON resources to 1.21.11 formats | ✅ | | 1,467 files, 0 validator errors (`tools/validate_resources.py`) |
-| R1a | Datapacks load on a dedicated server (Create Fly's recipe formats differ from Create 6.0.10's) | 🔄 | agent `sim-data` | 2026-10-17: the server stops at datapack load (`create:cutting` step without `processing_time`, a loot table dropping air, an empty world-preset layer); fixing the JSON and extending the validator. Aeronautics data after |
+| R1a | Datapacks load on a dedicated server (Create Fly's recipe formats differ from Create 6.0.10's) | ✅ | | 2026-10-17: 0 data errors with both mods. Fixed a `create:cutting` step without `processing_time`, a loot table dropping air, advancement backgrounds; `tools/validate_resources.py` now checks Create Fly recipe formats and that every referenced item/block/tag/recipe exists (conversion table in `docs/p2-notes/sim-data.md`) |
 | R2 | OBJ models: `mecanum_wheel`, `plunger_wheel`, **`steering_wheel`** | ✅ | | Create Fly bundles NeoForge's OBJ loader (`"loader": "neoforge:obj"` works in any namespace), so restoring the loader keys was enough; mecanum/plunger/omni wheels are Offroad's |
 | R3 | Register custom advancement triggers (`*_builtin`) | ✅ | | `SimAdvancementTriggers` |
 | R4 | Check `c:` convention tags exist on Fabric (`c:armors`, `c:music_discs`, …) | ✅ | | all exist in convention tags v2; code uses `ConventionalItemTags` (see `docs/p2-notes/registry.md`) |
 | R5 | Blocks whose models lost `render_type` need render layers set in code | ✅ | | Create Fly honours `render_type` in model JSON, so it was restored in the 13 models (4 Simulated, 9 Aeronautics) |
 | C1 | Add `simulated` + `aeronautics` to `settings.gradle` (depends on `:sable` + Create Fly from Modrinth maven) | ✅ | | `fabric.mod.json` per mod; optional compat (JEI, CC: Tweaked, Nature's/Explorer's Compass, Sodium, Iris) compileOnly |
-| C2 | Replace Registrate (`SimulatedRegistrate`, builders, `BlockEntry`) with static registration in Create Fly's style | ✅ Simulated | | registry fields are the objects themselves (`SimBlocks.X` is the block); a small `Simulated.getRegistrate()` helper keeps creative-tab sections, display targets, nav targets |
+| C2 | Replace Registrate (`SimulatedRegistrate`, builders, `BlockEntry`) with static registration in Create Fly's style | ✅ | | registry fields are the objects themselves (`SimBlocks.X` is the block); a small `Simulated.getRegistrate()` helper keeps creative-tab sections, display targets, nav targets |
 | C3 | Fabric impls of the 13 `service/Sim*Service` interfaces (inventory/fluid via Transfer API, menus, tabs, config, …) | ✅ | | `fabric/service`; item/fluid storages via Fabric Transfer API. Energy isn't exposed (no Fabric energy API among our deps) |
-| C4 | Port `META-INF/accesstransformer.cfg` → access wideners | ✅ Simulated | | `:simulated:validateAccessWidener` passes; the `.cfg` is deleted |
-| C5 | Client entrypoints: block entity renderers, visuals, screens, ponder | ✅ Simulated | | render-state BERs, Flywheel visuals, client behaviours per BE type, menus, particles, ponder on Create Fly's ponder |
-| C6 | Create API gaps: the 37 Create classes with no direct Create Fly equivalent | ✅ Simulated | | mappings per area in `docs/p2-notes/` |
+| C4 | Port `META-INF/accesstransformer.cfg` → access wideners | ✅ | | `:simulated:validateAccessWidener` and `:aeronautics:validateAccessWidener` pass; the `.cfg` files are deleted |
+| C5 | Client entrypoints: block entity renderers, visuals, screens, ponder | ✅ | | render-state BERs, Flywheel visuals, client behaviours per BE type, menus, particles, ponder on Create Fly's ponder; the client e2e scene places a row of Simulated/Aeronautics blocks and they render (steering wheel OBJ, levitite, burner, propellers, …) |
+| C6 | Create API gaps: the 37 Create classes with no direct Create Fly equivalent | ✅ | | mappings per area in `docs/p2-notes/` |
 | C7 | 1.21.11 API fixes in Simulated (same patterns as Sable; see PORTING.md) | ✅ | | Veil render effects (contraption diagram, End Sea, lasers, physics staff) re-implemented on the 1.21.11 pipeline |
 | C8 | Simulated mixins (86) verified against 1.21.11 **and Create Fly** | ✅ | | checked against the bytecode with javap; 5 removed as obsolete, several retargeted; dedicated server applies all (0 mixin errors) |
-| C9 | Aeronautics: same as C2–C8 (181 files, 29 mixins) | 🔄 | agents `aero-core`, `aero-content`, `aero-render` | started 2026-10-17; levitite shader and balloon effects need 1.21.11 re-implementations |
-| C10 | Sable ↔ Create integration (contraptions on sub-levels, kinetics across sub-levels) | ✅ | | 2026-10-17: 139 of upstream's Create-compat mixins ported against Create Fly (`sable-create.mixins.json`, applied only when `create` is loaded); 8 skipped as unnecessary on Create Fly (`docs/p2-notes/sable-create.md`). Server e2e passes with and without Create; client side not yet run |
-| T1 | Server e2e with Sable + Simulated + Aeronautics + Create Fly | 🔄 | | Sable + Create Fly + Simulated: all mixins apply; blocked on R1a. Aeronautics after C9 |
-| T2 | Playtest checklist: build a ship, assemble, propeller flight, balloon lift, levitite, steering | ⬜ | | GameTest harness ready; test design in `docs/p2-notes/gametest.md`. Then a manual playtest |
+| C9 | Aeronautics: same as C2–C8 (181 files, 29 mixins) | ✅ | | 2026-10-17: compiles, all 29 mixins checked against the bytecode (7 removed: their targets, mostly Sodium/Iris chunk-layer hooks, don't exist on 1.21.11); Levitite Blend is a Create Fly fluid; levitite shimmer/ghost layers on sub-levels and the balloon hot-air effect re-implemented with their own pipelines; burner flame shader |
+| C10 | Sable ↔ Create integration (contraptions on sub-levels, kinetics across sub-levels) | ✅ | | 2026-10-17: 139 of upstream's Create-compat mixins ported against Create Fly (`sable-create.mixins.json`, applied only when `create` is loaded); 8 skipped as unnecessary on Create Fly (`docs/p2-notes/sable-create.md`). Server and client e2e pass with Create. Fixed: Create block entities (deployer, item drain, ejector, arm, …) duplicated their contents when assembled into a sub-level |
+| T1 | Server e2e with Sable + Simulated + Aeronautics + Create Fly | ✅ | | 2026-10-17: `tools/e2e.sh server` and `client`: mixin audit passes, 0 mixin errors, 0 data errors, 600 ticks with 38 sub-levels plus 14 mod blocks placed. Found and fixed a client crash when placing a torsion spring (inner "extra kinetics" block entities picked up the parent's Create Fly behaviours) |
+| T2 | Playtest checklist: build a ship, assemble, propeller flight, balloon lift, levitite, steering | ✅ | | 2026-10-17, every checklist item exercised in the game: `tools/e2e.sh gametest` (22/22 required): physics assembler builds a ship that falls and rests, disassembles it again; steering wheel turned by a player drives its shaft to 90° and back (400/400 runs); torsion spring driven by a motor on a moving ship; propeller bearing lifts a ship (vs unpowered control); powered hot-air burner lifts a balloon (unpowered stays down); levitite raft hovers, an overloaded one sinks; upstream's extra-kinetics structure tests. `tools/e2e.sh flight` (real client): an airship (deck, physics assembler, propeller bearing + sail rotor, burner, levitite) is built, assembled and flies from y −59 to y 137 in ~9 s, rendering in the air with propeller airflow particles ("In Thrust We Trust" is awarded). Thrust direction checked against upstream's code: on that build −256 RPM lifts, as upstream (the default "pull when clockwise" mode negates thrust; a wrench toggles it; `docs/p2-notes/aero-propeller.md`). How flying feels is still worth a human playtest |
 
 **Known Phase 2 gaps (PORT-TODOs):** energy storage not exposed (docking connector battery); server config not synced
 to clients (Simulated/Aeronautics use Create Fly's config system); JEI doesn't show the portable engine dyeing recipe;
 single-block sub-levels don't fade into the End Sea; two Create-compat mixins add a `write` override Create Fly lacks
-(revisit if Create Fly adds it). `VoidAnchor` stays unregistered, as upstream.
+(revisit if Create Fly adds it); levitite placed in the world (not on a ship) has no shimmer layer; the Levitite Blend
+fog isn't cylindrical (1.21.11 fog has no shape option); filter items on brass tunnels/rollers and extra factory gauges
+still duplicate on assembly; the client logs 38 harmless "movement packet for a non-existent sub-level" errors at
+disconnect. `VoidAnchor` stays unregistered, as upstream.
 
 ## Suggested split for two people
 

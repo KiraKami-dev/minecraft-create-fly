@@ -33,6 +33,7 @@ public final class E2E implements ModInitializer {
     private int commandTick = -1;
     private final Map<UUID, Vector3dc> spawnPositions = new HashMap<>();
     private final Playtest playtest = "playtest".equals(System.getProperty("e2e.scenario")) ? new Playtest() : null;
+    private final E2EFlight flight = E2EFlight.enabled() ? new E2EFlight() : null;
 
     @Override
     public void onInitialize() {
@@ -81,6 +82,9 @@ public final class E2E implements ModInitializer {
         }
 
         final int since = this.ticks - this.commandTick;
+        if (this.flight != null) {
+            this.flight.tick(server.overworld(), since);
+        }
         if (since == 1 || since % 100 == 0) {
             if (since > 1) {
                 LOG.info("E2E: {} ticks after spawn, server alive", since);

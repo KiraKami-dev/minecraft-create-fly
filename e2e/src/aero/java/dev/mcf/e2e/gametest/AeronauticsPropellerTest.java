@@ -2,6 +2,7 @@ package dev.mcf.e2e.gametest;
 
 import com.zurrtum.create.AllBlocks;
 import com.zurrtum.create.content.kinetics.motor.CreativeMotorBlockEntity;
+import dev.eriksonn.aeronautics.content.blocks.propeller.bearing.propeller_bearing.PropellerBearingBlockEntity;
 import dev.eriksonn.aeronautics.index.AeroBlocks;
 import dev.ryanhcode.sable.sublevel.ServerSubLevel;
 import net.fabricmc.fabric.api.gametest.v1.GameTest;
@@ -19,9 +20,9 @@ import static dev.mcf.e2e.gametest.SimulatedTestHelper.*;
  * Propeller thrust (ROADMAP T2, Aeronautics): a propeller bearing with sails ("blades") driven by a creative motor on
  * an assembled ship lifts it. Built only with {@code -Pe2eAero} (see e2e/build.gradle).
  *
- * <p>Not run yet: Aeronautics does not compile on 1.21.11 so far, so the test is optional until it has passed once.
- * The thrust direction of this build was never observed on the port, so the test does not assume it: if the rotor
- * pushes the ship into the floor at +256 RPM, it reverses the motor and then requires the lift.
+ * <p>With the bearing facing up and the default thrust option (pull_when_clockwise), +256 RPM pushes the ship down
+ * and -256 RPM lifts it. That is upstream behaviour, not a port bug (Sable's {@code getScaledThrust} negates the
+ * thrust; see docs/p2-notes/aero-propeller.md). The test still tries +256 first and reverses if the ship sinks.
  */
 public final class AeronauticsPropellerTest {
 
@@ -33,7 +34,7 @@ public final class AeronauticsPropellerTest {
      * deck corner. After assembly the motor is started on the ship: the bearing assembles the rotor and its thrust must
      * lift the ship more than a block within 3 s.
      */
-    @GameTest(structure = "sable:physicstest.gravity", maxTicks = 300, required = false)
+    @GameTest(structure = "sable:physicstest.gravity", maxTicks = 300)
     public void propellerBearingLiftsShip(final GameTestHelper helper) {
         final BlockPos motor = new BlockPos(2, 1, 2);
         final BlockPos bearing = new BlockPos(2, 2, 2);
@@ -49,6 +50,8 @@ public final class AeronauticsPropellerTest {
         glue(helper, new BlockPos(1, 1, 1), new BlockPos(3, 2, 3));
         glue(helper, new BlockPos(1, 3, 1), new BlockPos(3, 3, 3));
         final int shipBlocks = 9 + 1 + 9 + 1;
+        // once the bearing assembles, the rotor (hub + 8 sails) moves out of the plot into its contraption entity
+        final int rotorBlocks = 9;
 
         final ServerSubLevel[] ship = new ServerSubLevel[1];
         final SubLevelProbe[] probe = new SubLevelProbe[1];
@@ -61,6 +64,12 @@ public final class AeronauticsPropellerTest {
                     helper.assertValueEqual(shipBlocks, countBlocks(ship[0]), "blocks in the ship");
                     plotMotor[0] = findOneInPlot(helper, ship[0], state -> state.is(AllBlocks.CREATIVE_MOTOR), "creative motor");
                     probe[0] = new SubLevelProbe(helper, ship[0]).sampleEveryTick();
+                })
+                .thenExecuteAfter(20, () -> {
+                    // no-power control: the unpowered ship must rest on the floor
+                    if (Math.abs(probe(helper, probe).displacement().y()) > 0.2) {
+                        helper.fail("The unpowered ship moved vertically: " + probe[0]);
+                    }
                     setMotor(helper, ship[0], plotMotor[0], RPM);
                 })
                 .thenExecuteAfter(60, () -> {
@@ -77,7 +86,13 @@ public final class AeronauticsPropellerTest {
                     }
                 })
                 .thenExecute(() -> {
-                    helper.assertValueEqual(shipBlocks, countBlocks(ship[0]), "blocks in the ship after lift-off");
+                    helper.assertValueEqual(shipBlocks - rotorBlocks, countBlocks(ship[0]), "blocks in the ship after lift-off");
+                    final BlockPos plotBearing = findOneInPlot(helper, ship[0], state -> state.is(AeroBlocks.PROPELLER_BEARING), "propeller bearing");
+                    final PropellerBearingBlockEntity be = plotBlockEntity(ship[0], plotBearing, PropellerBearingBlockEntity.class);
+                    if (be == null || be.getMovedContraption() == null) {
+                        helper.fail("The propeller bearing has no assembled rotor");
+                    }
+                    helper.assertValueEqual(rotorBlocks, be.getMovedContraption().getContraption().getBlocks().size(), "blocks in the rotor contraption");
                     // airflow caps the climb at about 0.1 * RPM m/s
                     if (probe[0].maxSpeed() > 0.1 * RPM + 5) {
                         helper.fail("The ship climbs implausibly fast: " + probe[0]);

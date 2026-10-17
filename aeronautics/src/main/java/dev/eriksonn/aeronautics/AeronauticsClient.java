@@ -4,7 +4,11 @@ import com.zurrtum.create.client.AllModels;
 import com.zurrtum.create.client.foundation.block.connected.SimpleCTBehaviour;
 import com.zurrtum.create.client.infrastructure.model.CTModel;
 import com.zurrtum.create.client.ponder.foundation.PonderIndex;
-import dev.eriksonn.aeronautics.content.blocks.hot_air.balloon.effect.ClientBalloonEffectRenderer;
+import dev.eriksonn.aeronautics.content.blocks.hot_air.HotAirClient;
+import dev.eriksonn.aeronautics.content.blocks.mounted_potato_cannon.MountedPotatoCannonClient;
+import dev.eriksonn.aeronautics.content.blocks.propeller.PropellerClient;
+import dev.eriksonn.aeronautics.content.display_sources.GasDisplaySourceRender;
+import dev.eriksonn.aeronautics.content.particle.AeroParticleProviders;
 import dev.eriksonn.aeronautics.content.ponder.AeroPonderPlugin;
 import dev.eriksonn.aeronautics.fabric.content.fluids.levitite.LevititeBlendClient;
 import dev.eriksonn.aeronautics.index.AeroBlockEntityBehaviours;
@@ -16,8 +20,8 @@ import dev.eriksonn.aeronautics.index.AeroEntityRenders;
 import dev.eriksonn.aeronautics.index.AeroPartialModels;
 import dev.eriksonn.aeronautics.index.AeroSpriteShift;
 import dev.eriksonn.aeronautics.index.client.AeroClientRegistries;
+import dev.eriksonn.aeronautics.index.client.AeroRenderTypes;
 import dev.eriksonn.aeronautics.index.client.AeroSituationalMusic;
-import dev.ryanhcode.sable.veillite.platform.VeilEventPlatform;
 import dev.simulated_team.simulated.index.SimItemTooltips;
 
 public class AeronauticsClient {
@@ -45,28 +49,18 @@ public class AeronauticsClient {
         AllModels.register(AeroBlocks.LEVITITE, CTModel.of(new SimpleCTBehaviour(AeroSpriteShift.LEVITITE)));
         AllModels.register(AeroBlocks.PEARLESCENT_LEVITITE, CTModel.of(new SimpleCTBehaviour(AeroSpriteShift.PEARLESCENT_LEVITITE)));
 
+        // client halves of content, split out by their areas (after the defaults above: their tooltip behaviours
+        // replace the default kinetic tooltip, and the last registration wins)
+        HotAirClient.registerClient();
+        PropellerClient.registerClient();
+        MountedPotatoCannonClient.registerClient();
+        AeroParticleProviders.registerClient();
+        GasDisplaySourceRender.registerClient();
+
         // Levitite Blend: world/tank rendering, fog (upstream: the NeoForge client fluid type extensions)
         LevititeBlendClient.register();
-
-        registerEvents();
-    }
-
-    private static void registerEvents() {
-        VeilEventPlatform.INSTANCE.onVeilRenderLevelStage((stage,
-                                                           levelRenderer,
-                                                           bufferSource,
-                                                           matrixStack,
-                                                           frustumMatrix,
-                                                           projectionMatrix,
-                                                           renderTick,
-                                                           deltaTracker,
-                                                           camera,
-                                                           frustum) -> {
-            ClientBalloonEffectRenderer.onRenderLevelStage(stage, frustumMatrix, projectionMatrix, renderTick);
-        });
-
-        // Upstream also registered AeroRenderTypes.levitite()/levititeGhosts() as Veil block layers and fixed buffers
-        // (NeoForge: a ChunkRenderTypeSet for the Levitite blocks). Those custom layers are the levitite renderer's
-        // (aero-render) job on 1.21.11; its client hook is wired in by the orchestrator.
+        // Levitite shimmer/ghost layers on sub-levels are drawn by their own pipelines (content.blocks.levitite.render);
+        // this only resets their state on disconnect. The balloon hot-air effect renders in its own frame pass.
+        AeroRenderTypes.registerClient();
     }
 }
