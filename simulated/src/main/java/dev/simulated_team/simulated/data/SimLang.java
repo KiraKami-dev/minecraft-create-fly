@@ -1,28 +1,20 @@
 package dev.simulated_team.simulated.data;
 
 
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.zurrtum.create.foundation.utility.FilesHelper;
-import com.tterrag.registrate.providers.RegistrateLangProvider;
 import dev.simulated_team.simulated.Simulated;
-import dev.simulated_team.simulated.data.advancements.SimAdvancements;
-import dev.simulated_team.simulated.index.SimKeys;
-import dev.simulated_team.simulated.index.SimSoundEvents;
-import dev.simulated_team.simulated.index.ponder.SimPonderPlugin;
 import com.zurrtum.create.client.catnip.lang.Lang;
 import com.zurrtum.create.client.catnip.lang.LangBuilder;
 import com.zurrtum.create.client.catnip.lang.LangNumberFormat;
-import com.zurrtum.create.client.ponder.foundation.PonderIndex;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.level.block.state.BlockState;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.function.BiConsumer;
 
+/**
+ * Lang helpers. Client-only: Create Fly's catnip {@link LangBuilder} lives in its client package, so server-side code
+ * has to build {@link Component}s directly. (The datagen lang provider of upstream is gone, the lang JSON is shipped.)
+ */
 public class SimLang {
 
     public static LangBuilder builder() {
@@ -87,46 +79,6 @@ public class SimLang {
         for (final String key : keys)
             result.add(translate((prefix != null ? prefix + "." : "") + key).component());
         return result;
-    }
-
-
-    public static void registrateLang(final RegistrateLangProvider provider) {
-        final BiConsumer<String, String> consumer = provider::add;
-        SimKeys.provideLang(consumer);
-        SimAdvancements.provideLang(consumer);
-        SimSoundEvents.REGISTRY.provideLang(consumer);
-
-        final Map<String, String> lang = getLangMap("en_us");
-        lang.forEach(consumer);
-
-        PonderIndex.addPlugin(new SimPonderPlugin());
-        PonderIndex.getLangAccess().provideLang(Simulated.MOD_ID, consumer);
-    }
-
-    private static Map<String, String> getLangMap(final String lang) {
-        final String filepath = "datagen/lang/%s.json".formatted(lang);
-        final JsonObject langObject = FilesHelper.loadJsonResource(filepath).getAsJsonObject();
-
-        final Map<String, String> langMap = new HashMap<>();
-        flattenJson(langMap, langObject, null);
-        return langMap;
-    }
-
-    private static void flattenJson(final Map<String, String> outputMap, final JsonElement element, final String currentPath) {
-        if(element.isJsonPrimitive() && element.getAsJsonPrimitive().isString()) {
-            final String string = element.getAsJsonPrimitive().getAsString();
-            outputMap.put(currentPath, string);
-            return;
-        }
-
-        if(element.isJsonObject()) {
-            final JsonObject object = element.getAsJsonObject();
-            for (final String key : object.keySet()) {
-                final JsonElement value = object.get(key);
-                final String path = currentPath != null ? currentPath + "." + key : key;
-                flattenJson(outputMap, value, path);
-            }
-        }
     }
 
 }

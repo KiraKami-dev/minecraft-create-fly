@@ -1,20 +1,21 @@
 package dev.simulated_team.simulated.index;
 
-import com.zurrtum.create.api.registry.CreateBuiltInRegistries;
+import com.zurrtum.create.api.registry.CreateRegistries;
 import com.zurrtum.create.content.logistics.item.filter.attribute.ItemAttributeType;
 import dev.simulated_team.simulated.Simulated;
 import dev.simulated_team.simulated.content.item_attributes.BlockBouncinessItemAttribute;
 import dev.simulated_team.simulated.content.item_attributes.BlockFrictionItemAttribute;
 import dev.simulated_team.simulated.content.item_attributes.BlockMassItemAttribute;
-import dev.ryanhcode.sable.veillite.platform.registry.RegistrationProvider;
-import dev.ryanhcode.sable.veillite.platform.registry.RegistryObject;
+import net.minecraft.core.Registry;
 
 public class SimItemAttributeTypes {
-	private static final RegistrationProvider<ItemAttributeType> REGISTRY = RegistrationProvider.get(CreateBuiltInRegistries.ITEM_ATTRIBUTE_TYPE, Simulated.MOD_ID);
+	public static final BlockMassItemAttribute.Type BLOCK_MASS = register("block_mass", new BlockMassItemAttribute.Type());
+	public static final BlockFrictionItemAttribute.Type BLOCK_FRICTION = register("block_friction", new BlockFrictionItemAttribute.Type());
+	public static final BlockBouncinessItemAttribute.Type BLOCK_BOUNCINESS = register("block_bounciness", new BlockBouncinessItemAttribute.Type());
 
-	public static final RegistryObject<BlockMassItemAttribute.Type> BLOCK_MASS = REGISTRY.register("block_mass", BlockMassItemAttribute.Type::new);
-	public static final RegistryObject<BlockFrictionItemAttribute.Type> BLOCK_FRICTION = REGISTRY.register("block_friction", BlockFrictionItemAttribute.Type::new);
-	public static final RegistryObject<BlockBouncinessItemAttribute.Type> BLOCK_BOUNCINESS = REGISTRY.register("block_bounciness", BlockBouncinessItemAttribute.Type::new);
+	private static <T extends ItemAttributeType> T register(final String name, final T type) {
+		return Registry.register(CreateRegistries.ITEM_ATTRIBUTE_TYPE, Simulated.path(name), type);
+	}
 
 	public static void init() {
 

@@ -20,6 +20,7 @@ import dev.simulated_team.simulated.content.navigation_targets.lodestone_compass
 import dev.simulated_team.simulated.content.physics_staff.PhysicsStaffServerHandler;
 import dev.simulated_team.simulated.content.physics_staff.PhysicsStaffSubLevelObserver;
 import dev.simulated_team.simulated.content.worldgen.SimulatedWorldPreset;
+import dev.simulated_team.simulated.fabric.events.SimFabricCommonEvents;
 import dev.simulated_team.simulated.index.SimBlocks;
 import dev.simulated_team.simulated.index.SimTags;
 import dev.simulated_team.simulated.index.SimWorldPresets;
@@ -143,8 +144,12 @@ public class SimulatedCommonEvents {
         trackingSystem.addTrackingPlugin(new ServerRopeTrackingSystem(serverContainer.getLevel()));
     }
 
+    /**
+     * Registers the common event listeners, including the Fabric API events (called from {@link Simulated#init()}).
+     */
     public static void register() {
         SableEventPlatform.INSTANCE.onSubLevelContainerReady(SimulatedCommonEvents::onContainerReady);
+        SimFabricCommonEvents.register();
     }
 
     public static void modifyDefaultComponents(final BiConsumer<ItemLike, Consumer<DataComponentPatch.Builder>> modify) {

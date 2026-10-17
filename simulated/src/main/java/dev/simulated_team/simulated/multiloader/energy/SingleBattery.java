@@ -2,6 +2,8 @@ package dev.simulated_team.simulated.multiloader.energy;
 
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.util.Mth;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
 
 public class SingleBattery {
     public final int maxEnergy;
@@ -54,7 +56,21 @@ public class SingleBattery {
     }
 
     public void read(final CompoundTag tag) {
-        this.energy = Mth.clamp(tag.getInt("Energy"), 0, this.maxEnergy);
+        this.energy = Mth.clamp(tag.getIntOr("Energy", 0), 0, this.maxEnergy);
+    }
+
+    /**
+     * Same layout as {@link #read(CompoundTag)}, for block entities loading through {@link ValueInput}.
+     */
+    public void read(final ValueInput view) {
+        this.energy = Mth.clamp(view.getIntOr("Energy", 0), 0, this.maxEnergy);
+    }
+
+    /**
+     * Same layout as {@link #write()}, for block entities saving through {@link ValueOutput}.
+     */
+    public void write(final ValueOutput view) {
+        view.putInt("Energy", this.energy);
     }
 
     public CompoundTag write() {

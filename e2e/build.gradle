@@ -1,30 +1,53 @@
 // Dev-only end-to-end harness: boots a server/client with the ported mods, applies every mixin
-// (audit), spawns physics sub-levels, and takes screenshots. Never shipped.
+// (audit), spawns physics sub-levels, takes screenshots, and runs the GameTest suite. Never shipped.
 dependencies {
-    runtimeOnly project(path: ':sable', configuration: 'namedElements')
+    // the GameTests (dev.mcf.e2e.gametest) are written against Sable's API
+    implementation project(path: ':sable', configuration: 'namedElements')
     modRuntimeOnly "fuzs.forgeconfigapiport:forgeconfigapiport-fabric:${forgeconfigapiport_version}"
 }
 
 // Commands run once a player is present (client) or after start-up (server). ';'-separated.
+// The forceload keeps the scene ticking on a dedicated server, which has no player to load chunks.
 def e2eCommands = [
         'time set noon', 'gamerule advance_time false', 'gamerule spawn_mobs false',
+        'forceload add -32 -16 31 47',
         'tp @a 0 -60 0 0 15',
         'execute positioned 0 -59 12 run sable spawn jenga 12',
         'execute positioned 5 -40 14 run sable spawn sphere 3 minecraft:stone',
         'execute positioned -5 -45 14 run sable spawn platform 4 minecraft:oak_planks',
 ].join(';')
 
+def e2eSceneArgs = [
+        '-De2e.enabled=true',
+        // -Pe2ePrepare: boot without spawning anything (tools/e2e.sh uses it to make a clean template world)
+        "-De2e.commands=${project.hasProperty('e2ePrepare') ? '' : e2eCommands}".toString(),
+        '-Dmixin.debug.verify=true',
+]
+// -Pe2ePlay: same scene, but no screenshots and the client stays open (tools/e2e.sh play)
+if (project.hasProperty('e2ePlay')) e2eSceneArgs += '-De2e.play=true'
+
 loom {
     runs {
-        configureEach {
-            vmArg '-De2e.enabled=true'
-            // -Pe2ePrepare: boot without spawning anything (tools/e2e.sh uses it to make a clean template world)
-            vmArg "-De2e.commands=${project.hasProperty('e2ePrepare') ? '' : e2eCommands}"
-            vmArg '-Dmixin.debug.verify=true'
-            // -Pe2ePlay: same scene, but no screenshots and the client stays open (tools/e2e.sh play)
-            if (project.hasProperty('e2ePlay')) vmArg '-De2e.play=true'
+        client { runDir 'run/client'; programArgs '--quickPlaySingleplayer', 'e2e'; vmArgs e2eSceneArgs }
+        server { runDir 'run/server'; vmArgs e2eSceneArgs }
+        // Headless GameTest server (Fabric API gametest module): runs every @GameTest registered under the
+        // `fabric-gametest` entrypoint, writes run/gametest/gametest-report.xml and exits with the number
+        // of failed required tests. -Pe2eFilter=<selector> runs a subset, e.g. -Pe2eFilter='mcf_e2e:sable_physics_*'
+        gametest {
+            server()
+            configName = 'E2E GameTest'
+            runDir 'run/gametest'
+            vmArgs '-Dfabric-api.gametest', '-De2e.gametest=true', '-De2e.gametest.report=gametest-report.xml',
+                    '-Dmixin.debug.verify=true'
+            if (project.hasProperty('e2eFilter')) vmArg "-Dfabric-api.gametest.filter=${project.property('e2eFilter')}"
+            // -Pe2eVerify (with a filter): run every selected test 100 times in each of the 4 rotations
+            if (project.hasProperty('e2eVerify')) vmArg '-Dfabric-api.gametest.verify=true'
         }
-        client { runDir 'run/client'; programArgs '--quickPlaySingleplayer', 'e2e' }
-        server { runDir 'run/server' }
     }
+}
+
+// Every GameTest run starts from a fresh world: the server saves the sub-levels and force-loaded chunks
+// the tests leave behind, which would otherwise be loaded again by the next run.
+tasks.matching { it.name == 'runGametest' }.configureEach {
+    doFirst { delete file('run/gametest/world') }
 }

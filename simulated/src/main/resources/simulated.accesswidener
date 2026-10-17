@@ -1,9 +1,14 @@
 accessWidener v2 named
 
+# creative tab (SimulatedFabric); fabric-item-group-api also makes it transitive-accessible
+accessible class net/minecraft/world/item/CreativeModeTab$TabVisibility
+
 # Entity Storage
 accessible field net/minecraft/server/level/ServerLevel entityManager Lnet/minecraft/world/level/entity/PersistentEntitySectionManager;
 accessible field net/minecraft/world/level/entity/PersistentEntitySectionManager sectionStorage Lnet/minecraft/world/level/entity/EntitySectionStorage;
-# (was META-INF/accesstransformer.cfg) SimAssemblyHelper
+
+# platform
+# (also META-INF/accesstransformer.cfg upstream) SimAssemblyHelper
 accessible field net/minecraft/world/entity/Entity levelCallback Lnet/minecraft/world/level/entity/EntityInLevelCallback;
 
 # Contraption Diagram

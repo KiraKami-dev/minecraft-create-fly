@@ -1,5 +1,6 @@
 {
  "credit": "Made with Blockbench",
+ "render_type": "minecraft:cutout",
  "textures": {
   "4": "simulated:block/redstone_inductor/redstonebit",
   "particle": "create:block/diodes/brass_diode_base"
