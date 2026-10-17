@@ -2,7 +2,6 @@ package dev.simulated_team.simulated.content.entities.honey_glue;
 
 import com.zurrtum.create.api.schematic.requirement.SpecialEntityItemRequirement;
 import com.zurrtum.create.content.schematics.requirement.ItemRequirement;
-import com.zurrtum.create.infrastructure.packet.s2c.NbtSpawnPacket;
 import dev.simulated_team.simulated.Simulated;
 import dev.simulated_team.simulated.data.SimLang;
 import dev.simulated_team.simulated.index.SimEntityTypes;
@@ -14,14 +13,8 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.particles.ItemParticleOption;
 import net.minecraft.core.particles.ParticleTypes;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.network.protocol.Packet;
-import net.minecraft.network.protocol.game.ClientGamePacketListener;
-import net.minecraft.network.protocol.game.ClientboundAddEntityPacket;
 import net.minecraft.network.syncher.SynchedEntityData;
-import net.minecraft.server.level.ServerEntity;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.util.ProblemReporter;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.damagesource.DamageSource;
@@ -32,8 +25,6 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.Rotation;
 import net.minecraft.world.level.material.PushReaction;
-import net.minecraft.world.level.storage.TagValueInput;
-import net.minecraft.world.level.storage.TagValueOutput;
 import net.minecraft.world.level.storage.ValueInput;
 import net.minecraft.world.level.storage.ValueOutput;
 import net.minecraft.world.phys.AABB;
@@ -177,7 +168,7 @@ public class HoneyGlueEntity extends Entity implements SpecialEntityItemRequirem
         view.store("From", Vec3.CODEC, new Vec3(savedBounds.minX, savedBounds.minY, savedBounds.minZ));
         view.store("To", Vec3.CODEC, new Vec3(savedBounds.maxX, savedBounds.maxY, savedBounds.maxZ));
 
-        // Entity#saveWithoutId already wrote the same position when saving, but the spawn packet only carries this data
+        // (always written: ValueOutput can't tell if Entity#saveWithoutId already wrote it)
         view.store("Pos", Vec3.CODEC, position);
     }
 
@@ -195,32 +186,6 @@ public class HoneyGlueEntity extends Entity implements SpecialEntityItemRequirem
             this.setBounds(bb);
         } else {
             this.setBoundsAndSync(bb);
-        }
-    }
-
-    /**
-     * Sends the bounds with the spawn packet
-     */
-    @Override
-    public Packet<ClientGamePacketListener> getAddEntityPacket(final ServerEntity entityTrackerEntry) {
-        try (final ProblemReporter.ScopedCollector logging = new ProblemReporter.ScopedCollector(this.problemPath(), Simulated.LOGGER)) {
-            final TagValueOutput view = TagValueOutput.createWithContext(logging, this.registryAccess());
-            this.addAdditionalSaveData(view);
-            return new NbtSpawnPacket(this, entityTrackerEntry, view.buildResult());
-        }
-    }
-
-    @Override
-    public void recreateFromPacket(final ClientboundAddEntityPacket packet) {
-        super.recreateFromPacket(packet);
-
-        if (!(packet instanceof final NbtSpawnPacket spawnPacket) || spawnPacket.getNbt() == null) {
-            return;
-        }
-
-        final CompoundTag tag = spawnPacket.getNbt();
-        try (final ProblemReporter.ScopedCollector logging = new ProblemReporter.ScopedCollector(this.problemPath(), Simulated.LOGGER)) {
-            this.readAdditionalSaveData(TagValueInput.create(logging, this.registryAccess(), tag));
         }
     }
 

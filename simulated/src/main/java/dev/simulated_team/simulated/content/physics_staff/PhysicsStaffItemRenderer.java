@@ -275,9 +275,7 @@ public class PhysicsStaffItemRenderer implements ItemModel, SpecialModelRenderer
                 clientHandler.lastCubeOrientation.set(clientHandler.getDragSession().dragOrientation());
             }
 
-            // 1.21.1 rendered hands in view space, 1.21.11 bakes the inverse view rotation into the hand pose
-            final Matrix4f viewPose = toViewSpace(camera, ms.last().pose());
-            final Matrix4f m = new Matrix4f(viewPose);
+            final Matrix4f m = new Matrix4f(ms.last().pose());
             m.m30(0).m31(0).m32(0);
             m.invert();
             m.rotate(clientHandler.lastCubeOrientation);
@@ -292,7 +290,7 @@ public class PhysicsStaffItemRenderer implements ItemModel, SpecialModelRenderer
 
         if (context.firstPerson()) {
             final Vector3f focusPoint = new Vector3f();
-            toViewSpace(camera, ms.last().pose()).transformPosition(focusPoint);
+            ms.last().pose().transformPosition(focusPoint);
 
             itemProjMat.set(getHandProjectionMatrix(minecraft, camera, partialTicks));
             focusPos.set(focusPoint.x, focusPoint.y, focusPoint.z);
@@ -306,14 +304,8 @@ public class PhysicsStaffItemRenderer implements ItemModel, SpecialModelRenderer
     }
 
     /**
-     * @return the pose in view space, i.e. without the inverse camera rotation the 1.21.11 hand renderer starts with
-     */
-    private static Matrix4f toViewSpace(final Camera camera, final Matrix4f pose) {
-        return new Matrix4f().rotation(camera.rotation().conjugate(new Quaternionf())).mul(pose);
-    }
-
-    /**
-     * @return the projection matrix used to draw the first person hand ({@code GameRenderer#renderLevel})
+     * @return the projection matrix used to draw the first person hand ({@code GameRenderer#renderLevel}; upstream read
+     * {@code RenderSystem.getProjectionMatrix()} while the hand rendered, 1.21.11 only keeps it in a GPU buffer)
      */
     private static Matrix4f getHandProjectionMatrix(final Minecraft minecraft, final Camera camera, final float partialTicks) {
         final float fov = minecraft.gameRenderer.getFov(camera, partialTicks, false);
