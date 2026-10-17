@@ -17,9 +17,12 @@ public interface SableUDPPacket {
     static void configureSerialization(final ChannelPipeline pipeline, final PacketFlow flow, final boolean memoryOnly, @Nullable final BandwidthDebugMonitor debugMonitor) {
         pipeline.addLast("splitter", createFrameDecoder(debugMonitor, memoryOnly))
                 .addLast(new FlowControlHandler())
-                .addLast("decoder", new SableUDPPacketDecoder())
-                .addLast("prepender", createFrameEncoder(memoryOnly))
-                .addLast("encoder", new SableUDPPacketEncoder());
+                .addLast("decoder", new SableUDPPacketDecoder());
+        // datagrams carry their own framing, a length prefix would corrupt the raw buffers written to a connected socket
+        if (memoryOnly) {
+            pipeline.addLast("prepender", createFrameEncoder(true));
+        }
+        pipeline.addLast("encoder", new SableUDPPacketEncoder());
 
     }
 
