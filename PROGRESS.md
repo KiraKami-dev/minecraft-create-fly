@@ -12,7 +12,7 @@ flowchart LR
 ```
 
 ## Now
-- Phase 1 finishing with 4 parallel agents (clones in `../mcf-agents/sable-*`, shared e2e lock): S11 Sodium, S17 compat mixins running. Open after: S10 manual checks (walk/jump on moving sub-levels, multiplayer).
+- Phase 1: S11 Sodium (agent in `../mcf-agents/sable-sodium`, shared e2e lock) is the last open task. `merge-integration-p2` (9e60066) now also has p2-port's latest (steering, flight scene); waiting for the teammate to review and fast-forward p2-port. Open after: S10 manual checks (walk/jump on moving sub-levels, multiplayer).
 
 ## Next
 - Phase 2: C1 (add `simulated`/`aeronautics` to the build) → C2 Registrate replacement.
@@ -24,6 +24,8 @@ flowchart LR
 - 2026-10-17: S14 fixed: Indigo path now re-shades rotated sub-levels (`getShade` neutral + up normal on shade-less quads); verified with a flipped platform, shading on vs off.
 - 2026-10-17: S12 merged: Create Fly Flywheel visuals on sub-levels follow the sub-level pose (`tools/e2e.sh client flywheel`); lighting is S12a.
 - 2026-10-17: S10 merged: `tools/e2e.sh playtest` checks assemble, fall/rest, stacking, standing on, carried by push/rotate/translate: 14/14 pass on integration.
+- 2026-10-17: S17 merged: compat mixin review; fixed Shoulder Surfing descriptor (crashed on launch), `-Pe2eCompat` loads Shoulder Surfing + Jade; mods without a 1.21.11 Fabric build left out.
+- 2026-10-17: merge-integration-p2 refreshed with p2-port 32bc59d: server 38/38, gametest 22 pass + 1 optional (gravity), playtest pass, flight scene ship climbs to y=121.
 
 ## Blockers
 - None. Note: this shell's `JAVA_HOME` is JDK 17 and the build needs 21; `e2e.sh` picks 21 itself; for Gradle use `JAVA_HOME=$(/usr/libexec/java_home -v 21)`.
