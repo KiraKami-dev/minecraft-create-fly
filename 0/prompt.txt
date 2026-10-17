@@ -1,0 +1,17 @@
+<task-notification>
+<task-id>by4x98mw8</task-id>
+<tool-use-id>toolu_01E7roDqwuzbtfurK8DS8zsy</tool-use-id>
+<output-file>/private/tmp/claude-501/-Users-akshatkhair-Documents-Projects-minecraft-create-fly/9d5f7982-a2e8-4c32-8fdd-758e962ff6b1/tasks/by4x98mw8.output</output-file>
+<status>completed</status>
+<summary>Background command "Commit S16 merge and run e2e suite" completed (exit code 0)</summary>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>bivx19a5t</task-id>
+<tool-use-id>REDACTED</tool-use-id>
+<output-file>/private/tmp/claude-501/-Users-akshatkhair-Documents-Projects-minecraft-create-fly/9d5f7982-a2e8-4c32-8fdd-758e962ff6b1/tasks/bivx19a5t.output</output-file>
+<status>completed</status>
+<summary>Background command "Run full e2e suite on merged integration" completed (exit code 0)</summary>
+</task-notification>
