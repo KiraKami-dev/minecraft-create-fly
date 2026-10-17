@@ -179,3 +179,59 @@ Propeller and steering tests also need Create kinetics working on sub-levels (RO
   Test 1: wheel -> shaft -> Create mechanical bearing with sails (rudder): `be.getAngle()` and the bearing angle reach 90
   within ~30 ticks. Test 2 (full steering, needs propeller + sail lift from Sable's `SailBlockMixin`): a ship pushed
   forward by a propeller yaws (local angular velocity y) with the sign of the wheel angle.
+
+# gametest-content (branch `p2-gametest-content`): Simulated + Aeronautics content tests (ROADMAP T2)
+
+## Tests and results (2026-10-17, `tools/e2e.sh gametest 'mcf_e2e:simulated_*'`)
+| Test | Origin | Asserts | Result |
+|---|---|---|---|
+| `simulated_ship_test_assembler_builds_ship` | new | 3x3 glued plank deck + physics assembler, used through the `AssemblePacket` handler with a player in reach: exactly 1 new sub-level with 10 blocks (9 planks + assembler BE, no assembly exception), world region empty except an unglued stone on the deck, no drops, glue moved into the plot; falls, rests on the floor (bottom y 1 +-0.1), < 0.1 sideways drift, still 10 blocks | PASS |
+| `simulated_ship_test_assembler_disassembles_landed_ship` | new | same ship, once resting: use the assembler (plot position, reach checked in world space through Sable's interaction-range mixin) -> aligns, sub-level removed, 9 planks + assembler back in the world one block lower, no drops, glue back | PASS |
+| `simulated_ship_test_torsion_spring_on_ship` | new (upstream `torsionSpring` machine on a ship) | glued 3x5 deck with creative motor (32 RPM) -> clutch -> torsion spring -> shaft + lever + assembler, assembled (21 blocks): on the ship the spring reaches speed 32 and 90 deg; pulling the lever in the plot disengages the clutch and it unwinds to 0 | PASS |
+| `simulated_extra_kinetics_test_analog_transmission(_reverse)` | upstream, structure `simulated:extrakineticstest.*` | lever steps 0..15, speed 16 / modifier (16 * modifier on the extra side) | FAIL, optional: the structure's analog transmission BE is gone by tick 3 ("Missing block entity") |
+| `simulated_extra_kinetics_test_swivel_bearing` | upstream, structure | shaft 64 / cog -32 RPM, then 1 sub-level (honey-glued fan) turning at 64 | FAIL, optional: speed stays 0 for 100 ticks next to a running motor |
+| `simulated_extra_kinetics_test_torsion_spring` | upstream, structure | 32 RPM, 90 deg, lever -> 0 deg | FAIL, optional: speed stays 0 for 100 ticks |
+The four structure tests fail because the kinetic block entities loaded from the NeoForge-saved structure NBT (network
+ids, stress, stale absolute `Source` positions) never come up on Create Fly, while the same machine placed in code works
+on a ship. Plus a real data-format incompatibility: the torsion spring's saved `TorsionSpringOutput.Sequence
+{Mode:"TURN_ANGLE"}` (upstream Create writes the enum name) fails to load ("Unknown element name: TURN_ANGLE") because
+Create Fly's `SequencerInstructions.CODEC` is `StringRepresentable.fromEnum` (serialized names). Worlds/schematics saved
+by upstream with a sequenced torsion spring lose that state. Not investigated further (owner: blocks-kinetic / Create Fly
+compat). `extrakineticstest.torsionspringtorture` and `hotairtest.burner` have no upstream test (the latter uses the old
+`simulated:adjustable_burner`/`simulated:white_envelope` ids, now `aeronautics:`).
+
+## Harness facts learned
+- A freshly assembled sub-level is invisible to `SableTestHelper.subLevelsInTest` in the tick it was created: its
+  `boundingBox()` is computed on its first tick. `SimulatedTestHelper.assembleWithAssembler` diffs
+  `container.getAllSubLevels()` before/after instead.
+- `GameTestSequence.thenExecute(After)` catches a failed assertion, marks the test failed, and **keeps running the
+  following events of that tick**; anything other than a `GameTestAssertException` there (e.g. an NPE on state an earlier
+  step failed to set) crashes the whole GameTest server. Guard shared state (`probe(helper, holder)` in the ship tests).
+- A `SubLevelProbe.sampleEveryTick()` fails the test once its sub-level is removed: don't use it on a ship that is
+  expected to disassemble; sample from the waiting step instead.
+- Player-like triggering without a client: Fabric's `FakePlayer.get(level, profile)` (a `ServerPlayer` outside the player
+  list; stats ignored), positioned in reach, and the packet's server handler called directly
+  (`new AssemblePacket(pos).handle(ctx)` with a small `ServerPacketContext` record).
+
+## Helpers (`SimulatedTestHelper`)
+Upstream `SimulatedGameTestHelper` port (`assertKineticsSpeed`, `assertExtraKineticsSpeed`; `helper.getBlockEntity(pos)`
+-> `getBlockEntity(pos, Class)`), `kinetic`, `placeMotor(pos, facing, rpm)`, `absoluteFacing`, `glue(min, max)` (one
+`SuperGlueEntity` over a local box), `placeAssembler`, `useAssembler(worldPos)` / `useAssemblerAt(localPos)`,
+`assembleWithAssembler(localPos)`, `projectedCenter`, `onlySubLevel`, `findInPlot` / `findOneInPlot` / `plotBlockEntity`
+(blocks an assembly moved into a plot), `itemsInTest`, `gluesInTest`.
+
+## Aeronautics tests (gated, not run yet)
+`e2e/src/aero/java/dev/mcf/e2e/gametest/`: `AeronauticsLevititeTest` (`levitite_raft_hovers`: 1 levitite + 8 planks hovers
+within 0.25 blocks for 5 s; `overloaded_levitite_raft_sinks`: 1 + 17 sinks, slower than free fall),
+`AeronauticsPropellerTest` (`propeller_bearing_lifts_ship`: motor -> propeller bearing -> glued 8-sail rotor on an
+assembled deck; motor started on the ship; lifts > 1 block, reversing the motor once if +256 RPM pushes down),
+`AeronauticsHotAirTest` (`powered_burner_lifts_balloon`: 5x5 envelope box over a powered burner leaves the floor within
+800 ticks; `unpowered_burner_stays_down`). All `required = false` until they have passed once.
+- Switch on: `ORG_GRADLE_PROJECT_e2eAero=true tools/e2e.sh gametest 'mcf_e2e:aeronautics_*'` (or `-Pe2eAero` on the
+  Gradle call): adds `src/aero/java` to the main source set, `implementation project(':aeronautics' namedElements)`
+  (so the mod is loaded), and expands `${aeroGameTests}` in `fabric.mod.json` into the three entrypoints.
+- Once Aeronautics compiles: move the classes to `src/main/java`, put the entrypoints into `fabric.mod.json`, drop the
+  switch, and confirm the propeller's thrust sign (then require the lift in one direction).
+- APIs they use: `AeroBlocks.LEVITITE/PROPELLER_BEARING/HOT_AIR_BURNER/WHITE_ENVELOPE_BLOCK` (block instances,
+  `PROPELLER_BEARING` with `BlockStateProperties.FACING`), Create Fly `AllBlocks.SAIL/CREATIVE_MOTOR`,
+  `CreativeMotorBlockEntity.generatedSpeed`.
