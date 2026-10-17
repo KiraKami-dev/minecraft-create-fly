@@ -13,7 +13,7 @@ import dev.simulated_team.simulated.index.SimRegistries;
 import net.fabricmc.fabric.api.object.builder.v1.block.entity.FabricBlockEntityTypeBuilder;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Registry;
-import net.minecraft.core.component.DataComponentMap;
+import net.minecraft.core.component.DataComponentPatch;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.Identifier;
@@ -251,7 +251,7 @@ public class SimulatedRegistrate {
      * Gives every item registered as a navigation target its {@link SimDataComponents#TARGET} default component.
      * Wire to Fabric's {@code DefaultItemComponentEvents.MODIFY} ({@code context::modify}).
      */
-    public static void onAddDefaultComponents(final BiConsumer<ItemLike, Consumer<DataComponentMap.Builder>> modify) {
+    public static void onAddDefaultComponents(final BiConsumer<ItemLike, Consumer<DataComponentPatch.Builder>> modify) {
         forEachNavigationTargetItem((item, target) -> modify.accept(item, builder -> builder.set(SimDataComponents.TARGET, target)));
     }
 
