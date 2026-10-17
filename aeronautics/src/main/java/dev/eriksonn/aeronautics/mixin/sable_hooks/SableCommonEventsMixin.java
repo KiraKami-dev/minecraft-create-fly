@@ -14,7 +14,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(SableCommonEvents.class)
 public class SableCommonEventsMixin {
 
-    @Inject(method = "handleBlockChange", at = @At("HEAD"))
+    @Inject(method = "handleBlockChange", at = @At("HEAD"), remap = false)
     private static void onBlockChange(final ServerLevel level,
                                       final LevelChunk chunk,
                                       final int x,

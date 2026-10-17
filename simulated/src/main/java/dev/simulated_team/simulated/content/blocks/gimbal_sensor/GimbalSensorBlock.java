@@ -64,6 +64,7 @@ public class GimbalSensorBlock extends Block implements IBE<GimbalSensorBlockEnt
         return direction != null;
     }
 
+
     @Override
     public Class<GimbalSensorBlockEntity> getBlockEntityClass() {
         return GimbalSensorBlockEntity.class;
@@ -71,7 +72,7 @@ public class GimbalSensorBlock extends Block implements IBE<GimbalSensorBlockEnt
 
     @Override
     public BlockEntityType<? extends GimbalSensorBlockEntity> getBlockEntityType() {
-        return SimBlockEntityTypes.GIMBAL_SENSOR.get();
+        return SimBlockEntityTypes.GIMBAL_SENSOR;
     }
 
     @Override

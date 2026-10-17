@@ -1,6 +1,6 @@
 package dev.simulated_team.simulated.index;
 
-import dev.engine_room.flywheel.lib.model.baked.PartialModel;
+import com.zurrtum.create.client.flywheel.lib.model.baked.PartialModel;
 import dev.simulated_team.simulated.Simulated;
 
 public class SimPartialModels {

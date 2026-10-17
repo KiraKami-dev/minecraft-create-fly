@@ -3,6 +3,8 @@ package dev.simulated_team.simulated.multiloader.inventory;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
@@ -37,6 +39,14 @@ public abstract class InventoryLoaderWrapper implements AbstractContainer {
     @Override
     public void read(final HolderLookup.Provider provider, final CompoundTag nbt) {
 
+    }
+
+    @Override
+    public void write(final ValueOutput view) {
+    }
+
+    @Override
+    public void read(final ValueInput view) {
     }
 
     @Override

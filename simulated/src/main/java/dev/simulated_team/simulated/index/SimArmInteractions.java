@@ -1,6 +1,6 @@
 package dev.simulated_team.simulated.index;
 
-import com.zurrtum.create.api.registry.CreateBuiltInRegistries;
+import com.zurrtum.create.api.registry.CreateRegistries;
 import com.zurrtum.create.content.kinetics.mechanicalArm.AllArmInteractionPointTypes;
 import com.zurrtum.create.content.kinetics.mechanicalArm.ArmBlockEntity;
 import com.zurrtum.create.content.kinetics.mechanicalArm.ArmInteractionPoint;
@@ -17,7 +17,7 @@ import org.jetbrains.annotations.Nullable;
 
 public class SimArmInteractions {
     private static <T extends ArmInteractionPointType> void register(final String name, final T type) {
-        Registry.register(CreateBuiltInRegistries.ARM_INTERACTION_POINT_TYPE, Simulated.path(name), type);
+        Registry.register(CreateRegistries.ARM_INTERACTION_POINT_TYPE, Simulated.path(name), type);
     }
 
     static {
@@ -58,7 +58,7 @@ public class SimArmInteractions {
     public static class NavTableType extends ArmInteractionPointType {
         @Override
         public boolean canCreatePoint(final Level level, final BlockPos pos, final BlockState state) {
-            return SimBlocks.NAVIGATION_TABLE.has(state);
+            return state.is(SimBlocks.NAVIGATION_TABLE);
         }
 
         @Override

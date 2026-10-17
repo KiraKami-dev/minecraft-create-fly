@@ -19,13 +19,13 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 @Mixin(LevelChunk.class)
 public class LevelChunkMixin {
 
-    @Shadow @Final private Level level;
+    @Shadow @Final Level level;
 
     @Unique
     private BlockPos simulated$blockSet = null;
 
     @Inject(method = "setBlockState", at = @At("HEAD"))
-    private void simulated$preSetBlockState(final BlockPos pPos, final BlockState pState, final boolean pIsMoving,
+    private void simulated$preSetBlockState(final BlockPos pPos, final BlockState pState, final int flags,
                                             final CallbackInfoReturnable<BlockState> cir) {
         this.simulated$blockSet = pPos;
     }

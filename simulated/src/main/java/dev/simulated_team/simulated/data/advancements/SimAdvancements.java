@@ -1,34 +1,27 @@
 package dev.simulated_team.simulated.data.advancements;
 
-import com.google.common.collect.Sets;
+import net.minecraft.world.item.ItemStack;
 import dev.simulated_team.simulated.Simulated;
 import dev.simulated_team.simulated.index.SimBlocks;
 import dev.simulated_team.simulated.index.SimItems;
-import net.minecraft.advancements.Advancement;
-import net.minecraft.advancements.AdvancementHolder;
-import net.minecraft.core.HolderLookup;
-import net.minecraft.data.CachedOutput;
-import net.minecraft.data.DataProvider;
-import net.minecraft.data.PackOutput;
-import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.DyeColor;
 import net.minecraft.world.level.block.Blocks;
-import org.jetbrains.annotations.NotNull;
 
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
-import java.util.concurrent.CompletableFuture;
 import java.util.function.BiConsumer;
-import java.util.function.Consumer;
 import java.util.function.UnaryOperator;
 
 import static dev.simulated_team.simulated.data.advancements.SimulatedAdvancement.TaskType;
 
-public class SimAdvancements implements DataProvider {
+/**
+ * Simulated's advancements. The advancement JSON is shipped (upstream generated it from here); at runtime this only
+ * creates the builtin triggers ({@link SimAdvancementTriggers}) and provides {@link SimulatedAdvancement#awardTo}.
+ */
+public class SimAdvancements {
     public static final List<SimulatedAdvancement> SIM_ADVANCEMENTS = new ArrayList<>();
-    private final PackOutput output;    public static final SimulatedAdvancement
+
+    public static final SimulatedAdvancement
 
 //         Root Advancements
     ROOT = create("root", b -> b
@@ -39,7 +32,7 @@ public class SimAdvancements implements DataProvider {
             .special(TaskType.SILENT)),
 
     APPLIED_KINEMATICS = create("applied_kinematics", b -> b
-            .icon(SimBlocks.PHYSICS_ASSEMBLER.asStack())
+            .icon(new ItemStack(SimBlocks.PHYSICS_ASSEMBLER))
             .title("Applied Kinematics")
             .description("Obtain a Physics Assembler, the heart of every Simulated Contraption")
             .special(TaskType.NOISY)
@@ -244,12 +237,6 @@ public class SimAdvancements implements DataProvider {
             .after(APPLIED_KINEMATICS));
 
     // -----------------
-    private final CompletableFuture<HolderLookup.Provider> registries;
-    public SimAdvancements(final PackOutput output, final CompletableFuture<HolderLookup.Provider> registries) {
-        this.output = output;
-        this.registries = registries;
-    }
-
     public static void provideLang(final BiConsumer<String, String> consumer) {
         for (final SimulatedAdvancement advancement : SIM_ADVANCEMENTS) {
             advancement.provideLang(consumer);
@@ -264,38 +251,4 @@ public class SimAdvancements implements DataProvider {
 
     public static void register() {
     }
-
-    public List<SimulatedAdvancement> getAdvancementsArray() {
-        return SIM_ADVANCEMENTS;
-    }
-
-    @Override
-    public @NotNull CompletableFuture<?> run(@NotNull final CachedOutput cachedOutput) {
-        return this.registries.thenCompose(provider -> {
-            final PackOutput.PathProvider pathProvider = this.output.createPathProvider(PackOutput.Target.DATA_PACK, "advancement");
-            final List<CompletableFuture<?>> futures = new ArrayList<>();
-
-            final Set<Identifier> set = Sets.newHashSet();
-            final Consumer<AdvancementHolder> consumer = (advancement) -> {
-                final Identifier id = advancement.id();
-                if (!set.add(id)) {
-                    throw new IllegalStateException("Duplicate advancement " + id);
-                }
-                final Path path = pathProvider.json(id);
-                futures.add(DataProvider.saveStable(cachedOutput, provider, Advancement.CODEC, advancement.value(), path));
-            };
-
-            for (final SimulatedAdvancement advancement : this.getAdvancementsArray()) {
-                advancement.save(consumer);
-            }
-            return CompletableFuture.allOf(futures.toArray(CompletableFuture[]::new));
-        });
-    }
-
-    @Override
-    public @NotNull String getName() {
-        return "Create Simulated's Advancements";
-    }
-
-
 }

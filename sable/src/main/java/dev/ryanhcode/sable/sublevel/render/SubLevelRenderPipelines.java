@@ -62,6 +62,20 @@ public final class SubLevelRenderPipelines {
             .withBlend(BlendFunction.TRANSLUCENT)
             .build();
 
+    /**
+     * Depth-only copies of {@link #SOLID} and {@link #CUTOUT}, for the sky light shadow map
+     */
+    public static final RenderPipeline SHADOW_SOLID = RenderPipeline.builder(SUB_LEVEL_TERRAIN_SNIPPET)
+            .withLocation(Sable.sablePath("pipeline/sub_level_shadow_solid"))
+            .withColorWrite(false)
+            .build();
+
+    public static final RenderPipeline SHADOW_CUTOUT = RenderPipeline.builder(SUB_LEVEL_TERRAIN_SNIPPET)
+            .withLocation(Sable.sablePath("pipeline/sub_level_shadow_cutout"))
+            .withShaderDefine("ALPHA_CUTOUT", 0.5F)
+            .withColorWrite(false)
+            .build();
+
     private SubLevelRenderPipelines() {
     }
 

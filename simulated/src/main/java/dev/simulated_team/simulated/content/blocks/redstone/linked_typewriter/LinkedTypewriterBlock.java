@@ -4,21 +4,19 @@ import com.google.common.collect.ImmutableList;
 import com.mojang.serialization.MapCodec;
 import com.zurrtum.create.AllItems;
 import com.zurrtum.create.content.equipment.wrench.IWrenchable;
-import com.zurrtum.create.client.content.redstone.link.controller.LinkedControllerClientHandler;
 import com.zurrtum.create.foundation.block.IBE;
-import dev.simulated_team.simulated.data.SimLang;
+import dev.simulated_team.simulated.Simulated;
 import dev.simulated_team.simulated.index.SimBlockEntityTypes;
 import dev.simulated_team.simulated.index.SimBlockShapes;
-import dev.simulated_team.simulated.service.SimMenuService;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.util.ProblemReporter;
 import net.minecraft.world.Containers;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
-import net.minecraft.world.ItemInteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.Item;
@@ -30,14 +28,14 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelReader;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.HorizontalDirectionalBlock;
-import net.minecraft.world.level.block.ShulkerBoxBlock;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.BooleanProperty;
-import net.minecraft.world.level.block.state.properties.DirectionProperty;
+import net.minecraft.world.level.block.state.properties.EnumProperty;
+import net.minecraft.world.level.storage.TagValueOutput;
 import net.minecraft.world.level.storage.loot.LootParams;
 import net.minecraft.world.level.storage.loot.parameters.LootContextParams;
 import net.minecraft.world.phys.BlockHitResult;
@@ -52,7 +50,7 @@ import java.util.UUID;
 public class LinkedTypewriterBlock extends HorizontalDirectionalBlock implements IBE<LinkedTypewriterBlockEntity>, IWrenchable {
     public static final BooleanProperty POWERED = BlockStateProperties.POWERED;
     public static final MapCodec<LinkedTypewriterBlock> CODEC = simpleCodec(LinkedTypewriterBlock::new);
-    public static final DirectionProperty HORIZONTAL_FACING = BlockStateProperties.HORIZONTAL_FACING;
+    public static final EnumProperty<Direction> HORIZONTAL_FACING = BlockStateProperties.HORIZONTAL_FACING;
 
     public LinkedTypewriterBlock(final Properties properties) {
         super(properties);
@@ -85,7 +83,7 @@ public class LinkedTypewriterBlock extends HorizontalDirectionalBlock implements
 
     @Override
     public BlockEntityType<? extends LinkedTypewriterBlockEntity> getBlockEntityType() {
-        return SimBlockEntityTypes.LINKED_TYPEWRITER.get();
+        return SimBlockEntityTypes.LINKED_TYPEWRITER;
     }
 
     @Override
@@ -94,20 +92,18 @@ public class LinkedTypewriterBlock extends HorizontalDirectionalBlock implements
     }
 
     @Override
-    protected ItemInteractionResult useItemOn(final ItemStack itemStack, final BlockState blockState, final Level level, final BlockPos blockPos, final Player player, final InteractionHand interactionHand, final BlockHitResult blockHitResult) {
+    protected InteractionResult useItemOn(final ItemStack itemStack, final BlockState blockState, final Level level, final BlockPos blockPos, final Player player, final InteractionHand interactionHand, final BlockHitResult blockHitResult) {
         final ItemStack heldItem = player.getItemInHand(interactionHand);
 
-        final Item linkedControllerItem = AllItems.LINKED_CONTROLLER.asItem();
+        final Item linkedControllerItem = AllItems.LINKED_CONTROLLER;
         if (player.getMainHandItem().is(linkedControllerItem) || player.getOffhandItem().is(linkedControllerItem)) {
-            if (level.isClientSide) {
+            if (level.isClientSide()) {
                 final ItemStack item = player.getMainHandItem().is(linkedControllerItem) ?
                         player.getMainHandItem() : player.getOffhandItem();
-                player.displayClientMessage(SimLang.translate("linked_typewriter.linked_controller_copy").component(), true);
-                LinkedTypewriterInteractionHandler.sendLinkedControllerData(level, blockPos, item);
-                LinkedControllerClientHandler.MODE = LinkedControllerClientHandler.Mode.IDLE;
+                LinkedTypewriterInteractionHandler.copyFromLinkedController(player, level, blockPos, item);
             }
 
-            return ItemInteractionResult.sidedSuccess(level.isClientSide);
+            return InteractionResult.SUCCESS;
         }
 
         if (heldItem.isEmpty() && interactionHand == InteractionHand.MAIN_HAND) {
@@ -117,7 +113,7 @@ public class LinkedTypewriterBlock extends HorizontalDirectionalBlock implements
                 final UUID uuid = player.getUUID();
 
                 if (player.isShiftKeyDown() && be.checkAndStartUsing(uuid)) {
-                    if (!level.isClientSide) {
+                    if (!level.isClientSide()) {
                         this.displayScreen(be, player);
                     } else {
                         LinkedTypewriterInteractionHandler.setMode(LinkedTypewriterInteractionHandler.Mode.SCREEN_BINDING);
@@ -141,7 +137,7 @@ public class LinkedTypewriterBlock extends HorizontalDirectionalBlock implements
             });
 
             if (success.getValue()) {
-                return ItemInteractionResult.SUCCESS;
+                return InteractionResult.SUCCESS;
             }
         }
 
@@ -154,7 +150,7 @@ public class LinkedTypewriterBlock extends HorizontalDirectionalBlock implements
     }
 
     @Override
-    protected int getAnalogOutputSignal(final BlockState state, final Level level, final BlockPos pos) {
+    protected int getAnalogOutputSignal(final BlockState state, final Level level, final BlockPos pos, final Direction direction) {
         final BlockEntity be = level.getBlockEntity(pos);
         if (be instanceof final LinkedTypewriterBlockEntity typewriter) {
             return typewriter.isInUse() ? 15 : 0;
@@ -178,17 +174,28 @@ public class LinkedTypewriterBlock extends HorizontalDirectionalBlock implements
     }
 
     @Override
-    public ItemStack getCloneItemStack(final LevelReader level, final BlockPos pos, final BlockState state) {
-        final ItemStack itemStack = super.getCloneItemStack(level, pos, state);
+    protected ItemStack getCloneItemStack(final LevelReader level, final BlockPos pos, final BlockState state, final boolean includeData) {
+        final ItemStack itemStack = super.getCloneItemStack(level, pos, state, includeData);
+        // the typewriter always keeps its keys (and name) when picked
         final BlockEntity blockEntity = level.getBlockEntity(pos);
         if (blockEntity != null) {
-            BlockItem.setBlockEntityData(itemStack, blockEntity.getType(), blockEntity.saveWithoutMetadata(level.registryAccess()));
-            if (blockEntity.components().has(DataComponents.CUSTOM_NAME)) {
-                itemStack.set(DataComponents.CUSTOM_NAME, blockEntity.components().get(DataComponents.CUSTOM_NAME));
-            }
+            saveToItem(blockEntity, itemStack);
         }
 
         return itemStack;
+    }
+
+    /**
+     * Stores the block entity data and components (custom name) on the item, like vanilla's pick block with data.
+     */
+    public static void saveToItem(final BlockEntity blockEntity, final ItemStack itemStack) {
+        try (final ProblemReporter.ScopedCollector reporter = new ProblemReporter.ScopedCollector(blockEntity.problemPath(), Simulated.LOGGER)) {
+            final TagValueOutput output = TagValueOutput.createWithContext(reporter, blockEntity.getLevel().registryAccess());
+            blockEntity.saveCustomOnly(output);
+            blockEntity.removeComponentsFromTag(output);
+            BlockItem.setBlockEntityData(itemStack, blockEntity.getType(), output);
+            itemStack.applyComponents(blockEntity.collectComponents());
+        }
     }
 
     @Override
@@ -196,10 +203,10 @@ public class LinkedTypewriterBlock extends HorizontalDirectionalBlock implements
         assert level != null;
 
         final BlockEntity blockEntity = level.getBlockEntity(pos);
-        if (blockEntity != null && !level.isClientSide && player.isCreative() &&
+        if (blockEntity != null && !level.isClientSide() && player.isCreative() &&
                 blockEntity instanceof final LinkedTypewriterBlockEntity linkedTypewriterBlockEntity && (!linkedTypewriterBlockEntity.getTypewriterEntries().getKeyMap().isEmpty() || linkedTypewriterBlockEntity.components().has(DataComponents.CUSTOM_NAME))) {
 
-            Containers.dropItemStack(level, pos.getX(), pos.getY(), pos.getZ(), this.getCloneItemStack(level, pos, state));
+            Containers.dropItemStack(level, pos.getX(), pos.getY(), pos.getZ(), this.getCloneItemStack(level, pos, state, true));
         }
         return super.playerWillDestroy(level, pos, state, player);
     }
@@ -209,15 +216,13 @@ public class LinkedTypewriterBlock extends HorizontalDirectionalBlock implements
         final BlockEntity blockEntity = params.getOptionalParameter(LootContextParams.BLOCK_ENTITY);
         if (blockEntity instanceof final LinkedTypewriterBlockEntity typewriter) {
             final ItemStack itemStack = new ItemStack(this);
-            typewriter.saveToItem(itemStack, params.getLevel().registryAccess());
-
-            params.withDynamicDrop(ShulkerBoxBlock.CONTENTS, consumer -> itemStack.copy());
+            saveToItem(typewriter, itemStack);
             return ImmutableList.of(itemStack);
         }
         return super.getDrops(state, params);
     }
 
     protected void displayScreen(final LinkedTypewriterBlockEntity be, final Player player) {
-        SimMenuService.INSTANCE.openScreen((ServerPlayer) player, be, be::sendToMenu);
+        be.openHandledScreen((ServerPlayer) player);
     }
 }

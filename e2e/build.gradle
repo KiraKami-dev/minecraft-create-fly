@@ -1,10 +1,16 @@
 // Dev-only end-to-end harness: boots a server/client with the ported mods, applies every mixin
-// (audit), spawns physics sub-levels, and takes screenshots. Never shipped.
+// (audit), spawns physics sub-levels, takes screenshots, and runs the GameTest suite. Never shipped.
 dependencies {
+    // the GameTests (dev.mcf.e2e.gametest) are written against Sable's API
     implementation project(path: ':sable', configuration: 'namedElements')
+    // Phase 2 content on Create Fly (the content GameTests use Simulated's and Create's API)
+    implementation project(path: ':simulated', configuration: 'namedElements')
+    modImplementation "maven.modrinth:create-fly:${create_fly_version}"
     modRuntimeOnly "fuzs.forgeconfigapiport:forgeconfigapiport-fabric:${forgeconfigapiport_version}"
     // Sable bundles it as jar-in-jar; the mixin plugin needs it once a gated compat mod (Create Fly) is loaded
     runtimeOnly 'org.apache.maven:maven-artifact:3.8.5'
+    // -Pe2eSodium: run with Sodium installed (tools/e2e.sh passes it when E2E_SODIUM=1)
+    if (project.hasProperty('e2eSodium')) modRuntimeOnly "maven.modrinth:sodium:mc1.21.11-0.8.14-fabric"
     // -Pe2eCompat: also load the compat targets, to check their sable mixins apply
     if (project.hasProperty('e2eCompat')) {
         modRuntimeOnly "maven.modrinth:shoulder-surfing-reloaded:1.21.11-5.2.0+fabric"
@@ -12,22 +18,53 @@ dependencies {
     }
 }
 
+// Aeronautics and its GameTests (src/aero/java) are loaded by default; -Pe2eAero=false runs the harness without
+// Aeronautics (Sable + Create Fly + Simulated only), e.g. to bisect a problem:
+//   ORG_GRADLE_PROJECT_e2eAero=false tools/e2e.sh gametest
+def e2eAero = !project.hasProperty('e2eAero') || project.property('e2eAero') != 'false'
+def aeroGameTestClasses = ['AeronauticsLevititeTest', 'AeronauticsPropellerTest', 'AeronauticsHotAirTest']
+if (e2eAero) {
+    sourceSets.main.java.srcDir 'src/aero/java'
+    dependencies {
+        implementation project(path: ':aeronautics', configuration: 'namedElements')
+    }
+}
+processResources {
+    def aeroGameTests = e2eAero ? aeroGameTestClasses.collect { ",\n      \"dev.mcf.e2e.gametest.${it}\"" }.join('') : ''
+    inputs.property 'aeroGameTests', aeroGameTests
+    filesMatching('fabric.mod.json') { expand(aeroGameTests: aeroGameTests) }
+}
+
 // Commands run once a player is present (client) or after start-up (server). ';'-separated.
+// The forceload keeps the scene ticking on a dedicated server, which has no player to load chunks.
 def e2eCommands = [
         'time set noon', 'gamerule advance_time false', 'gamerule spawn_mobs false',
+        'forceload add -32 -16 31 47',
         'tp @a 0 -60 0 0 15',
-        // a dedicated server has no player keeping the chunks loaded, and sub-levels unload with their chunk
-        'forceload add -16 0 15 31',
+        // a row of Simulated and Aeronautics blocks in front of the camera (block entities + renderers in screenshots)
+        'setblock -6 -60 7 simulated:physics_assembler', 'setblock -5 -60 8 simulated:rope_winch',
+        'setblock -4 -60 7 simulated:steering_wheel', 'setblock -3 -60 8 simulated:laser_pointer',
+        'setblock -2 -60 7 simulated:swivel_bearing', 'setblock -1 -60 8 aeronautics:white_envelope',
+        'setblock 0 -60 7 simulated:torsion_spring', 'setblock 1 -60 8 simulated:altitude_sensor',
+        'setblock 1 -60 7 aeronautics:steam_vent', 'setblock 2 -60 7 aeronautics:levitite',
+        'setblock 3 -60 7 aeronautics:pearlescent_levitite', 'setblock 4 -60 7 aeronautics:adjustable_burner',
+        'setblock 5 -60 7 aeronautics:propeller_bearing', 'setblock 6 -60 7 aeronautics:andesite_propeller',
         'execute positioned 0 -59 12 run sable spawn jenga 12',
         'execute positioned 5 -40 14 run sable spawn sphere 3 minecraft:stone',
         'execute positioned -5 -45 14 run sable spawn platform 4 minecraft:oak_planks',
 ].join(';')
 
-// -Pe2eScenario=flywheel: put Create Fly in the runtime and assemble Create kinetic blocks into a sub-level
-// (checks Flywheel visuals follow the sub-level pose). Without it the scene stays Create-free.
+// -Pe2eScene=flight (tools/e2e.sh flight): only the camera set-up; E2EFlight builds, assembles and flies an airship
+def e2eFlightCommands = [
+        'time set noon', 'gamerule advance_time false', 'gamerule spawn_mobs false',
+        'forceload add -32 -16 31 47',
+        'tp @a 0 -60 0 0 -12',
+].join(';')
+def e2eFlight = project.findProperty('e2eScene') == 'flight'
+// -Pe2eScenario=flywheel: assemble Create kinetic blocks into a sub-level
+// (checks Flywheel visuals follow the sub-level pose).
 def flywheelScenario = project.findProperty('e2eScenario') == 'flywheel'
 if (flywheelScenario) {
-    dependencies { modRuntimeOnly "maven.modrinth:create-fly:${create_fly_version}" }
     e2eCommands = [
             'time set noon', 'gamerule advance_time false', 'gamerule spawn_mobs false',
             'tp @a 0 -60 0 0 15',
@@ -46,20 +83,63 @@ if (flywheelScenario) {
     ].join(';')
 }
 
+// -Pe2eScenario=shadows: a large platform sub-level hovering (physics paused) over flat ground at noon, camera beside it
+// looking under it; compare screenshots with `sub_level_skylight_shadows` on and off (e2e/run/client/config/sable-client.toml)
+if (project.findProperty('e2eScenario') == 'shadows') {
+    e2eCommands = [
+            'time set noon', 'gamerule advance_time false', 'gamerule spawn_mobs false',
+            'tp @a 20 -60 30 146 6',
+            'forceload add -32 -32 47 32',
+            'execute positioned 0 -50 0 run sable spawn platform 12 minecraft:oak_planks',
+            'sable paused true',
+    ].join(';')
+}
+
+// -Pe2eScenario=inspector: put imguimc in the runtime (Sable's jar-in-jar is not unpacked for a project dependency)
+// and open the ImGui inspector window before the screenshots
+if (project.findProperty('e2eScenario') == 'inspector') {
+    dependencies {
+        modRuntimeOnly "maven.modrinth:imguimc:5h3ujBwr"
+        runtimeOnly "io.github.spair:imgui-java-binding:${imgui_java_version}"
+        runtimeOnly "io.github.spair:imgui-java-natives-macos:${imgui_java_version}"
+    }
+}
+
+def e2eSceneArgs = [
+        '-De2e.enabled=true',
+        // -Pe2ePrepare: boot without spawning anything (tools/e2e.sh uses it to make a clean template world)
+        "-De2e.commands=${project.hasProperty('e2ePrepare') || project.findProperty('e2eScenario') in ['playtest', 'water'] ? '' : e2eFlight ? e2eFlightCommands : e2eCommands}".toString(),
+        '-Dmixin.debug.verify=true',
+]
+// -Pe2ePlay: same scene, but no screenshots and the client stays open (tools/e2e.sh play)
+if (project.hasProperty('e2ePlay')) e2eSceneArgs += '-De2e.play=true'
+if (e2eFlight) e2eSceneArgs += '-De2e.scene=flight'
+// -Pe2eScenario=water: pool + hull + water occlusion region, screenshots (client only)
+// -Pe2eScenario=playtest: scripted assemble/collide/stand-on checks instead of the default scene (client only)
+if (project.hasProperty('e2eScenario')) e2eSceneArgs += "-De2e.scenario=${project.property('e2eScenario')}".toString()
+
 loom {
     runs {
-        configureEach {
-            vmArg '-De2e.enabled=true'
-            // -Pe2ePrepare: boot without spawning anything (tools/e2e.sh uses it to make a clean template world)
-            vmArg "-De2e.commands=${project.hasProperty('e2ePrepare') || project.findProperty('e2eScenario') in ['playtest', 'water'] ? '' : e2eCommands}"
-            vmArg '-Dmixin.debug.verify=true'
-            // -Pe2ePlay: same scene, but no screenshots and the client stays open (tools/e2e.sh play)
-            // -Pe2eScenario=water: pool + hull + water occlusion region, screenshots (client only)
-            // -Pe2eScenario=playtest: scripted assemble/collide/stand-on checks instead of the default scene (client only)
-            if (project.hasProperty('e2eScenario')) vmArg "-De2e.scenario=${project.property('e2eScenario')}"
-            if (project.hasProperty('e2ePlay')) vmArg '-De2e.play=true'
+        client { runDir 'run/client'; programArgs '--quickPlaySingleplayer', 'e2e'; vmArgs e2eSceneArgs }
+        server { runDir 'run/server'; vmArgs e2eSceneArgs }
+        // Headless GameTest server (Fabric API gametest module): runs every @GameTest registered under the
+        // `fabric-gametest` entrypoint, writes run/gametest/gametest-report.xml and exits with the number
+        // of failed required tests. -Pe2eFilter=<selector> runs a subset, e.g. -Pe2eFilter='mcf_e2e:sable_physics_*'
+        gametest {
+            server()
+            configName = 'E2E GameTest'
+            runDir 'run/gametest'
+            vmArgs '-Dfabric-api.gametest', '-De2e.gametest=true', '-De2e.gametest.report=gametest-report.xml',
+                    '-Dmixin.debug.verify=true'
+            if (project.hasProperty('e2eFilter')) vmArg "-Dfabric-api.gametest.filter=${project.property('e2eFilter')}"
+            // -Pe2eVerify (with a filter): run every selected test 100 times in each of the 4 rotations
+            if (project.hasProperty('e2eVerify')) vmArg '-Dfabric-api.gametest.verify=true'
         }
-        client { runDir 'run/client'; programArgs '--quickPlaySingleplayer', 'e2e' }
-        server { runDir 'run/server' }
     }
+}
+
+// Every GameTest run starts from a fresh world: the server saves the sub-levels and force-loaded chunks
+// the tests leave behind, which would otherwise be loaded again by the next run.
+tasks.matching { it.name == 'runGametest' }.configureEach {
+    doFirst { delete file('run/gametest/world') }
 }

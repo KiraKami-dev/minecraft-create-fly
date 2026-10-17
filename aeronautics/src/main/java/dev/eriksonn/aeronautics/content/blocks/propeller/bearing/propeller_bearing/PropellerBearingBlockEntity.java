@@ -1,9 +1,9 @@
 package dev.eriksonn.aeronautics.content.blocks.propeller.bearing.propeller_bearing;
 
+import com.zurrtum.create.AllBlockTags;
 import com.zurrtum.create.AllBlocks;
+import com.zurrtum.create.AllClientHandle;
 import com.zurrtum.create.AllSoundEvents;
-import com.zurrtum.create.AllTags;
-import com.zurrtum.create.client.api.goggles.IHaveGoggleInformation;
 import com.zurrtum.create.api.stress.BlockStressValues;
 import com.zurrtum.create.content.contraptions.AssemblyException;
 import com.zurrtum.create.content.contraptions.ControlledContraptionEntity;
@@ -11,16 +11,12 @@ import com.zurrtum.create.content.contraptions.bearing.BearingBlock;
 import com.zurrtum.create.content.contraptions.bearing.BearingContraption;
 import com.zurrtum.create.content.contraptions.bearing.MechanicalBearingBlockEntity;
 import com.zurrtum.create.api.behaviour.BlockEntityBehaviour;
-import com.zurrtum.create.client.foundation.blockEntity.behaviour.scrollValue.INamedIconOptions;
-import com.zurrtum.create.client.foundation.blockEntity.behaviour.scrollValue.ScrollOptionBehaviour;
-import com.zurrtum.create.client.foundation.gui.AllIcons;
-import com.zurrtum.create.foundation.utility.ServerSpeedProvider;
+import com.zurrtum.create.foundation.blockEntity.behaviour.scrollValue.ServerScrollOptionBehaviour;
 import dev.eriksonn.aeronautics.Aeronautics;
 import dev.eriksonn.aeronautics.config.AeroConfig;
 import dev.eriksonn.aeronautics.content.blocks.propeller.bearing.contraption.PropellerBearingContraptionEntity;
 import dev.eriksonn.aeronautics.content.blocks.propeller.bearing.sound.PropellerBearingSoundHolder;
 import dev.eriksonn.aeronautics.content.blocks.propeller.behaviour.PropellerActorBehaviour;
-import dev.eriksonn.aeronautics.data.AeroLang;
 import dev.eriksonn.aeronautics.index.AeroAdvancements;
 import dev.eriksonn.aeronautics.util.AeroSoundDistUtil;
 import dev.ryanhcode.sable.api.block.propeller.BlockEntityPropeller;
@@ -28,12 +24,8 @@ import dev.ryanhcode.sable.api.block.propeller.BlockEntitySubLevelPropellerActor
 import dev.simulated_team.simulated.api.BearingSlowdownController;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.core.HolderLookup;
 import net.minecraft.core.Vec3i;
-import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtUtils;
-import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
 import net.minecraft.util.Tuple;
@@ -41,6 +33,8 @@ import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
 import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Vector3d;
@@ -50,8 +44,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class PropellerBearingBlockEntity extends MechanicalBearingBlockEntity implements MechanicalBearingTileEntityExtension, BlockEntitySubLevelPropellerActor, IHaveGoggleInformation, BlockEntityPropeller {
-    private static final MutableComponent SCROLL_OPTION_TITLE = AeroLang.translate("scroll_option.thrust_direction").component();
+/**
+ * Client-only parts (thrust direction value box, goggle tooltip) are attached by {@code PropellerBearingClient}.
+ */
+public class PropellerBearingBlockEntity extends MechanicalBearingBlockEntity implements MechanicalBearingTileEntityExtension, BlockEntitySubLevelPropellerActor, BlockEntityPropeller {
     public final Vector3d thrustDirection;
     public final Vector3d facingDirection = new Vector3d();
     public float totalSailPower;
@@ -71,7 +67,7 @@ public class PropellerBearingBlockEntity extends MechanicalBearingBlockEntity im
      * last generated speed for server client syncing
      */
     protected float lastGeneratedSpeed;
-    private ScrollOptionBehaviour<ThrustDirection> thrustDirectionOption;
+    private ServerScrollOptionBehaviour<ThrustDirection> thrustDirectionOption;
     /**
      * client smoothed rotation speed
      */
@@ -119,13 +115,13 @@ public class PropellerBearingBlockEntity extends MechanicalBearingBlockEntity im
     }
 
     @Override
-    public void addBehaviours(final List<BlockEntityBehaviour> behaviours) {
+    public void addBehaviours(final List<BlockEntityBehaviour<?>> behaviours) {
         super.addBehaviours(behaviours);
         //remove normal mech bearing value box
         this.movementMode.setValue(2);
         behaviours.remove(this.movementMode);
 
-        this.thrustDirectionOption = new ScrollOptionBehaviour<>(ThrustDirection.class, SCROLL_OPTION_TITLE, this, this.getMovementModeSlot());
+        this.thrustDirectionOption = new ServerScrollOptionBehaviour<>(ThrustDirection.class, this);
 
         this.getThrustDirectionOption().withCallback($ -> this.onDirectionChanged());
         behaviours.add(this.getThrustDirectionOption());
@@ -167,7 +163,7 @@ public class PropellerBearingBlockEntity extends MechanicalBearingBlockEntity im
 
     public float getDirectionIndependentSpeed() {
         /*rotation speed is multiplied by direction, so we need to multiply by the direction again*/
-        return this.getBlockState().getValue(BlockStateProperties.FACING).getAxisDirection().getStep() * this.getClampedRotationRate() * (10f / 3) * (this.getThrustDirectionOption().value == 1 ? -1 : 1);
+        return this.getBlockState().getValue(BlockStateProperties.FACING).getAxisDirection().getStep() * this.getClampedRotationRate() * (10f / 3) * (this.getThrustDirectionOption().getValue() == 1 ? -1 : 1);
     }
 
     @Override
@@ -178,7 +174,7 @@ public class PropellerBearingBlockEntity extends MechanicalBearingBlockEntity im
     @Override
     public void tick() {
         this.prevAngle = this.angle;
-        final Vec3i normal = this.getBlockState().getValue(BlockStateProperties.FACING).getNormal();
+        final Vec3i normal = this.getBlockState().getValue(BlockStateProperties.FACING).getUnitVec3i();
         this.facingDirection.set(normal.getX(), normal.getY(), normal.getZ());
 
 //        SubLevelHelper.getContaining(this.level, this.getBlockPos());
@@ -216,43 +212,43 @@ public class PropellerBearingBlockEntity extends MechanicalBearingBlockEntity im
     public void activeTick() {
         this.behavior.pushEntities();
 
-        if (this.level.isClientSide) {
+        if (this.level.isClientSide()) {
             this.behavior.spawnParticles();
         }
     }
 
     public void onDirectionChanged() {
-        if (!this.level.isClientSide && this.running) {
+        if (!this.level.isClientSide() && this.running) {
             this.updateGeneratedRotation();
         }
     }
 
     @Override
-    public void write(final CompoundTag compound, final HolderLookup.Provider registries, final boolean clientPacket) {
-        compound.putFloat("LastGenerated", this.lastGeneratedSpeed);
-        compound.putFloat("RotationSpeed", this.getRotationSpeed());
+    public void write(final ValueOutput view, final boolean clientPacket) {
+        view.putFloat("LastGenerated", this.lastGeneratedSpeed);
+        view.putFloat("RotationSpeed", this.getRotationSpeed());
 
-        compound.putBoolean("DisassemblySlowdown", this.disassemblySlowdown);
+        view.putBoolean("DisassemblySlowdown", this.disassemblySlowdown);
         if (this.disassemblySlowdown) {
-            this.slowdownController.serializeIntoNBT(compound);
+            this.slowdownController.serialize(view);
         }
 
-        super.write(compound, registries, clientPacket);
+        super.write(view, clientPacket);
     }
 
     @Override
-    protected void read(final CompoundTag compound, final HolderLookup.Provider registries, final boolean clientPacket) {
+    protected void read(final ValueInput view, final boolean clientPacket) {
         if (!this.wasMoved) {
-            this.lastGeneratedSpeed = compound.getFloat("LastGenerated");
+            this.lastGeneratedSpeed = view.getFloatOr("LastGenerated", 0);
         }
 
-        this.setRotationSpeed(compound.getFloat("RotationSpeed"));
-        this.disassemblySlowdown = compound.getBoolean("DisassemblySlowdown");
+        this.setRotationSpeed(view.getFloatOr("RotationSpeed", 0));
+        this.disassemblySlowdown = view.getBooleanOr("DisassemblySlowdown", false);
         if (this.disassemblySlowdown) {
-            this.slowdownController.deserializeFromNBT(compound);
+            this.slowdownController.deserialize(view);
         }
 
-        super.read(compound, registries, clientPacket);
+        super.read(view, clientPacket);
     }
 
     @Override
@@ -279,8 +275,8 @@ public class PropellerBearingBlockEntity extends MechanicalBearingBlockEntity im
             speed = this.slowdownController.getSpeed(1);
         }
 
-        if (this.level.isClientSide) {
-            speed *= ServerSpeedProvider.get();
+        if (this.level.isClientSide()) {
+            speed *= AllClientHandle.INSTANCE.getServerSpeed();
             speed += this.clientAngleDiff / 3f;
         }
 
@@ -305,7 +301,7 @@ public class PropellerBearingBlockEntity extends MechanicalBearingBlockEntity im
     }
 
     private void updateSlowdownSpeed() {
-        if (this.slowdownController.stepGoal() && !this.level.isClientSide) {
+        if (this.slowdownController.stepGoal() && !this.level.isClientSide()) {
             this.disassemble();
             return;
         }
@@ -319,7 +315,7 @@ public class PropellerBearingBlockEntity extends MechanicalBearingBlockEntity im
         super.attach(contraption);
         this.contraptionInitialize();
 
-        if (this.level.isClientSide) {
+        if (this.level.isClientSide()) {
             this.currentSoundInstance = AeroSoundDistUtil.tickPropellerSounds(this, this.currentSoundInstance);
         }
     }
@@ -403,8 +399,8 @@ public class PropellerBearingBlockEntity extends MechanicalBearingBlockEntity im
 
     public float getSailPower(final StructureTemplate.StructureBlockInfo info) {
         BlockState state = info.state();
-        if (AllBlocks.COPYCAT_PANEL.has(state)) {
-            final BlockState newState = NbtUtils.readBlockState(this.blockHolderGetter(), info.nbt().getCompound("Material"));
+        if (state.is(AllBlocks.COPYCAT_PANEL)) {
+            final BlockState newState = NbtUtils.readBlockState(this.blockHolderGetter(), info.nbt().getCompoundOrEmpty("Material"));
             if (!newState.isAir()) {
                 state = newState;
             }
@@ -412,7 +408,7 @@ public class PropellerBearingBlockEntity extends MechanicalBearingBlockEntity im
 
         float power = 0;
 
-        if (state.is(AllTags.AllBlockTags.WINDMILL_SAILS.tag)) {
+        if (state.is(AllBlockTags.WINDMILL_SAILS)) {
             power += 1;
         }
 
@@ -426,7 +422,7 @@ public class PropellerBearingBlockEntity extends MechanicalBearingBlockEntity im
 
         if (this.movedContraption != null) {
             final Map<BlockPos, StructureTemplate.StructureBlockInfo> Blocks = this.movedContraption.getContraption().getBlocks();
-            final Vec3i direction = this.getBlockState().getValue(PropellerBearingBlock.FACING).getNormal();
+            final Vec3i direction = this.getBlockState().getValue(PropellerBearingBlock.FACING).getUnitVec3i();
             final HashMap<Integer, Tuple<Integer, Integer>> layerHashMap = new HashMap<>();
 
             for (final Map.Entry<BlockPos, StructureTemplate.StructureBlockInfo> entry : Blocks.entrySet()) {
@@ -508,17 +504,12 @@ public class PropellerBearingBlockEntity extends MechanicalBearingBlockEntity im
         this.rotationSpeed = rotationSpeed;
     }
 
-    public ScrollOptionBehaviour<ThrustDirection> getThrustDirectionOption() {
+    public ServerScrollOptionBehaviour<ThrustDirection> getThrustDirectionOption() {
         return this.thrustDirectionOption;
     }
 
-    @Override
-    public boolean addToGoggleTooltip(final List<Component> tooltip, final boolean isPlayerSneaking) {
-        if (!super.addToGoggleTooltip(tooltip, isPlayerSneaking)) {
-            return false;
-        }
-
-        return this.behavior.addToGoggleTooltip(tooltip, isPlayerSneaking);
+    public PropellerActorBehaviour getPropellerBehaviour() {
+        return this.behavior;
     }
 
     public PropellerBearingContraptionEntity getMovedContraption() {
@@ -527,23 +518,18 @@ public class PropellerBearingBlockEntity extends MechanicalBearingBlockEntity im
         return null;
     }
 
-    public enum ThrustDirection implements INamedIconOptions {
-        RIGHT_HANDED(AllIcons.I_REFRESH, "pull_when_clockwise"), LEFT_HANDED(AllIcons.I_ROTATE_CCW, "push_when_clockwise");
+    /**
+     * Icons ({@code I_REFRESH}, {@code I_ROTATE_CCW}) are mapped client-side by {@code PropellerBearingClient}.
+     */
+    public enum ThrustDirection {
+        RIGHT_HANDED("pull_when_clockwise"), LEFT_HANDED("push_when_clockwise");
 
         private final String translationKey;
-        private final AllIcons icon;
 
-        ThrustDirection(final AllIcons icon, final String name) {
-            this.icon = icon;
+        ThrustDirection(final String name) {
             this.translationKey = Aeronautics.MOD_ID + ".generic." + name;
         }
 
-        @Override
-        public AllIcons getIcon() {
-            return this.icon;
-        }
-
-        @Override
         public String getTranslationKey() {
             return this.translationKey;
         }

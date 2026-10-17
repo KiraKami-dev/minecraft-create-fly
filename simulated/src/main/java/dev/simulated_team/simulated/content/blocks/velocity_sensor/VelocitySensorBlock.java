@@ -93,6 +93,7 @@ public class VelocitySensorBlock extends AbstractDirectionalAxisBlock implements
         return direction != null && getAxis(state) == direction.getAxis();
     }
 
+
     @Override
     protected boolean isSignalSource(final BlockState blockState) {
         return true;
@@ -110,7 +111,7 @@ public class VelocitySensorBlock extends AbstractDirectionalAxisBlock implements
 
     @Override
     public BlockEntityType<? extends VelocitySensorBlockEntity> getBlockEntityType() {
-        return SimBlockEntityTypes.VELOCITY_SENSOR.get();
+        return SimBlockEntityTypes.VELOCITY_SENSOR;
     }
     private static final VelocitySensorShaper VELOCITY_SENSOR = VelocitySensorShaper.make();
     @Override

@@ -1,13 +1,14 @@
 package dev.simulated_team.simulated.content.particle;
 
-import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.particle.*;
 import net.minecraft.client.renderer.LevelRenderer;
+import net.minecraft.client.renderer.state.QuadParticleRenderState;
 import net.minecraft.core.BlockPos;
 import net.minecraft.util.Mth;
+import net.minecraft.util.RandomSource;
 import net.minecraft.world.phys.Vec3;
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
@@ -48,8 +49,9 @@ public class MagnetFieldParticle2 extends SimpleAnimatedParticle {
             this.setColor(1,0.7f,0.7f);
     }
 
-    public ParticleRenderType getRenderType() {
-        return ParticleRenderType.PARTICLE_SHEET_TRANSLUCENT;
+    @Override
+    public SingleQuadParticle.Layer getLayer() {
+        return SingleQuadParticle.Layer.TRANSLUCENT;
     }
 
     private void dissipate() {
@@ -58,7 +60,7 @@ public class MagnetFieldParticle2 extends SimpleAnimatedParticle {
 
 
     @Override
-    public void render(final VertexConsumer buffer, final Camera renderInfo, final float partialTicks) {
+    public void extract(final QuadParticleRenderState state, final Camera renderInfo, final float partialTicks) {
         final Quaternionf quaternionf = new Quaternionf();
         this.getFacingCameraMode().setRotation(quaternionf, renderInfo, partialTicks);
         if (this.roll != 0.0F) {
@@ -77,7 +79,7 @@ public class MagnetFieldParticle2 extends SimpleAnimatedParticle {
         //quaternionf.set(1,1,-1,1);
         //quaternionf.set(new Quaternionf().slerp(quaternionf,partialTicks));
 
-        final Vec3 vec3 = renderInfo.getPosition();
+        final Vec3 vec3 = renderInfo.position();
         final float x = (float)(this.x - vec3.x());
         final float y = (float)(this.y - vec3.y());
         final float z = (float)(this.z - vec3.z());
@@ -94,7 +96,7 @@ public class MagnetFieldParticle2 extends SimpleAnimatedParticle {
         quaternionf.lookAlong(new Vector3f(dirX,dirY,dirZ),new Vector3f(x,y,z)).conjugate();
         quaternionf.rotateX((float)(Math.PI/2.0));
 
-        this.renderRotatedQuad(buffer, quaternionf, x+offsetX, y+offsetY, z+offsetZ, partialTicks);
+        this.extractRotatedQuad(state, quaternionf, x+offsetX, y+offsetY, z+offsetZ, partialTicks);
     }
 
     @Override
@@ -115,6 +117,7 @@ public class MagnetFieldParticle2 extends SimpleAnimatedParticle {
         this.selectSprite(this.age +1);
     }
 
+    @Override
     public int getLightColor(final float partialTick) {
         final BlockPos blockpos = new BlockPos((int) this.x, (int) this.y, (int) this.z);
         return this.level.isLoaded(blockpos) ? LevelRenderer.getLightColor(this.level, blockpos) : 0;
@@ -135,8 +138,9 @@ public class MagnetFieldParticle2 extends SimpleAnimatedParticle {
             this.spriteSet = animatedSprite;
         }
 
+        @Override
         public Particle createParticle(final MagnetFieldParticleData2 data, final ClientLevel level, final double x, final double y, final double z,
-                                       final double xSpeed, final double ySpeed, final double zSpeed) {
+                                       final double xSpeed, final double ySpeed, final double zSpeed, final RandomSource random) {
             return new MagnetFieldParticle2(level, x, y, z, data.previousOffset.x,data.previousOffset.y,data.previousOffset.z,data.nextOffset.x,data.nextOffset.y,data.nextOffset.z, this.spriteSet, data.isNegative(),data.getTimeUntilEnd());
         }
     }

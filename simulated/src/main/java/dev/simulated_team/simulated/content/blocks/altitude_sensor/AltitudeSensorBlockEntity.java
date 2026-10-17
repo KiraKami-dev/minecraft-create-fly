@@ -1,6 +1,5 @@
 package dev.simulated_team.simulated.content.blocks.altitude_sensor;
 
-import com.zurrtum.create.client.api.goggles.IHaveGoggleInformation;
 import com.zurrtum.create.content.equipment.clipboard.ClipboardCloneable;
 import com.zurrtum.create.foundation.blockEntity.SmartBlockEntity;
 import com.zurrtum.create.api.behaviour.BlockEntityBehaviour;
@@ -8,27 +7,22 @@ import dev.ryanhcode.sable.Sable;
 import dev.ryanhcode.sable.api.SubLevelHelper;
 import dev.ryanhcode.sable.physics.config.dimension_physics.DimensionPhysicsData;
 import dev.ryanhcode.sable.companion.math.JOMLConversion;
-import dev.simulated_team.simulated.data.SimLang;
 import dev.simulated_team.simulated.data.advancements.SimAdvancements;
 import dev.simulated_team.simulated.util.Observable;
-import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.core.HolderLookup;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.network.chat.Component;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.phys.Vec3;
-import org.jetbrains.annotations.NotNull;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
 import org.joml.Vector3d;
 import org.joml.Vector3dc;
 
 import java.util.List;
 
-public class AltitudeSensorBlockEntity extends SmartBlockEntity implements IHaveGoggleInformation, Observable, ClipboardCloneable {
+public class AltitudeSensorBlockEntity extends SmartBlockEntity implements Observable, ClipboardCloneable {
 	public float highSignal = 1.0f;
 	public float lowSignal = 0.0f;
 
@@ -63,11 +57,11 @@ public class AltitudeSensorBlockEntity extends SmartBlockEntity implements IHave
 	}
 
 	public float toWorldHeight(final float normalHeight) {
-		return Mth.map(normalHeight, 0.0f, 1.0f, this.getLevel().getMinBuildHeight(), this.getLevel().getMaxBuildHeight());
+		return Mth.map(normalHeight, 0.0f, 1.0f, this.getLevel().getMinY(), this.getLevel().getMaxY() + 1);
 	}
 
 	public float toNormalHeight(final float worldHeight) {
-		return Mth.map(worldHeight, this.getLevel().getMinBuildHeight(), this.getLevel().getMaxBuildHeight(), 0.0f, 1.0f);
+		return Mth.map(worldHeight, this.getLevel().getMinY(), this.getLevel().getMaxY() + 1, 0.0f, 1.0f);
 	}
 
 	public double getAirPressure() {
@@ -123,38 +117,17 @@ public class AltitudeSensorBlockEntity extends SmartBlockEntity implements IHave
 	}
 
 	@Override
-	protected void read(final CompoundTag tag, final HolderLookup.Provider registries, final boolean clientPacket) {
-		super.read(tag, registries, clientPacket);
-		this.highSignal = tag.getFloat("high_signal");
-		this.lowSignal = tag.getFloat("low_signal");
+	protected void read(final ValueInput view, final boolean clientPacket) {
+		super.read(view, clientPacket);
+		this.highSignal = view.getFloatOr("high_signal", 0);
+		this.lowSignal = view.getFloatOr("low_signal", 0);
 	}
 
 	@Override
-	protected void write(final CompoundTag tag, final HolderLookup.Provider registries, final boolean clientPacket) {
-		super.write(tag, registries, clientPacket);
-		tag.putFloat("high_signal", this.highSignal);
-		tag.putFloat("low_signal", this.lowSignal);
-	}
-
-	@Override
-	public boolean addToGoggleTooltip(final List<Component> tooltip, final boolean isPlayerSneaking) {
-		final float height = this.getWorldHeight();
-		final float airPressure = (float) this.getAirPressure() * 100.0f;
-
-		SimLang.blockName(getBlockState())
-				.forGoggles(tooltip, 1);
-
-		SimLang.translate("altitude_sensor.height", SimLang.text(String.format("%.2f", height)).style(ChatFormatting.AQUA))
-				.style(ChatFormatting.GRAY)
-				.forGoggles(tooltip, 2);
-
-		SimLang.translate("altitude_sensor.air_pressure", SimLang.text(String.format("%.2f%%", airPressure)).style(ChatFormatting.AQUA))
-				.style(ChatFormatting.GRAY)
-				.forGoggles(tooltip, 2);
-
-		this.sendObserved(this.getBlockPos());
-
-		return true;
+	protected void write(final ValueOutput view, final boolean clientPacket) {
+		super.write(view, clientPacket);
+		view.putFloat("high_signal", this.highSignal);
+		view.putFloat("low_signal", this.lowSignal);
 	}
 
 	@Override
@@ -170,25 +143,25 @@ public class AltitudeSensorBlockEntity extends SmartBlockEntity implements IHave
 	}
 
 	@Override
-	public boolean writeToClipboard(final HolderLookup.@NotNull Provider registries, final CompoundTag tag, final Direction side) {
-		tag.putFloat("high_signal", this.highSignal);
-		tag.putFloat("low_signal", this.lowSignal);
+	public boolean writeToClipboard(final ValueOutput view, final Direction side) {
+		view.putFloat("high_signal", this.highSignal);
+		view.putFloat("low_signal", this.lowSignal);
 		return true;
 	}
 
 	@Override
-	public boolean readFromClipboard(final HolderLookup.@NotNull Provider registries, final CompoundTag tag, final Player player, final Direction side, final boolean simulate) {
+	public boolean readFromClipboard(final ValueInput view, final Player player, final Direction side, final boolean simulate) {
 		if(simulate) {
 			return true;
 		}
-		this.highSignal = tag.getFloat("high_signal");
-		this.lowSignal = tag.getFloat("low_signal");
+		this.highSignal = view.getFloatOr("high_signal", 0);
+		this.lowSignal = view.getFloatOr("low_signal", 0);
 		this.setChanged();
 		this.sendData();
 		return true;
 	}
 
 	@Override
-	public void addBehaviours(final List<BlockEntityBehaviour> behaviours) {
+	public void addBehaviours(final List<BlockEntityBehaviour<?>> behaviours) {
 	}
 }

@@ -9,15 +9,15 @@ import dev.simulated_team.simulated.index.SimBlockShapes;
 import dev.simulated_team.simulated.index.SimBlocks;
 import dev.simulated_team.simulated.service.SimItemService;
 import dev.simulated_team.simulated.util.placement_helpers.SymmetricSailPlacementHelper;
-import net.createmod.catnip.data.Iterate;
-import net.createmod.catnip.placement.IPlacementHelper;
-import net.createmod.catnip.placement.PlacementHelpers;
+import com.zurrtum.create.catnip.data.Iterate;
+import com.zurrtum.create.catnip.placement.IPlacementHelper;
+import com.zurrtum.create.catnip.placement.PlacementHelpers;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.InteractionHand;
-import net.minecraft.world.ItemInteractionResult;
+import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
@@ -67,7 +67,7 @@ public class SymmetricSailBlock extends RotatedPillarBlock implements IWrenchabl
     }
 
     public void applyDye(final BlockState state, final Level world, final BlockPos pos, final Vec3 hit, @Nullable final DyeColor color) {
-        BlockState newState = (SimBlocks.DYED_SYMMETRIC_SAILS.get(color)).getDefaultState();
+        BlockState newState = (SimBlocks.DYED_SYMMETRIC_SAILS.get(color)).defaultBlockState();
         newState = BlockHelper.copyProperties(state, newState);
 
         // Dye the block itself
@@ -125,23 +125,23 @@ public class SymmetricSailBlock extends RotatedPillarBlock implements IWrenchabl
     }
 
     @Override
-    protected ItemInteractionResult useItemOn(final ItemStack itemStack, final BlockState blockState, final Level level, final BlockPos blockPos, final Player player, final InteractionHand interactionHand, final BlockHitResult blockHitResult) {
+    protected InteractionResult useItemOn(final ItemStack itemStack, final BlockState blockState, final Level level, final BlockPos blockPos, final Player player, final InteractionHand interactionHand, final BlockHitResult blockHitResult) {
         final ItemStack heldItem = player.getItemInHand(InteractionHand.MAIN_HAND);
 
         final DyeColor color = SimItemService.getDyeColor(heldItem);
         if (color != null) {
-            if (!level.isClientSide)
+            if (!level.isClientSide())
                 level.playSound(null, blockPos, SoundEvents.DYE_USE, SoundSource.BLOCKS, 1.0f, 1.1f - level.random.nextFloat() * .2f);
             this.applyDye(blockState, level, blockPos, blockHitResult.getLocation(), color);
-            return ItemInteractionResult.SUCCESS;
+            return InteractionResult.SUCCESS;
         }
 
         final IPlacementHelper placementHelper = PlacementHelpers.get(placementHelperId);
         if (placementHelper.matchesItem(heldItem)) {
-            placementHelper.getOffset(player, level, blockState, blockPos, blockHitResult).placeInWorld(level, (BlockItem) heldItem.getItem(), player, interactionHand, blockHitResult);
-            return ItemInteractionResult.SUCCESS;
+            placementHelper.getOffset(player, level, blockState, blockPos, blockHitResult).placeInWorld(level, (BlockItem) heldItem.getItem(), player, interactionHand);
+            return InteractionResult.SUCCESS;
         }
-        return ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
+        return InteractionResult.TRY_WITH_EMPTY_HAND;
     }
 
     public DyeColor getColor() {
@@ -159,14 +159,14 @@ public class SymmetricSailBlock extends RotatedPillarBlock implements IWrenchabl
     }
 
     @Override
-    public void fallOn(final Level level, final BlockState state, final BlockPos pos, final Entity entity, final float fallDistance) {
+    public void fallOn(final Level level, final BlockState state, final BlockPos pos, final Entity entity, final double fallDistance) {
         super.fallOn(level, state, pos, entity, 0);
     }
 
     @Override
-    public void updateEntityAfterFallOn(final BlockGetter level, final Entity entity) {
+    public void updateEntityMovementAfterFallOn(final BlockGetter level, final Entity entity) {
         if (entity.isSuppressingBounce()) {
-            super.updateEntityAfterFallOn(level, entity);
+            super.updateEntityMovementAfterFallOn(level, entity);
         } else {
             this.bounce(entity);
         }
@@ -191,8 +191,8 @@ public class SymmetricSailBlock extends RotatedPillarBlock implements IWrenchabl
     }
 
     @Override
-    public ItemStack getCloneItemStack(final LevelReader level, final BlockPos pos, final BlockState state) {
-        return SimBlocks.WHITE_SYMMETRIC_SAIL.asStack();
+    public ItemStack getCloneItemStack(final LevelReader level, final BlockPos pos, final BlockState state, final boolean includeData) {
+        return new ItemStack(SimBlocks.WHITE_SYMMETRIC_SAIL);
     }
 
     @Override
@@ -202,7 +202,7 @@ public class SymmetricSailBlock extends RotatedPillarBlock implements IWrenchabl
 
     @Override
     public ItemRequirement getRequiredItems(final BlockState state, @org.jetbrains.annotations.Nullable final BlockEntity blockEntity) {
-        return new ItemRequirement(ItemRequirement.ItemUseType.CONSUME, SimBlocks.WHITE_SYMMETRIC_SAIL.asStack());
+        return new ItemRequirement(ItemRequirement.ItemUseType.CONSUME, new ItemStack(SimBlocks.WHITE_SYMMETRIC_SAIL));
     }
 }
 

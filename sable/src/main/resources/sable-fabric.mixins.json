@@ -7,9 +7,6 @@
   "client": [
     "block_outline_render.LevelRendererMixin",
     "camera_rotation.CameraMixin",
-    "compatibility.create.flywheel.AbstractBlockEntityVisualMixin",
-    "compatibility.create.flywheel.BlockEntityStorageMixin",
-    "compatibility.create.flywheel.RenderDispatcherImplMixin",
     "dynamic_directional_shading.IndigoRenderContextMixin",
     "dynamic_directional_shading.SectionCompilerMixin",
     "fix_bundle_packet.ClientPacketListenerMixin",

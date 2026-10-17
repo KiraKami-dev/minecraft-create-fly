@@ -2,82 +2,132 @@ package dev.eriksonn.aeronautics.content.blocks.mounted_potato_cannon;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
-import com.zurrtum.create.content.kinetics.base.DirectionalAxisKineticBlock;
+import com.zurrtum.create.catnip.math.AngleHelper;
+import com.zurrtum.create.catnip.theme.Color;
+import com.zurrtum.create.client.catnip.render.CachedBuffers;
+import com.zurrtum.create.client.catnip.render.SuperByteBuffer;
 import com.zurrtum.create.client.content.kinetics.base.KineticBlockEntityRenderer;
-import com.zurrtum.create.client.foundation.blockEntity.behaviour.filtering.FilteringRenderer;
-import com.zurrtum.create.foundation.blockEntity.renderer.SafeBlockEntityRenderer;
-import dev.engine_room.flywheel.api.visualization.VisualizationManager;
-import dev.engine_room.flywheel.lib.transform.PoseTransformStack;
-import dev.engine_room.flywheel.lib.transform.TransformStack;
+import com.zurrtum.create.client.flywheel.api.visualization.VisualizationManager;
+import com.zurrtum.create.client.flywheel.lib.transform.PoseTransformStack;
+import com.zurrtum.create.client.flywheel.lib.transform.TransformStack;
+import com.zurrtum.create.content.kinetics.base.DirectionalAxisKineticBlock;
 import dev.eriksonn.aeronautics.index.AeroPartialModels;
-import net.createmod.catnip.animation.AnimationTickHolder;
-import net.createmod.catnip.math.AngleHelper;
-import net.createmod.catnip.render.CachedBuffers;
-import net.createmod.catnip.render.SuperByteBuffer;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.MultiBufferSource;
-import net.minecraft.client.renderer.rendertype.RenderType;
+import net.minecraft.client.renderer.SubmitNodeCollector;
+import net.minecraft.client.renderer.blockentity.BlockEntityRenderer;
 import net.minecraft.client.renderer.blockentity.BlockEntityRendererProvider;
-import net.minecraft.client.renderer.entity.ItemRenderer;
+import net.minecraft.client.renderer.blockentity.state.BlockEntityRenderState;
+import net.minecraft.client.renderer.feature.ModelFeatureRenderer;
+import net.minecraft.client.renderer.item.ItemModelResolver;
+import net.minecraft.client.renderer.item.ItemStackRenderState;
+import net.minecraft.client.renderer.rendertype.RenderTypes;
+import net.minecraft.client.renderer.state.CameraRenderState;
+import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.core.Direction;
 import net.minecraft.core.Vec3i;
 import net.minecraft.util.Mth;
 import net.minecraft.world.item.ItemDisplayContext;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
+import net.minecraft.world.phys.Vec3;
+import org.jetbrains.annotations.Nullable;
 import org.joml.Quaternionf;
 
-public class MountedPotatoCannonRenderer extends SafeBlockEntityRenderer<MountedPotatoCannonBlockEntity> {
+/**
+ * Barrel, bellows and the loaded item are always drawn here; the shaft and cog only without Flywheel (the visual draws
+ * them otherwise), so this renderer is registered alongside {@link MountedPotatoCannonVisual}.
+ */
+public class MountedPotatoCannonRenderer implements BlockEntityRenderer<MountedPotatoCannonBlockEntity, MountedPotatoCannonRenderer.MountedPotatoCannonRenderState> {
+
+	private final ItemModelResolver itemModelResolver;
 
 	public MountedPotatoCannonRenderer(final BlockEntityRendererProvider.Context context) {
+		this.itemModelResolver = context.itemModelResolver();
 	}
 
 	@Override
-	protected void renderSafe(final MountedPotatoCannonBlockEntity be, final float partialTicks, final PoseStack ms, final MultiBufferSource buffer, final int light, final int overlay) {
-		FilteringRenderer.renderOnBlockEntity(be, partialTicks, ms, buffer, light, overlay);
-		this.renderComponents(be, partialTicks, ms, buffer, light, overlay);
-		this.renderItem(be, partialTicks, ms, buffer, light, overlay);
+	public MountedPotatoCannonRenderState createRenderState() {
+		return new MountedPotatoCannonRenderState();
 	}
 
-	private void renderComponents(final MountedPotatoCannonBlockEntity be, final float partialTicks, final PoseStack ms, final MultiBufferSource buffer, final int light, final int overlay) {
-		final VertexConsumer vb = buffer.getBuffer(RenderType.cutoutMipped());
+	@Override
+	public void extractRenderState(final MountedPotatoCannonBlockEntity be, final MountedPotatoCannonRenderState state, final float partialTicks,
+								   final Vec3 cameraPos, @Nullable final ModelFeatureRenderer.CrumblingOverlay crumblingOverlay) {
+		BlockEntityRenderState.extractBase(be, state, crumblingOverlay);
+		this.extractComponents(be, state, partialTicks);
+		this.extractItem(be, state, partialTicks);
+	}
 
-		final boolean drawParts = !VisualizationManager.supportsVisualization(be.getLevel());
-		if (drawParts) {
-			KineticBlockEntityRenderer.renderRotatingKineticBlock(be, this.getRenderedBlockState(be), ms, vb, light);
+	private void extractComponents(final MountedPotatoCannonBlockEntity be, final MountedPotatoCannonRenderState state, final float partialTicks) {
+		final BlockState blockState = state.blockState;
+
+		state.drawParts = !VisualizationManager.supportsVisualization(be.getLevel());
+		if (state.drawParts) {
+			// upstream KineticBlockEntityRenderer.renderRotatingKineticBlock(be, shaft, ...)
+			final Direction.Axis axis = KineticBlockEntityRenderer.getRotationAxisOf(be);
+			state.shaft = CachedBuffers.block(KineticBlockEntityRenderer.KINETIC_BLOCK, this.getRenderedBlockState(be));
+			state.shaftAngle = KineticBlockEntityRenderer.getAngleForBe(be, be.getBlockPos(), axis);
+			state.shaftDirection = Direction.fromAxisAndDirection(axis, Direction.AxisDirection.POSITIVE);
+			state.shaftColor = KineticBlockEntityRenderer.getColor(be);
+
+			state.cog = CachedBuffers.partial(AeroPartialModels.CANNON_COG, blockState);
+			state.cogAngle = be.getCogwheelAngle(partialTicks);
 		}
-
-		final BlockState blockState = be.getBlockState();
 
 		//TODO Don't make this jank
-		final float barrelOffset = !be.isBlocked() ? be.getBarrelDistance(partialTicks) : (float) -(be.getBlockedLength() / 2);
-		final float bellowOffset = -be.getBellowDistance(partialTicks);
+		state.barrelOffset = !be.isBlocked() ? be.getBarrelDistance(partialTicks) : (float) -(be.getBlockedLength() / 2);
+		state.bellowOffset = -be.getBellowDistance(partialTicks);
 
-		final SuperByteBuffer barrel = CachedBuffers.partial(AeroPartialModels.CANNON_BARREL, blockState);
-		transform(barrel, blockState, true)
-				.translate(0, 0, barrelOffset)
-				.light(light)
-				.renderInto(ms, vb);
+		state.barrel = CachedBuffers.partial(AeroPartialModels.CANNON_BARREL, blockState);
+		state.bellow = CachedBuffers.partial(AeroPartialModels.CANNON_BELLOW, blockState);
+	}
 
-		final SuperByteBuffer bellow = CachedBuffers.partial(AeroPartialModels.CANNON_BELLOW, blockState);
-		transform(bellow, blockState, true)
-				.translate(0, bellowOffset, 0)
-				.light(light)
-				.renderInto(ms, vb);
-
-		transform(bellow, blockState, true)
-				.rotateCentered((float) (Math.PI), Direction.SOUTH)
-				.light(light)
-				.translate(0, bellowOffset, 0).renderInto(ms, vb);
-
-		if (drawParts) {
-			final SuperByteBuffer cogwheel = CachedBuffers.partial(AeroPartialModels.CANNON_COG, blockState);
-			final float angle = be.getCogwheelAngle(partialTicks);
-			transform(cogwheel, blockState, true)
-					.rotateCentered(Mth.DEG_TO_RAD * (angle % 360), Direction.SOUTH)
-					.light(light)
-					.renderInto(ms, vb);
+	private void extractItem(final MountedPotatoCannonBlockEntity be, final MountedPotatoCannonRenderState state, final float partialTicks) {
+		state.item = null;
+		if (be.getInventory().isEmpty()) {
+			return;
 		}
+
+		// upstream ItemRenderer#renderStatic(stack, FIXED, light, overlay, ms, buffer, level, 0)
+		final ItemStackRenderState item = new ItemStackRenderState();
+		this.itemModelResolver.updateForTopItem(item, be.getInventory().slot.getStack(), ItemDisplayContext.FIXED, be.getLevel(), null, 0);
+		state.item = item;
+
+		final float normalizedTimer = be.getItemTime(partialTicks);
+		float itemPosition = !be.isBlocked() ? 1 - (float) Math.exp(-0.25f * normalizedTimer) : 0;
+		itemPosition *= 0.8f;
+		state.itemPosition = itemPosition;
+
+		final int itemRotationId = be.getItemRotationId();
+		final Quaternionf Q = new Quaternionf((float) Math.sin(itemRotationId * 0.4f), (float) Math.cos(itemRotationId * 1.4f), (float) Math.sin(itemRotationId * 3.0f), (float) Math.cos(itemRotationId * 5.0f));
+		Q.normalize();
+		state.itemRotation = Q;
+	}
+
+	@Override
+	public void submit(final MountedPotatoCannonRenderState state, final PoseStack ms, final SubmitNodeCollector queue, final CameraRenderState cameraState) {
+		queue.submitCustomGeometry(ms, RenderTypes.cutoutMovingBlock(), state::renderComponents);
+		this.submitItem(state, ms, queue);
+	}
+
+	private void submitItem(final MountedPotatoCannonRenderState state, final PoseStack ms, final SubmitNodeCollector queue) {
+		if (state.item == null) {
+			return;
+		}
+
+		final TransformStack<PoseTransformStack> msr = TransformStack.of(ms);
+		ms.pushPose();
+		msr.center();
+
+		final Direction facing = state.blockState.getValue(BlockStateProperties.FACING);
+		final Vec3i facingVec = facing.getUnitVec3i();
+
+		final float itemScale = 0.35f;
+		final float itemPosition = state.itemPosition;
+		ms.translate(facingVec.getX() * itemPosition, facing.getStepY() * itemPosition, facingVec.getZ() * itemPosition);
+		ms.scale(itemScale, itemScale, itemScale);
+		msr.rotate(state.itemRotation);
+		state.item.submit(ms, queue, state.lightCoords, OverlayTexture.NO_OVERLAY, 0);
+		ms.popPose();
 	}
 
 	private static SuperByteBuffer transform(final SuperByteBuffer buffer, final BlockState state, final boolean axisDirectionMatters) {
@@ -101,31 +151,61 @@ public class MountedPotatoCannonRenderer extends SafeBlockEntityRenderer<Mounted
 		return KineticBlockEntityRenderer.shaft(KineticBlockEntityRenderer.getRotationAxisOf(te));
 	}
 
-	public void renderItem(final MountedPotatoCannonBlockEntity be, final float partialTicks, final PoseStack ms, final MultiBufferSource buffer, final int light, final int overlay) {
-		if (be.getInventory().isEmpty()) {
-			return;
+	public static class MountedPotatoCannonRenderState extends BlockEntityRenderState {
+		public boolean drawParts;
+		public SuperByteBuffer shaft;
+		public float shaftAngle;
+		public Direction shaftDirection;
+		public Color shaftColor;
+		public SuperByteBuffer cog;
+		public float cogAngle;
+
+		public SuperByteBuffer barrel;
+		public SuperByteBuffer bellow;
+		public float barrelOffset;
+		public float bellowOffset;
+
+		@Nullable
+		public ItemStackRenderState item;
+		public float itemPosition;
+		public Quaternionf itemRotation;
+
+		/**
+		 * Upstream {@code renderComponents}; the cached buffers are shared, so all transforms are applied here
+		 */
+		public void renderComponents(final PoseStack.Pose pose, final VertexConsumer vb) {
+			final BlockState blockState = this.blockState;
+			final int light = this.lightCoords;
+
+			if (this.drawParts) {
+				// upstream KineticBlockEntityRenderer.kineticRotationTransform
+				this.shaft.light(light);
+				this.shaft.rotateCentered(this.shaftAngle, this.shaftDirection);
+				this.shaft.color(this.shaftColor);
+				this.shaft.renderInto(pose, vb);
+			}
+
+			transform(this.barrel, blockState, true)
+					.translate(0, 0, this.barrelOffset)
+					.light(light)
+					.renderInto(pose, vb);
+
+			transform(this.bellow, blockState, true)
+					.translate(0, this.bellowOffset, 0)
+					.light(light)
+					.renderInto(pose, vb);
+
+			transform(this.bellow, blockState, true)
+					.rotateCentered((float) (Math.PI), Direction.SOUTH)
+					.light(light)
+					.translate(0, this.bellowOffset, 0).renderInto(pose, vb);
+
+			if (this.drawParts) {
+				transform(this.cog, blockState, true)
+						.rotateCentered(Mth.DEG_TO_RAD * (this.cogAngle % 360), Direction.SOUTH)
+						.light(light)
+						.renderInto(pose, vb);
+			}
 		}
-
-		final ItemRenderer itemRenderer = Minecraft.getInstance().getItemRenderer();
-		final TransformStack<PoseTransformStack> msr = TransformStack.of(ms);
-		ms.pushPose();
-		msr.center();
-
-		final Direction facing = be.getBlockState().getValue(BlockStateProperties.FACING);
-		final Vec3i facingVec = facing.getNormal();
-
-		final float itemScale = 0.35f;
-		final float normalizedTimer = be.getItemTime(partialTicks);
-		float itemPosition = !be.isBlocked() ? 1 - (float) Math.exp(-0.25f * normalizedTimer) : 0;
-
-		itemPosition *= 0.8f;
-		ms.translate(facingVec.getX() * itemPosition, facing.getStepY() * itemPosition, facingVec.getZ() * itemPosition);
-		ms.scale(itemScale, itemScale, itemScale);
-		final int itemRotationId = be.getItemRotationId();
-		final Quaternionf Q = new Quaternionf((float) Math.sin(itemRotationId * 0.4f), (float) Math.cos(itemRotationId * 1.4f), (float) Math.sin(itemRotationId * 3.0f), (float) Math.cos(itemRotationId * 5.0f));
-		Q.normalize();
-		msr.rotate(Q);
-		itemRenderer.renderStatic(be.getInventory().slot.getStack(), ItemDisplayContext.FIXED, light, overlay, ms, buffer, be.getLevel(), 0);
-		ms.popPose();
 	}
 }

@@ -37,7 +37,7 @@ public record BlockMassItemAttribute(double mass) implements ItemAttribute {
 
 	@Override
 	public ItemAttributeType getType() {
-		return SimItemAttributeTypes.BLOCK_MASS.get();
+		return SimItemAttributeTypes.BLOCK_MASS;
 	}
 
 	@Override
@@ -73,7 +73,7 @@ public record BlockMassItemAttribute(double mass) implements ItemAttribute {
 		}
 
 		@Override
-		public StreamCodec<? super RegistryFriendlyByteBuf, ? extends ItemAttribute> streamCodec() {
+		public StreamCodec<? super RegistryFriendlyByteBuf, ? extends ItemAttribute> packetCodec() {
 			return STREAM_CODEC;
 		}
 	}

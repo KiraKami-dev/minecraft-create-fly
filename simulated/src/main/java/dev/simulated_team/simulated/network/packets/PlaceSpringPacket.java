@@ -49,7 +49,7 @@ public record PlaceSpringPacket(BlockPos parentPos, BlockPos childPos, Direction
         final BlockPos parentRelative = this.parentPos().relative(this.parentFacing);
         final BlockPos childRelative = this.childPos().relative(this.childFacing);
 
-        if (!player.canInteractWithBlock(childRelative, 4)) {
+        if (!player.isWithinBlockInteractionRange(childRelative, 4)) {
             return;
         }
 
@@ -83,7 +83,7 @@ public record PlaceSpringPacket(BlockPos parentPos, BlockPos childPos, Direction
     }
 
     private SpringBlockEntity addSpring(final Level level, final BlockPos placedPos, final BlockPos childPos, final Direction facing, final boolean controller, final float distance) {
-        final BlockState newState = SimBlocks.SPRING.getDefaultState();
+        final BlockState newState = SimBlocks.SPRING.defaultBlockState();
 
         if (level.setBlockAndUpdate(placedPos, newState.setValue(SpringBlock.FACING, facing))) {
             final SpringBlockEntity parentSpring = (SpringBlockEntity) level.getBlockEntity(placedPos);

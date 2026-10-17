@@ -17,14 +17,12 @@ import dev.simulated_team.simulated.network.packets.physics_staff.PhysicsStaffDr
 import dev.simulated_team.simulated.network.packets.physics_staff.PhysicsStaffLocksPacket;
 import dev.simulated_team.simulated.service.SimConfigService;
 import dev.ryanhcode.sable.veillite.api.network.VeilPacketManager;
+import com.mojang.serialization.Codec;
+import com.mojang.serialization.codecs.RecordCodecBuilder;
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
-import net.createmod.catnip.data.Pair;
-import net.minecraft.core.HolderLookup;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.ListTag;
-import net.minecraft.nbt.NbtUtils;
-import net.minecraft.nbt.Tag;
+import com.zurrtum.create.catnip.data.Pair;
+import net.minecraft.core.UUIDUtil;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -32,6 +30,7 @@ import net.minecraft.util.Mth;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.saveddata.SavedData;
+import net.minecraft.world.level.saveddata.SavedDataType;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -48,6 +47,16 @@ import java.util.UUID;
 
 public class PhysicsStaffServerHandler extends SavedData {
     public static final String ID = "simulated_physics_staff_lock_data";
+
+    /**
+     * Same layout as the 1.21.1 data: a list of locked sub-level UUIDs (int arrays) under {@link #ID}
+     */
+    public static final Codec<PhysicsStaffServerHandler> CODEC = RecordCodecBuilder.create(instance -> instance.group(
+            UUIDUtil.CODEC.listOf().optionalFieldOf(ID, List.of()).forGetter(handler -> List.copyOf(handler.locks.keySet()))
+    ).apply(instance, PhysicsStaffServerHandler::create));
+
+    private static final SavedDataType<PhysicsStaffServerHandler> TYPE = new SavedDataType<>(ID, PhysicsStaffServerHandler::new, CODEC, null);
+
     private final Map<UUID, Lock> locks = new Object2ObjectOpenHashMap<>();
     private final Map<UUID, DragSession> draggingSessions = new Object2ObjectOpenHashMap<>();
     private ServerLevel level;
@@ -62,7 +71,7 @@ public class PhysicsStaffServerHandler extends SavedData {
     }
 
     public static void sendAllData(final Player player) {
-        final MinecraftServer server = player.getServer();
+        final MinecraftServer server = player.level().getServer();
         assert server != null;
 
         for (final ServerLevel level : server.getAllLevels()) {
@@ -92,16 +101,15 @@ public class PhysicsStaffServerHandler extends SavedData {
         return handle;
     }
 
-    private static PhysicsStaffServerHandler create(final ServerLevel level, final CompoundTag nbt, final HolderLookup.Provider registries) {
-        final PhysicsStaffServerHandler sd = new PhysicsStaffServerHandler(level);
-        sd.loadLocks(nbt.getList(ID, Tag.TAG_INT_ARRAY));
+    private static PhysicsStaffServerHandler create(final List<UUID> lockedSubLevels) {
+        // the level is assigned by #get
+        final PhysicsStaffServerHandler sd = new PhysicsStaffServerHandler();
+        sd.loadLocks(lockedSubLevels);
         return sd;
     }
 
     public static PhysicsStaffServerHandler get(final ServerLevel level) {
-        final PhysicsStaffServerHandler data = level.getChunkSource().getDataStorage().computeIfAbsent(
-                new SavedData.Factory<>(PhysicsStaffServerHandler::new, (nbt, lookup) -> create(level, nbt, lookup), null),
-                PhysicsStaffServerHandler.ID);
+        final PhysicsStaffServerHandler data = level.getChunkSource().getDataStorage().computeIfAbsent(TYPE);
         data.level = level;
 
         return data;
@@ -185,24 +193,10 @@ public class PhysicsStaffServerHandler extends SavedData {
         );
     }
 
-    @Override
-    public @NotNull CompoundTag save(final CompoundTag tag, final HolderLookup.@NotNull Provider provider) {
-        final ListTag tags = new ListTag();
-        this.saveLocks(tags);
-        tag.put(ID, tags);
-
-        return tag;
-    }
-
-    private void loadLocks(final ListTag list) {
-        for (final Tag tag : list) {
-            final UUID uuid = NbtUtils.loadUUID(tag);
+    private void loadLocks(final List<UUID> list) {
+        for (final UUID uuid : list) {
             this.locks.put(uuid, new Lock(uuid, null));
         }
-    }
-
-    private void saveLocks(final ListTag list) {
-        list.addAll(this.locks.keySet().stream().map(NbtUtils::createUUID).toList());
     }
 
     public boolean isLocked(final SubLevel subLevel) {

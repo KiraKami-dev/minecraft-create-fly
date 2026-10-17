@@ -43,7 +43,7 @@ public final class SableClientConfig {
                 .define("sub_level_water_occlusion", true);
         SUB_LEVEL_SKYLIGHT_SHADOWS = builder
                 .comment("Whether sub-levels should cast a shadow on the world")
-                .define("sub_level_skylight_shadows", false); // PORT-TODO(1.21.11): see SableSkyLightShadows
+                .define("sub_level_skylight_shadows", true);
         DEBUG_DRAW_LOADED_CHUNKS = builder
                 .comment("Whether to draw loaded chunks on the client in the chunk debug renderer")
                 .define("debug_draw_loaded_chunks", Veil.platform().isDevelopmentEnvironment());

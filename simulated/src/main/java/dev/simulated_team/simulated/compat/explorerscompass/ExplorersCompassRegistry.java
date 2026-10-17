@@ -5,6 +5,6 @@ import dev.simulated_team.simulated.Simulated;
 
 public class ExplorersCompassRegistry {
     public static void init() {
-        Simulated.getRegistrate().navTarget("explorers_compass", ExplorersCompassNavigationTarget::new, () -> ExplorersCompass.explorersCompass);
+        Simulated.getRegistrate().navTarget("explorers_compass", ExplorersCompassNavigationTarget::new, () -> ExplorersCompass.EXPLORERS_COMPASS_ITEM);
     }
 }

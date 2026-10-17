@@ -1,60 +1,49 @@
 package dev.simulated_team.simulated.content.blocks.steering_wheel;
 
-import com.google.common.collect.ImmutableList;
-import com.mojang.blaze3d.vertex.PoseStack;
-import com.zurrtum.create.AllSoundEvents;
+import com.mojang.serialization.Codec;
+import com.zurrtum.create.api.behaviour.BlockEntityBehaviour;
 import com.zurrtum.create.content.kinetics.base.GeneratingKineticBlockEntity;
 import com.zurrtum.create.content.kinetics.base.KineticBlockEntity;
 import com.zurrtum.create.content.kinetics.transmission.sequencer.SequencedGearshiftBlockEntity;
 import com.zurrtum.create.content.kinetics.transmission.sequencer.SequencerInstructions;
 import com.zurrtum.create.foundation.blockEntity.SmartBlockEntity;
-import com.zurrtum.create.api.behaviour.BlockEntityBehaviour;
-import com.zurrtum.create.client.foundation.blockEntity.behaviour.ValueBoxTransform;
-import com.zurrtum.create.client.foundation.blockEntity.ValueSettingsBoard;
-import com.zurrtum.create.client.foundation.blockEntity.ValueSettingsFormatter;
-import com.zurrtum.create.client.foundation.blockEntity.behaviour.scrollValue.ScrollValueBehaviour;
-import com.zurrtum.create.client.foundation.utility.CreateLang;
-import dev.engine_room.flywheel.lib.transform.TransformStack;
+import com.zurrtum.create.foundation.blockEntity.behaviour.scrollValue.ServerScrollValueBehaviour;
 import dev.simulated_team.simulated.content.blocks.behaviour.HoldTipBehaviour;
-import dev.simulated_team.simulated.data.SimLang;
 import dev.simulated_team.simulated.index.SimBlocks;
 import dev.simulated_team.simulated.index.SimClickInteractions;
-import net.createmod.catnip.math.AngleHelper;
-import net.createmod.catnip.math.VecHelper;
-import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.core.HolderLookup;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.NbtUtils;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.tags.BlockTags;
 import net.minecraft.util.Mth;
-import net.minecraft.world.ItemInteractionResult;
+import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
-import net.minecraft.world.level.block.HorizontalDirectionalBlock;
 import net.minecraft.world.level.block.LevelEvent;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
 import net.minecraft.world.phys.AABB;
-import net.minecraft.world.phys.BlockHitResult;
-import net.minecraft.world.phys.Vec3;
 
 import java.util.List;
+import java.util.Optional;
 
+/**
+ * Client-only parts live in {@link SteeringWheelScrollValueBehaviour} (value box), {@link SteeringWheelAudioBehaviour}
+ * (cranking sounds, was tickAudio) and {@link SteeringWheelRenderer}/{@link SteeringWheelVisual}.
+ */
 public class SteeringWheelBlockEntity extends GeneratingKineticBlockEntity {
     public static final int RPM = 16;
 
     public boolean held = false;
     private int inUse = 0;
 
-    public ScrollValueBehaviour angleInput;
+    public AngleLimitBehaviour angleInput;
 
     public float targetAngle = 0;
     public float targetAngleToUpdate = 0;
@@ -72,7 +61,8 @@ public class SteeringWheelBlockEntity extends GeneratingKineticBlockEntity {
 
     public BlockState material = Blocks.SPRUCE_PLANKS.defaultBlockState();
 
-    private static final MutableComponent ROTATE_TIP = SimLang.translate("gui.hold_tip.hold_to_rotate").component();
+    // SimLang (catnip LangBuilder) is client-only on Create Fly
+    private static final MutableComponent ROTATE_TIP = Component.translatable("simulated.gui.hold_tip.hold_to_rotate");
 
     public SteeringWheelBlockEntity(final BlockEntityType<?> type, final BlockPos pos, final BlockState state) {
         super(type, pos, state);
@@ -80,10 +70,12 @@ public class SteeringWheelBlockEntity extends GeneratingKineticBlockEntity {
     }
 
     @Override
-    public void addBehaviours(final List<BlockEntityBehaviour> behaviours) {
+    public void addBehaviours(final List<BlockEntityBehaviour<?>> behaviours) {
         behaviours.add(new HoldTipBehaviour(this, SteeringWheelBlockEntity::holdTipGetter));
-        behaviours.add(this.angleInput = new SteeringWheelScrollValueBehaviour(this).between(1, 360));
-        this.angleInput.value = 180;
+        this.angleInput = new AngleLimitBehaviour(this);
+        this.angleInput.between(1, 360);
+        this.angleInput.setValue(180);
+        behaviours.add(this.angleInput);
     }
 
     public static MutableComponent holdTipGetter(final Player player, final BlockPos pos, final BlockState state) {
@@ -160,7 +152,7 @@ public class SteeringWheelBlockEntity extends GeneratingKineticBlockEntity {
     public void tick() {
         super.tick();
 
-        if (this.level.isClientSide) {
+        if (this.level.isClientSide()) {
             this.oldClientAngle = this.clientAngle;
             if (SimClickInteractions.STEERING_WHEEL_MANAGER.isBlockActive(this.getBlockPos())) {
                 this.clientAngle = this.targetAngleToUpdate;
@@ -176,12 +168,12 @@ public class SteeringWheelBlockEntity extends GeneratingKineticBlockEntity {
         if (this.inUse > 0) {
             this.inUse--;
 
-            if (this.inUse == 0 && !this.level.isClientSide) {
+            if (this.inUse == 0 && !this.level.isClientSide()) {
                 this.sequenceContext = null;
                 this.generatedSpeed = 0;
                 this.updateGeneratedRotation();
             }
-        } else if(!this.level.isClientSide) {
+        } else if(!this.level.isClientSide()) {
             this.updateTargetAngle(this.targetAngleToUpdate);
         }
     }
@@ -223,53 +215,54 @@ public class SteeringWheelBlockEntity extends GeneratingKineticBlockEntity {
     }
 
     @Override
-    protected void write(final CompoundTag compound, final HolderLookup.Provider registries, final boolean clientPacket) {
-        super.write(compound, registries, clientPacket);
+    protected void write(final ValueOutput view, final boolean clientPacket) {
+        super.write(view, clientPacket);
 
-        compound.putFloat("Angle", this.angle);
-        compound.putFloat("TargetAngle", this.targetAngle);
+        view.putFloat("Angle", this.angle);
+        view.putFloat("TargetAngle", this.targetAngle);
         if (this.targetAngleToUpdate != this.targetAngle) {
-            compound.putFloat("TargetAngleToUpdate", this.targetAngleToUpdate);
+            view.putFloat("TargetAngleToUpdate", this.targetAngleToUpdate);
         }
 
         if (clientPacket) {
-            compound.putBoolean("Held", this.held);
+            view.putBoolean("Held", this.held);
         }
 
-        compound.put("Material", NbtUtils.writeBlockState(this.material));
+        view.store("Material", BlockState.CODEC, this.material);
     }
 
     @Override
-    public void writeSafe(final CompoundTag compound, final HolderLookup.Provider registries) {
-        super.writeSafe(compound, registries);
-        compound.put("Material", NbtUtils.writeBlockState(this.material));
+    public void writeSafe(final ValueOutput view) {
+        super.writeSafe(view);
+        view.store("Material", BlockState.CODEC, this.material);
     }
 
     @Override
-    protected void read(final CompoundTag compound, final HolderLookup.Provider registries, final boolean clientPacket) {
-        super.read(compound, registries, clientPacket);
-        // todo pr create to validate this for all scroll value behaviours
-        this.angleInput.value = Mth.clamp(this.angleInput.value, 1, 360);
+    protected void read(final ValueInput view, final boolean clientPacket) {
+        super.read(view, clientPacket);
+        // the angle limit is clamped to [1, 360] by AngleLimitBehaviour#read
 
-        this.angle = Math.clamp(compound.getFloat("Angle"), -360, 360);
+        this.angle = Math.clamp(view.getFloatOr("Angle", 0), -360, 360);
         if (clientPacket) {
-            this.held = compound.getBoolean("Held");
+            this.held = view.getBooleanOr("Held", false);
         }
 
         if (!clientPacket || !SimClickInteractions.STEERING_WHEEL_MANAGER.isBlockActive(this.getBlockPos())) {
-            this.updateTargetAngle(Math.clamp(compound.getFloat("TargetAngle"), -360, 360));
-            if (compound.contains("TargetAngleToUpdate")) {
-                this.targetAngleToUpdate = Math.clamp(compound.getFloat("TargetAngleToUpdate"), -360, 360);
+            this.updateTargetAngle(Math.clamp(view.getFloatOr("TargetAngle", 0), -360, 360));
+            final Optional<Float> toUpdate = view.read("TargetAngleToUpdate", Codec.FLOAT);
+            if (toUpdate.isPresent()) {
+                this.targetAngleToUpdate = Math.clamp(toUpdate.get(), -360, 360);
             } else {
                 this.targetAngleToUpdate = this.targetAngle;
             }
         }
 
         final BlockState prevMaterial = this.material;
-        if (!compound.contains("Material"))
+        final Optional<BlockState> material = view.read("Material", BlockState.CODEC);
+        if (material.isEmpty())
             return;
 
-        this.material = NbtUtils.readBlockState(this.blockHolderGetter(), compound.getCompound("Material"));
+        this.material = material.get();
         if (this.material.isAir())
             this.material = Blocks.SPRUCE_PLANKS.defaultBlockState();
 
@@ -283,7 +276,7 @@ public class SteeringWheelBlockEntity extends GeneratingKineticBlockEntity {
 
     @Override
     protected Block getStressConfigKey() {
-        return SimBlocks.STEERING_WHEEL.get();
+        return SimBlocks.STEERING_WHEEL;
     }
 
     public float getRenderAngle(final float partialTicks) {
@@ -302,54 +295,13 @@ public class SteeringWheelBlockEntity extends GeneratingKineticBlockEntity {
     }
 
     @Override
-    public AABB createRenderBoundingBox() {
+    protected AABB createRenderBoundingBox() {
         return super.createRenderBoundingBox().inflate(0.4);
     }
 
-    // 0 or -1 at center
-    // 4 or -5 at edges
-    private int lastPlayedIncrement = 0;
-
-    @Override
-    public void tickAudio() {
-        super.tickAudio();
-        float renderAngle = this.getRenderAngle(0);
-        // angle rarely caps at exactly 180
-
-        if (Math.abs(Math.abs(this.angle) - this.angleInput.getValue()) < 0.01) {
-            renderAngle += (float) (Math.signum(this.angle) * 0.01);
-        }
-
-        final int playingIncrement = (int) Math.floor(Math.toDegrees(renderAngle) / 45);
-
-        if (this.lastPlayedIncrement != playingIncrement) {
-            int spokeCrossed = playingIncrement;
-            if (this.lastPlayedIncrement - playingIncrement > 0) { // make - travel over a spoke match + travel
-                spokeCrossed++;
-            }
-            // if not travelling away from edge spoke
-            if (spokeCrossed != Math.signum(this.lastPlayedIncrement - playingIncrement) * 4) {
-                switch (spokeCrossed) {
-                    case -4, 4 -> {
-                        AllSoundEvents.CRANKING.playAt(this.level, this.worldPosition, 1.25f, 0.85f, true);
-                    }
-
-                    case 0 -> {
-                        AllSoundEvents.CRANKING.playAt(this.level, this.worldPosition, 1.25f, 0.5f, true);
-                    }
-
-                    default -> {
-                        AllSoundEvents.CRANKING.playAt(this.level, this.worldPosition, 0.5f, 1.25f, true);
-                    }
-                }
-            }
-            this.lastPlayedIncrement = playingIncrement;
-        }
-    }
-
     private void redraw() {
-        if (!this.isVirtual())
-            this.requestModelDataUpdate();
+        // NeoForge's requestModelDataUpdate is not needed: the wheel is drawn by SteeringWheelRenderer/Visual,
+        // which key their models on the material
         if (this.hasLevel()) {
             this.level.sendBlockUpdated(this.getBlockPos(), this.getBlockState(), this.getBlockState(), 16);
             this.level.getChunkSource()
@@ -368,56 +320,32 @@ public class SteeringWheelBlockEntity extends GeneratingKineticBlockEntity {
         return material.is(BlockTags.PLANKS);
     }
 
-    public ItemInteractionResult applyMaterialIfValid(final ItemStack stack) {
+    public InteractionResult applyMaterialIfValid(final ItemStack stack) {
         if (this.isMaterialValid(stack) && (stack.getItem()instanceof final BlockItem blockItem)) {
             if (this.level.isClientSide() && !this.isVirtual())
-                return ItemInteractionResult.SUCCESS;
-            this.material = blockItem.getBlock().defaultBlockState();;
+                return InteractionResult.SUCCESS;
+            this.material = blockItem.getBlock().defaultBlockState();
             this.notifyUpdate();
-            this.level.levelEvent(LevelEvent.PARTICLES_DESTROY_BLOCK, this.worldPosition, Block.getId(material));
-            return ItemInteractionResult.SUCCESS;
+            this.level.levelEvent(LevelEvent.PARTICLES_DESTROY_BLOCK, this.worldPosition, Block.getId(this.material));
+            return InteractionResult.SUCCESS;
         }
-        return ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
+        return InteractionResult.TRY_WITH_EMPTY_HAND;
     }
 
-    private static class SteeringWheelValueBoxTransform extends ValueBoxTransform.Sided {
-
-        @Override
-        protected boolean isSideActive(final BlockState state, final Direction direction) {
-            return direction == (state.getValue(SteeringWheelBlock.ON_FLOOR) ? Direction.UP : Direction.DOWN);
+    /**
+     * The angle limit (1-360 degrees). Server half of the value box; the client half is
+     * {@link SteeringWheelScrollValueBehaviour}.
+     */
+    public static class AngleLimitBehaviour extends ServerScrollValueBehaviour {
+        public AngleLimitBehaviour(final SmartBlockEntity be) {
+            super(be);
         }
 
         @Override
-        protected Vec3 getSouthLocation() {
-            return VecHelper.voxelSpace(8, 8, 15.5);
-        }
-
-        @Override
-        public void rotate(final LevelAccessor level, final BlockPos pos, final BlockState state, final PoseStack ms) {
-            super.rotate(level, pos, state, ms);
-            final Direction facing = state.getValue(HorizontalDirectionalBlock.FACING);
-
-            TransformStack.of(ms)
-                    .rotateZDegrees(-AngleHelper.horizontalAngle(facing) + 180);
-        }
-    }
-
-    private static class SteeringWheelScrollValueBehaviour extends ScrollValueBehaviour {
-        public SteeringWheelScrollValueBehaviour(final SmartBlockEntity be) {
-            super(SimLang.translate("torsion_spring.angle_limit").component(), be, new SteeringWheelValueBoxTransform());
-            this.withFormatter(v -> Math.abs(v) + CreateLang.translateDirect("generic.unit.degrees")
-                    .getString());
-        }
-
-        @Override
-        public ValueSettingsBoard createBoard(final Player player, final BlockHitResult hitResult) {
-            return new ValueSettingsBoard(this.label, 360, 45, ImmutableList.of(Component.literal("\u27f3").withStyle(ChatFormatting.BOLD)), new ValueSettingsFormatter(this::formatValue));
-        }
-
-        public MutableComponent formatValue(final ValueSettings settings) {
-            return SimLang.number(Math.max(1, Math.abs(settings.value())))
-                    .add(CreateLang.translateDirect("generic.unit.degrees"))
-                    .component();
+        public void read(final ValueInput view, final boolean clientPacket) {
+            super.read(view, clientPacket);
+            // todo pr create to validate this for all scroll value behaviours
+            this.value = Mth.clamp(this.value, 1, 360);
         }
     }
 }

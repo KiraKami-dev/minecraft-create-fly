@@ -1,44 +1,28 @@
 package dev.simulated_team.simulated.content.blocks.gimbal_sensor;
 
-import com.google.common.collect.ImmutableList;
-import com.mojang.blaze3d.vertex.PoseStack;
-import com.zurrtum.create.Create;
-import com.zurrtum.create.client.api.goggles.IHaveGoggleInformation;
-import com.zurrtum.create.foundation.blockEntity.SmartBlockEntity;
 import com.zurrtum.create.api.behaviour.BlockEntityBehaviour;
-import com.zurrtum.create.client.foundation.blockEntity.behaviour.ValueBoxTransform;
-import com.zurrtum.create.client.foundation.blockEntity.ValueSettingsBoard;
-import com.zurrtum.create.client.foundation.blockEntity.ValueSettingsFormatter;
-import com.zurrtum.create.client.foundation.blockEntity.behaviour.scrollValue.ScrollValueBehaviour;
-import dev.engine_room.flywheel.lib.transform.TransformStack;
+import com.zurrtum.create.catnip.data.Iterate;
+import com.zurrtum.create.catnip.math.VecHelper;
+import com.zurrtum.create.foundation.blockEntity.SmartBlockEntity;
+import com.zurrtum.create.foundation.blockEntity.behaviour.ValueSettings;
+import com.zurrtum.create.foundation.blockEntity.behaviour.scrollValue.ServerScrollValueBehaviour;
 import dev.ryanhcode.sable.Sable;
-import dev.ryanhcode.sable.api.SubLevelHelper;
+import dev.ryanhcode.sable.companion.math.JOMLConversion;
 import dev.ryanhcode.sable.companion.math.Pose3d;
 import dev.ryanhcode.sable.companion.math.Pose3dc;
 import dev.ryanhcode.sable.physics.config.dimension_physics.DimensionPhysicsData;
 import dev.ryanhcode.sable.sublevel.SubLevel;
-import dev.ryanhcode.sable.companion.math.JOMLConversion;
-import dev.simulated_team.simulated.data.SimLang;
-import net.createmod.catnip.data.Iterate;
-import net.createmod.catnip.math.AngleHelper;
-import net.createmod.catnip.math.VecHelper;
-import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.core.HolderLookup;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
 import net.minecraft.world.phys.Vec3;
-import org.jetbrains.annotations.NotNull;
 import org.joml.Quaterniond;
 import org.joml.Quaternionf;
 import org.joml.Vector3d;
@@ -47,11 +31,11 @@ import org.joml.Vector3dc;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
+import java.util.Optional;
 
 import static java.lang.Math.*;
 
-public class GimbalSensorBlockEntity extends SmartBlockEntity implements IHaveGoggleInformation {
+public class GimbalSensorBlockEntity extends SmartBlockEntity {
 
     private static final Pose3dc IDENTITY_POSE = new Pose3d(new Vector3d(), new Quaterniond(), new Vector3d(), new Vector3d(1.0));
     private static final double MAX_ANGLE_X = Math.toRadians(90);
@@ -68,7 +52,10 @@ public class GimbalSensorBlockEntity extends SmartBlockEntity implements IHaveGo
      */
     public boolean updateVisualRotation = true;
     CompassTarget compassTarget = new CompassTarget();
-    private GimbalSensorScrollValueBehaviour axisBehaviour;
+    /**
+     * Server half of the angle limits, the value box is {@link GimbalSensorValueBehaviour} on the client
+     */
+    GimbalSensorScrollValueBehaviour axisBehaviour;
     private Vector3d eulerAngles = new Vector3d(0, 0, 0);
     private Vector3d angleVelocities = new Vector3d(0, 0, 0);
     private Quaterniond lastShellOrientation = null;
@@ -88,7 +75,7 @@ public class GimbalSensorBlockEntity extends SmartBlockEntity implements IHaveGo
     }
 
     @Override
-    public void addBehaviours(final List<BlockEntityBehaviour> behaviours) {
+    public void addBehaviours(final List<BlockEntityBehaviour<?>> behaviours) {
         behaviours.add((this.axisBehaviour = new GimbalSensorScrollValueBehaviour(this)).between(-90, 90));
         this.axisBehaviour.primaryValue = 45;
         this.axisBehaviour.secondaryValue = 45;
@@ -107,12 +94,12 @@ public class GimbalSensorBlockEntity extends SmartBlockEntity implements IHaveGo
         final SubLevel subLevel = Sable.HELPER.getContaining(this);
         final Pose3dc pose = subLevel != null ? subLevel.logicalPose() : IDENTITY_POSE;
 
-        if (this.level.isClientSide)
+        if (this.level.isClientSide())
             this.animateClientRotation(subLevel, pose);
         if (subLevel == null)
             return;
 
-        final Vector3d ld = JOMLConversion.toJOML(Vec3.atLowerCornerOf(Direction.DOWN.getNormal()));
+        final Vector3d ld = JOMLConversion.toJOML(Vec3.atLowerCornerOf(Direction.DOWN.getUnitVec3i()));
         subLevel.logicalPose().orientation().transformInverse(ld);
 
         this.XAngle = ld.y() < 0 || ld.z() * ld.z() > 0.001 ? atan2(ld.z(), -ld.y()) : 0;
@@ -300,87 +287,73 @@ public class GimbalSensorBlockEntity extends SmartBlockEntity implements IHaveGo
     }
 
     @Override
-    protected void write(final CompoundTag tag, final HolderLookup.Provider registries, final boolean clientPacket) {
-        super.write(tag, registries, clientPacket);
+    protected void write(final ValueOutput view, final boolean clientPacket) {
+        super.write(view, clientPacket);
 
-        final CompoundTag powers = new CompoundTag();
+        final ValueOutput powers = view.child("Powers");
         for (final Map.Entry<Direction, Integer> entry : this.redstoneMap.entrySet()) {
             powers.putInt(entry.getKey().getName(), entry.getValue());
         }
         if (!clientPacket) {
-            tag.putFloat("Angle1", (float) this.eulerAngles.x);
-            tag.putFloat("Angle2", (float) this.eulerAngles.y);
-            tag.putFloat("Angle3", (float) this.eulerAngles.z);
-            tag.putFloat("Vel1", (float) this.angleVelocities.x);
-            tag.putFloat("Vel2", (float) this.angleVelocities.y);
-            tag.putFloat("Vel3", (float) this.angleVelocities.z);
+            view.putFloat("Angle1", (float) this.eulerAngles.x);
+            view.putFloat("Angle2", (float) this.eulerAngles.y);
+            view.putFloat("Angle3", (float) this.eulerAngles.z);
+            view.putFloat("Vel1", (float) this.angleVelocities.x);
+            view.putFloat("Vel2", (float) this.angleVelocities.y);
+            view.putFloat("Vel3", (float) this.angleVelocities.z);
         }
 
-        tag.putDouble("x_angle", this.XAngle);
-        tag.putDouble("zz_angle", this.ZAngle);
-
-        tag.put("Powers", powers);
+        view.putDouble("x_angle", this.XAngle);
+        view.putDouble("zz_angle", this.ZAngle);
     }
 
     @Override
-    protected void read(final CompoundTag tag, final HolderLookup.Provider registries, final boolean clientPacket) {
-        super.read(tag, registries, clientPacket);
+    protected void read(final ValueInput view, final boolean clientPacket) {
+        super.read(view, clientPacket);
 
-        if (tag.contains("Powers")) {
-            final CompoundTag powers = (CompoundTag) tag.get("Powers");
+        final Optional<ValueInput> powers = view.child("Powers");
+        if (powers.isPresent()) {
             for (final Map.Entry<Direction, Integer> entry : this.redstoneMap.entrySet()) {
-                entry.setValue(powers.getInt(entry.getKey().getName()));
+                entry.setValue(powers.get().getIntOr(entry.getKey().getName(), 0));
             }
         }
         if (!clientPacket) {
-            float x = tag.getFloat("Angle1");
-            float y = tag.getFloat("Angle2");
-            float z = tag.getFloat("Angle3");
+            float x = view.getFloatOr("Angle1", 0);
+            float y = view.getFloatOr("Angle2", 0);
+            float z = view.getFloatOr("Angle3", 0);
             this.eulerAngles = new Vector3d(x, y, z);
-            x = tag.getFloat("Vel1");
-            y = tag.getFloat("Vel2");
-            z = tag.getFloat("Vel3");
+            x = view.getFloatOr("Vel1", 0);
+            y = view.getFloatOr("Vel2", 0);
+            z = view.getFloatOr("Vel3", 0);
             this.angleVelocities = new Vector3d(x, y, z);
         }
 
-        this.XAngle = tag.getDouble("x_angle");
-        this.ZAngle = tag.getDouble("z_angle");
+        this.XAngle = view.getDoubleOr("x_angle", 0);
+        // was read from "z_angle" (never written) on 1.21.1
+        this.ZAngle = view.getDoubleOr("zz_angle", 0);
     }
 
-    public static class GimbalSensorScrollValueBehaviour extends ScrollValueBehaviour {
+    /**
+     * Angle limits of the two axes; the value box side picks the axis ({@link #lastSide} is set by the client value box)
+     */
+    public static class GimbalSensorScrollValueBehaviour extends ServerScrollValueBehaviour {
         protected Direction lastSide = Direction.NORTH;
         protected int primaryValue;
         protected int secondaryValue;
-        protected Function<Integer, String> formatter;
-        protected int min;
-        protected int max;
 
         public GimbalSensorScrollValueBehaviour(final GimbalSensorBlockEntity be) {
-            super(Component.translatable("create.kinetics.valve_handle.rotated_angle"), be, new GimbalSensorValueBox(be));
-            this.withFormatter(this.formatter = v -> Math.abs(v) + Component.translatable("create.generic.unit.degrees")
-                    .getString());
+            super(be);
             this.primaryValue = 0;
             this.secondaryValue = 0;
         }
 
-        public ScrollValueBehaviour between(final int min, final int max) {
-            this.min = min;
-            this.max = max;
-            return super.between(min, max);
+        public void setLastSide(final Direction side) {
+            this.lastSide = side;
         }
 
         public boolean isPrimaryAxis() {
             final Direction.Axis blockAxis = this.blockEntity.getBlockState().getValue(GimbalSensorBlock.HORIZONTAL_AXIS);
             return this.lastSide.getAxis().isHorizontal() && this.lastSide.getAxis() != blockAxis;
-        }
-
-        @Override
-        public ValueSettingsBoard createBoard(final Player player, final BlockHitResult hitResult) {
-            final ImmutableList<Component> rows = ImmutableList.of(Component.literal("\u27f3") // ⟳
-                            .withStyle(ChatFormatting.BOLD),
-                    Component.literal("\u27f2") // ⟲
-                            .withStyle(ChatFormatting.BOLD));
-            return new ValueSettingsBoard(this.label, 90, 15, rows, new ValueSettingsFormatter(this::formatValue));
         }
 
         @Override
@@ -396,44 +369,40 @@ public class GimbalSensorBlockEntity extends SmartBlockEntity implements IHaveGo
             return new ValueSettings(this.getValue() < 0 ? 0 : 1, Math.abs(this.getValue()));
         }
 
-        public MutableComponent formatValue(final ValueSettings settings) {
-            return SimLang.number(Math.max(0, Math.abs(settings.value())))
-                    .add(Component.translatable(Create.ID + "." + "generic.unit.degrees"))
-                    .component();
+        @Override
+        public void write(final ValueOutput view, final boolean clientPacket) {
+            view.putInt("ScrollValue1", this.primaryValue);
+            view.putInt("ScrollValue2", this.secondaryValue);
+            super.write(view, clientPacket);
         }
 
         @Override
-        public void write(final CompoundTag nbt, final HolderLookup.Provider registries, final boolean clientPacket) {
-            nbt.putInt("ScrollValue1", this.primaryValue);
-            nbt.putInt("ScrollValue2", this.secondaryValue);
-            super.write(nbt, registries, clientPacket);
+        public void read(final ValueInput view, final boolean clientPacket) {
+            this.primaryValue = view.getIntOr("ScrollValue1", 0);
+            this.secondaryValue = view.getIntOr("ScrollValue2", 0);
+            super.read(view, clientPacket);
         }
 
         @Override
-        public void read(final CompoundTag nbt, final HolderLookup.Provider registries, final boolean clientPacket) {
-            this.primaryValue = nbt.getInt("ScrollValue1");
-            this.secondaryValue = nbt.getInt("ScrollValue2");
-            super.read(nbt, registries, clientPacket);
-        }
-
-        @Override
-        public boolean writeToClipboard(HolderLookup.@NotNull Provider registries, CompoundTag tag, Direction side) {
-            if(!acceptsValueSettings())
+        public boolean writeToClipboard(final ValueOutput view, final Direction side) {
+            if(!this.acceptsValueSettings())
                 return false;
-            tag.putInt("ScrollValue1", this.primaryValue);
-            tag.putInt("ScrollValue2", this.secondaryValue);
+            view.putInt("ScrollValue1", this.primaryValue);
+            view.putInt("ScrollValue2", this.secondaryValue);
             return true;
         }
 
         @Override
-        public boolean readFromClipboard(HolderLookup.@NotNull Provider registries, CompoundTag tag, Player player, Direction side, boolean simulate) {
-            if(!acceptsValueSettings()) return false;
-            if(!tag.contains("ScrollValue1") || !tag.contains("ScrollValue2")) return true;
+        public boolean readFromClipboard(final ValueInput view, final Player player, final Direction side, final boolean simulate) {
+            if(!this.acceptsValueSettings()) return false;
+            final Optional<Integer> primary = view.getInt("ScrollValue1");
+            final Optional<Integer> secondary = view.getInt("ScrollValue2");
+            if(primary.isEmpty() || secondary.isEmpty()) return true;
             if(simulate) return true;
-            this.primaryValue = tag.getInt("ScrollValue1");
-            this.secondaryValue = tag.getInt("ScrollValue2");
-            blockEntity.setChanged();
-            blockEntity.sendData();
+            this.primaryValue = primary.get();
+            this.secondaryValue = secondary.get();
+            this.blockEntity.setChanged();
+            this.blockEntity.sendData();
             return true;
         }
 
@@ -442,6 +411,7 @@ public class GimbalSensorBlockEntity extends SmartBlockEntity implements IHaveGo
             return this.isPrimaryAxis() ? this.primaryValue : this.secondaryValue;
         }
 
+        @Override
         public void setValue(int value) {
             value = Mth.clamp(value, this.min, this.max);
             if (value == this.getValue())
@@ -454,100 +424,6 @@ public class GimbalSensorBlockEntity extends SmartBlockEntity implements IHaveGo
             this.blockEntity.setChanged();
             this.blockEntity.sendData();
         }
-
-        @Override
-        public String formatValue() {
-            return this.formatter.apply(this.getValue());
-        }
-    }
-
-    public static class GimbalSensorValueBox extends ValueBoxTransform.Sided {
-        GimbalSensorBlockEntity be;
-
-        public GimbalSensorValueBox(final GimbalSensorBlockEntity be) {
-            this.be = be;
-        }
-
-        public Sided fromSide(final Direction direction) {
-            this.direction = direction;
-            this.be.axisBehaviour.lastSide = direction;
-            return this;
-        }
-
-        @Override
-        protected boolean isSideActive(final BlockState state, final Direction direction) {
-            final boolean a = (direction.getAxis() == state.getValue(GimbalSensorBlock.HORIZONTAL_AXIS));
-            return direction.getAxis().isHorizontal();// && (a == primaryAxis);
-        }
-
-        @Override
-        protected Vec3 getSouthLocation() {
-            return VecHelper.voxelSpace(8, 8, 16);
-        }
-
-        @Override
-        public boolean testHit(final LevelAccessor level, final BlockPos pos, final BlockState state, final Vec3 localHit) {
-            final Vec3 offset = this.getLocalOffset(level, pos, state);
-
-            if (offset == null)
-                return false;
-
-            return localHit.distanceTo(offset) < this.scale / 1.5f;
-        }
-
-    }
-
-    public static class DualGimbalSensorValueBox extends ValueBoxTransform.Dual {
-
-        protected Direction direction = Direction.UP;
-
-        public DualGimbalSensorValueBox(final boolean first) {
-            super(first);
-        }
-
-        @Override
-        public Vec3 getLocalOffset(final LevelAccessor levelAccessor, final BlockPos blockPos, final BlockState state) {
-            Vec3 location = this.getSouthLocation();
-            location = VecHelper.rotateCentered(location, AngleHelper.horizontalAngle(this.getSide()), Direction.Axis.Y);
-            location = VecHelper.rotateCentered(location, AngleHelper.verticalAngle(this.getSide()), Direction.Axis.X);
-            return location;
-        }
-
-
-        protected Vec3 getSouthLocation() {
-            return VecHelper.voxelSpace(8, 8, 16);
-        }
-
-        @Override
-        public void rotate(final LevelAccessor levelAccessor, final BlockPos blockPos, final BlockState blockState, final PoseStack poseStack) {
-            final float yRot = AngleHelper.horizontalAngle(this.getSide()) + 180;
-            final float xRot = this.getSide() == Direction.UP ? 90 : this.getSide() == Direction.DOWN ? 270 : 0;
-            TransformStack.of(poseStack)
-                    .rotateYDegrees(yRot)
-                    .rotateXDegrees(xRot);
-        }
-
-        @Override
-        public boolean shouldRender(final LevelAccessor level, final BlockPos pos, final BlockState state) {
-            return super.shouldRender(level, pos, state) && this.isSideActive(state, this.getSide());
-        }
-
-        @Override
-        public boolean testHit(final LevelAccessor level, final BlockPos pos, final BlockState state, final Vec3 localHit) {
-            final Vec3 offset = this.getLocalOffset(level, pos, state);
-            if (offset == null)
-                return false;
-            return localHit.distanceTo(offset) < this.scale / 1.5f;
-        }
-
-        protected boolean isSideActive(final BlockState state, final Direction direction) {
-            final boolean a = (direction.getAxis() == state.getValue(GimbalSensorBlock.HORIZONTAL_AXIS));
-            return direction.getAxis().isHorizontal() && (a == this.first);
-        }
-
-        public Direction getSide() {
-            return Direction.NORTH;
-        }
     }
 
     static class CompassTarget {
@@ -558,7 +434,8 @@ public class GimbalSensorBlockEntity extends SmartBlockEntity implements IHaveGo
         private boolean isRandom = false;
 
         public void update(final Vec3 pos, final Level level) {
-            this.isRandom = !level.dimensionType().natural();
+            // DimensionType#natural is gone on 1.21.11; like the vanilla compass, the needle spins outside the spawn dimension
+            this.isRandom = level.getRespawnData().globalPos().dimension() != level.dimension();
             if (!this.isRandom) {
                 this.target.set(0, 0, -1);
             } else {
@@ -596,28 +473,5 @@ public class GimbalSensorBlockEntity extends SmartBlockEntity implements IHaveGo
         public Vector3d getTarget(final Vector3d v) {
             return this.target.mul(this.isRandom() ? this.randomTargetLength : 1, v);
         }
-    }
-
-    @Override
-    public boolean addToGoggleTooltip(List<Component> tooltip, boolean isPlayerSneaking) {
-//        tooltip.add(Component.literal("hello"));
-        Component x = SimLang.text("%.2f".formatted(Math.toDegrees(this.getXAngle())))
-                .style(ChatFormatting.RED)
-                .component();
-        Component z = SimLang.text("%.2f".formatted(Math.toDegrees(this.getZAngle())))
-                .style(ChatFormatting.BLUE)
-                .component();
-
-        SimLang.blockName(getBlockState())
-                .forGoggles(tooltip, 1);
-        SimLang.translate("gimbal_sensor.x_angle", x)
-                .style(ChatFormatting.GRAY)
-                .forGoggles(tooltip, 2);
-        SimLang.translate("gimbal_sensor.z_angle", z)
-                .style(ChatFormatting.GRAY)
-                .forGoggles(tooltip, 2);
-
-
-        return true;
     }
 }

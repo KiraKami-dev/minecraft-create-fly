@@ -1,7 +1,7 @@
 package dev.eriksonn.aeronautics.content.blocks.hot_air;
 
 
-import net.createmod.catnip.animation.LerpedFloat;
+import com.zurrtum.create.catnip.animation.LerpedFloat;
 
 public class GasEmitterRenderHandler {
     private final LerpedFloat position;

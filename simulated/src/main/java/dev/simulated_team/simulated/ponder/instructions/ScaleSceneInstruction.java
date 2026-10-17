@@ -1,8 +1,8 @@
 package dev.simulated_team.simulated.ponder.instructions;
 
 import dev.simulated_team.simulated.mixin_interface.ponder.PonderSceneExtension;
-import net.createmod.ponder.foundation.PonderScene;
-import net.createmod.ponder.foundation.instruction.TickingInstruction;
+import com.zurrtum.create.client.ponder.foundation.PonderScene;
+import com.zurrtum.create.client.ponder.foundation.instruction.TickingInstruction;
 
 public class ScaleSceneInstruction extends TickingInstruction {
 

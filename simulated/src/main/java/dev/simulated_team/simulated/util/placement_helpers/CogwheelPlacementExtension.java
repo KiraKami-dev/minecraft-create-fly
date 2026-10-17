@@ -2,8 +2,8 @@ package dev.simulated_team.simulated.util.placement_helpers;
 
 import com.zurrtum.create.content.kinetics.simpleRelays.CogWheelBlock;
 import com.zurrtum.create.content.kinetics.simpleRelays.ICogWheel;
-import net.createmod.catnip.placement.IPlacementHelper;
-import net.createmod.catnip.placement.PlacementOffset;
+import com.zurrtum.create.catnip.placement.IPlacementHelper;
+import com.zurrtum.create.catnip.placement.PlacementOffset;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.InteractionHand;

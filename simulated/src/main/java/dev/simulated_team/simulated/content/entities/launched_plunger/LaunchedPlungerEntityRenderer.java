@@ -3,10 +3,9 @@ package dev.simulated_team.simulated.content.entities.launched_plunger;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.mojang.math.Axis;
-import dev.engine_room.flywheel.lib.transform.PoseTransformStack;
-import dev.engine_room.flywheel.lib.transform.TransformStack;
+import com.zurrtum.create.client.flywheel.lib.transform.PoseTransformStack;
+import com.zurrtum.create.client.flywheel.lib.transform.TransformStack;
 import dev.ryanhcode.sable.Sable;
-import dev.ryanhcode.sable.api.SubLevelHelper;
 import dev.ryanhcode.sable.companion.math.Pose3dc;
 import dev.ryanhcode.sable.sublevel.ClientSubLevel;
 import dev.ryanhcode.sable.sublevel.SubLevel;
@@ -16,40 +15,41 @@ import dev.simulated_team.simulated.index.SimPartialModels;
 import dev.simulated_team.simulated.index.SimRenderTypes;
 import dev.simulated_team.simulated.util.CatmulRomSpline;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
-import net.createmod.catnip.animation.AnimationTickHolder;
-import net.createmod.catnip.render.CachedBuffers;
-import net.createmod.catnip.render.SuperByteBuffer;
+import com.zurrtum.create.client.catnip.animation.AnimationTickHolder;
+import com.zurrtum.create.client.catnip.render.CachedBuffers;
+import com.zurrtum.create.client.catnip.render.SuperByteBuffer;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.AbstractClientPlayer;
 import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.client.renderer.LevelRenderer;
-import net.minecraft.client.renderer.MultiBufferSource;
-import net.minecraft.client.renderer.rendertype.RenderType;
+import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.client.renderer.culling.Frustum;
 import net.minecraft.client.renderer.entity.EntityRenderer;
 import net.minecraft.client.renderer.entity.EntityRendererProvider;
-import net.minecraft.client.renderer.entity.player.PlayerRenderer;
+import net.minecraft.client.renderer.entity.state.EntityRenderState;
+import net.minecraft.client.renderer.rendertype.RenderType;
+import net.minecraft.client.renderer.rendertype.RenderTypes;
+import net.minecraft.client.renderer.state.CameraRenderState;
+import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.resources.Identifier;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.BlockAndTintGetter;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.phys.Vec3;
+import org.jetbrains.annotations.Nullable;
 import org.joml.*;
 
 import java.lang.Math;
 import java.util.ArrayList;
 import java.util.List;
 
-public class LaunchedPlungerEntityRenderer extends EntityRenderer<LaunchedPlungerEntity> {
+public class LaunchedPlungerEntityRenderer extends EntityRenderer<LaunchedPlungerEntity, LaunchedPlungerEntityRenderer.PlungerRenderState> {
 
     private static final Quaternionf POSITIVE_Y = new Quaternionf().setAngleAxis(Math.PI / 2, 1, 0, 0);
     private static final Quaternionf NEGATIVE_Y = new Quaternionf().setAngleAxis(-Math.PI / 2, 1, 0, 0);
-    private static final Matrix4f FRUSTUM = new Matrix4f();
-    private static final Matrix4f PROJECTION = new Matrix4f();
 
     private static final Quaternionf ORIENTATION = new Quaternionf();
     private static final Quaternionf NEXT_ORIENTATION = new Quaternionf();
@@ -61,7 +61,6 @@ public class LaunchedPlungerEntityRenderer extends EntityRenderer<LaunchedPlunge
     private static final Vector3f SELF = new Vector3f();
 
     private static final List<Vec3> CABLE_POINTS = new ArrayList<>();
-    private static final List<Vec3> PREV_CABLE_POINTS = new ArrayList<>();
 
     private static final BlockPos.MutableBlockPos LIGHT_POS = new BlockPos.MutableBlockPos();
 
@@ -83,7 +82,7 @@ public class LaunchedPlungerEntityRenderer extends EntityRenderer<LaunchedPlunge
         final Matrix4f actualProjMat = gameRenderer.getProjectionMatrix(gameRenderer.getFov(camera, AnimationTickHolder.getPartialTicks(), true));
         actualProjMat.invert(new Matrix4f()).transform(v4);
         PlungerLauncherItemRenderer.itemProjMat.transform(v4);
-        final Vec3 cameraPosition = camera.getPosition();
+        final Vec3 cameraPosition = camera.position();
         focusPoint.set(v4.x, v4.y, v4.z);
         orientation.transform(focusPoint);
 
@@ -95,8 +94,13 @@ public class LaunchedPlungerEntityRenderer extends EntityRenderer<LaunchedPlunge
     }
 
     @Override
-    public void render(final LaunchedPlungerEntity entity, final float f, final float pt, final PoseStack poseStack, final MultiBufferSource multiBufferSource, final int light) {
-        super.render(entity, f, pt, poseStack, multiBufferSource, light);
+    public PlungerRenderState createRenderState() {
+        return new PlungerRenderState();
+    }
+
+    @Override
+    public void extractRenderState(final LaunchedPlungerEntity entity, final PlungerRenderState state, final float pt) {
+        super.extractRenderState(entity, state, pt);
 
         // render to sublevel and invert rotate rope to be accurate
         final LaunchedPlungerEntity other = entity.getOther();
@@ -105,18 +109,17 @@ public class LaunchedPlungerEntityRenderer extends EntityRenderer<LaunchedPlunge
         Vec3 perpendicularNormal = Vec3.ZERO;
         final Direction dir = entity.getData(LaunchedPlungerEntity.PLUNGED_DIRECTION);
         if (entity.isPlunged()) {
-            selfNormal = Vec3.atLowerCornerOf(dir.getNormal());
+            selfNormal = Vec3.atLowerCornerOf(dir.getUnitVec3i());
             if (dir.getAxis().isHorizontal()) {
-                perpendicularNormal = Vec3.atLowerCornerOf(Direction.UP.getNormal());
+                perpendicularNormal = Vec3.atLowerCornerOf(Direction.UP.getUnitVec3i());
             } else {
-                perpendicularNormal = Vec3.atLowerCornerOf(Direction.NORTH.getNormal());
+                perpendicularNormal = Vec3.atLowerCornerOf(Direction.NORTH.getUnitVec3i());
             }
         } else {
             selfNormal = entity.calculateViewVector(-Mth.lerp(pt, entity.xRotO, entity.getXRot()),-Mth.lerp(pt, entity.yRotO, entity.getYRot())).reverse();
             perpendicularNormal = entity.calculateViewVector(-Mth.lerp(pt, entity.xRotO, entity.getXRot()),-Mth.lerp(pt, entity.yRotO, entity.getYRot())-90).reverse();
         }
 
-        poseStack.pushPose();
         Vec3 oldPos = new Vec3(entity.xo, entity.yo, entity.zo);
         Vec3 newPos = entity.position();
         final float scalingFactor = 0.6f;
@@ -127,9 +130,6 @@ public class LaunchedPlungerEntityRenderer extends EntityRenderer<LaunchedPlunge
             newPos = clientPos.transformPosition(newPos);
             selfNormal = clientPos.transformNormal(selfNormal);
             perpendicularNormal = clientPos.transformNormal(perpendicularNormal);
-
-            final Quaterniondc quaterniondc = clientPos.orientation();
-            poseStack.mulPose(new Quaternionf(quaterniondc.x(), quaterniondc.y(), quaterniondc.z(), quaterniondc.w()).conjugate());
         }
 
         final SubLevel oldSubLevel = Sable.HELPER.getContainingClient(oldPos);
@@ -141,14 +141,12 @@ public class LaunchedPlungerEntityRenderer extends EntityRenderer<LaunchedPlunge
         final Vec3 renderPos = oldPos.lerp(newPos, pt);
         final Vec3 pos = renderPos.add(selfNormal.scale(scalingFactor));
 
-        poseStack.translate(-renderPos.x, -renderPos.y, -renderPos.z);
-
         final Vec3 target;
         if (other != null) {
             Vec3 otherNormal = Vec3.ZERO;
             if (other.isPlunged()) {
                 final Direction otherDir = other.getData(LaunchedPlungerEntity.PLUNGED_DIRECTION);
-                otherNormal = Vec3.atLowerCornerOf(otherDir.getNormal());
+                otherNormal = Vec3.atLowerCornerOf(otherDir.getUnitVec3i());
             } else {
                 otherNormal = other.calculateViewVector(-Mth.lerp(pt, other.xRotO, other.getXRot()),-Mth.lerp(pt, other.yRotO, other.getYRot())).reverse();
             }
@@ -175,10 +173,7 @@ public class LaunchedPlungerEntityRenderer extends EntityRenderer<LaunchedPlunge
                 target = getFirstPersonFocusPos(pt);
             } else {
                 if (owner instanceof final AbstractClientPlayer player && entity.getData(LaunchedPlungerEntity.OTHER_PLUNGER).isEmpty()) {
-                    final PlayerRenderer playerrenderer = (PlayerRenderer) Minecraft.getInstance().getEntityRenderDispatcher()
-                            .getRenderer(player);
                     float headYDirection = Mth.lerp(pt, player.yHeadRotO, player.yHeadRot);
-                    final float bodyDifference = Math.abs(headYDirection - player.getPreciseBodyRotation(pt)) / 50f;
                     final float headXDirection = Mth.lerp(pt, player.xRotO, player.getXRot());
                     final float lookDelta = Math.abs(Mth.map(headXDirection, 90, 0, 1f, 0f));
                     headYDirection = Mth.lerp(lookDelta, headYDirection, player.getPreciseBodyRotation(pt));
@@ -195,7 +190,7 @@ public class LaunchedPlungerEntityRenderer extends EntityRenderer<LaunchedPlunge
         final Vector3f secondRotation = new Vector3f();
         final Vector3f finalRotation = new Vector3f();
 
-        poseStack.popPose();
+        state.rope = null;
         if ((entity.getData(LaunchedPlungerEntity.IS_FIRST) || other == null || other.isRemoved()) && !target.equals(Vec3.ZERO)) {
             final float renderTime = (entity.tickCount + pt + entity.getAnimationOffset());
             final List<Vec3> points = new ObjectArrayList<>();
@@ -205,7 +200,7 @@ public class LaunchedPlungerEntityRenderer extends EntityRenderer<LaunchedPlunge
             final Vec3 normalizedScalar = toTarget.normalize();
             final float length = (float) renderPos.distanceTo(target);
             points.add(start);
-           
+
             if (length < 1000.0) {
                 for (float j = 0.01f; j < length; j += 0.5f) {
                     finalRotation.set(0, 0, 0);
@@ -224,33 +219,15 @@ public class LaunchedPlungerEntityRenderer extends EntityRenderer<LaunchedPlunge
             points.add(start.add(toTarget));
             points.add(start.add(toTarget));
 
-            renderRope(points, multiBufferSource, Minecraft.getInstance().level, poseStack);
+            state.rope = buildRope(points, entity.level());
         }
 
-        final double distanceIncludingSublevels = pos.distanceTo(target);
+        state.distanceIncludingSublevels = pos.distanceTo(target);
 
-        final PoseTransformStack stack = TransformStack.of(poseStack);
-        //render launched plunger and spool
-        poseStack.pushPose();
-        if (entity.isPlunged()) {
-            stack.rotate(dir.getRotation());
-        } else {
-            poseStack.mulPose(Axis.YP.rotationDegrees(Mth.lerp(pt, entity.yRotO, entity.getYRot()) - 90.0F));
-            poseStack.mulPose(Axis.ZP.rotationDegrees(Mth.lerp(pt, entity.xRotO, entity.getXRot())));
-            stack.rotateZDegrees(90f);
-        }
-        stack.rotateXDegrees(-90);
-
-        stack.scale(1.75f, 1.75f, 1.75f);
-        stack.translate(0, 0, 2.5f / 16f);
-
-        final VertexConsumer vb = multiBufferSource.getBuffer(RenderType.solid());
-        final SuperByteBuffer body = CachedBuffers.partial(SimPartialModels.LAUNCHED_PLUNGER_BODY, Blocks.AIR.defaultBlockState());
-        final SuperByteBuffer spool = CachedBuffers.partial(SimPartialModels.LAUNCHED_PLUNGER_SPOOL, Blocks.AIR.defaultBlockState());
-        final SuperByteBuffer joint = CachedBuffers.partial(SimPartialModels.LAUNCHED_PLUNGER_JOINT, Blocks.AIR.defaultBlockState());
-
-        stack.rotateZDegrees(90f);
-        body.light(light).renderInto(poseStack, vb);
+        state.plunged = entity.isPlunged();
+        state.plungedDirection = dir;
+        state.yaw = Mth.lerp(pt, entity.yRotO, entity.getYRot());
+        state.pitch = Mth.lerp(pt, entity.xRotO, entity.getXRot());
 
         FACE_NORMAL.set(selfNormal.x, selfNormal.y, selfNormal.z);
         SELF.set(pos.x, pos.y, pos.z);
@@ -265,25 +242,64 @@ public class LaunchedPlungerEntityRenderer extends EntityRenderer<LaunchedPlunge
         if (Float.isNaN(angle)) {
             angle = 0;
         }
+        state.jointAngle = angle;
+
+        state.body = CachedBuffers.partial(SimPartialModels.LAUNCHED_PLUNGER_BODY, Blocks.AIR.defaultBlockState());
+        state.spool = CachedBuffers.partial(SimPartialModels.LAUNCHED_PLUNGER_SPOOL, Blocks.AIR.defaultBlockState());
+        state.joint = CachedBuffers.partial(SimPartialModels.LAUNCHED_PLUNGER_JOINT, Blocks.AIR.defaultBlockState());
+    }
+
+    @Override
+    public void submit(final PlungerRenderState state, final PoseStack poseStack, final SubmitNodeCollector queue, final CameraRenderState cameraState) {
+        super.submit(state, poseStack, queue, cameraState);
+
+        if (state.rope != null) {
+            // the rope is built in camera-relative world space, so the entity pose is not applied
+            final Rope rope = state.rope;
+            queue.submitCustomGeometry(poseStack, SimRenderTypes.rope(), (pose, consumer) -> emitRope(rope, consumer));
+        }
+
+        final int light = state.lightCoords;
+        final PoseTransformStack stack = TransformStack.of(poseStack);
+        //render launched plunger and spool
+        poseStack.pushPose();
+        if (state.plunged) {
+            stack.rotate(state.plungedDirection.getRotation());
+        } else {
+            poseStack.mulPose(Axis.YP.rotationDegrees(state.yaw - 90.0F));
+            poseStack.mulPose(Axis.ZP.rotationDegrees(state.pitch));
+            stack.rotateZDegrees(90f);
+        }
+        stack.rotateXDegrees(-90);
+
+        stack.scale(1.75f, 1.75f, 1.75f);
+        stack.translate(0, 0, 2.5f / 16f);
+
+        final RenderType renderType = RenderTypes.solidMovingBlock();
+        final SuperByteBuffer body = state.body;
+        final SuperByteBuffer spool = state.spool;
+        final SuperByteBuffer joint = state.joint;
+
+        stack.rotateZDegrees(90f);
+        queue.submitCustomGeometry(poseStack, renderType, (pose, consumer) -> body.light(light).renderInto(pose, consumer));
 
         poseStack.pushPose();
-        stack.rotateZDegrees((float) Math.toDegrees(angle));
-        joint.light(light).renderInto(poseStack, vb);
+        stack.rotateZDegrees((float) Math.toDegrees(state.jointAngle));
+        queue.submitCustomGeometry(poseStack, renderType, (pose, consumer) -> joint.light(light).renderInto(pose, consumer));
         stack.translate(0, 0, 3f / 16f);
-        stack.rotateXDegrees((float) distanceIncludingSublevels * 90f * 2.6f);
-        spool.light(light).renderInto(poseStack, vb);
+        stack.rotateXDegrees((float) state.distanceIncludingSublevels * 90f * 2.6f);
+        queue.submitCustomGeometry(poseStack, renderType, (pose, consumer) -> spool.light(light).renderInto(pose, consumer));
         poseStack.popPose();
 
         poseStack.popPose();
     }
 
-    public static void renderRope(final List<Vec3> positions, final MultiBufferSource multiBufferSource, final BlockAndTintGetter level, final PoseStack poseStack) {
-        final Vec3 first = positions.getFirst();
-        final Vector3d origin = new Vector3d();
-        final Vec3 cameraPosition = Minecraft.getInstance().gameRenderer.getMainCamera().getPosition();
-
-        final RenderType renderType = SimRenderTypes.rope();
-        final VertexConsumer builder = multiBufferSource.getBuffer(renderType);
+    /**
+     * Builds the rope mesh data. The positions are camera relative, like the vertices upstream wrote directly into the
+     * buffer.
+     */
+    public static Rope buildRope(final List<Vec3> positions, final BlockAndTintGetter level) {
+        final Vec3 cameraPosition = Minecraft.getInstance().gameRenderer.getMainCamera().position();
 
         CABLE_POINTS.clear();
         for (final Vec3 position : positions) {
@@ -291,6 +307,19 @@ public class LaunchedPlungerEntityRenderer extends EntityRenderer<LaunchedPlunge
         }
 
         final List<Vec3> splinePoints = CatmulRomSpline.generateSpline(CABLE_POINTS, 4);
+        final int[] lights = new int[splinePoints.size()];
+
+        for (int i = 0; i < splinePoints.size(); i++) {
+            final Vec3 point = splinePoints.get(i);
+            lights[i] = LevelRenderer.getLightColor(level, LIGHT_POS.set(point.x + cameraPosition.x, point.y + cameraPosition.y, point.z + cameraPosition.z));
+        }
+
+        return new Rope(splinePoints, lights);
+    }
+
+    public static void emitRope(final Rope rope, final VertexConsumer builder) {
+        final List<Vec3> splinePoints = rope.points();
+        final Vector3d origin = new Vector3d();
 
         final int color = 0xFFFFFFFF;
         final float constantRadius = (2f / 16.0f) / 2.0f;
@@ -319,8 +348,8 @@ public class LaunchedPlungerEntityRenderer extends EntityRenderer<LaunchedPlunge
                 NEXT_ORIENTATION.set(ORIENTATION);
             }
 
-            final int lightStart = LevelRenderer.getLightColor(level, LIGHT_POS.set(x + cameraPosition.x, y + cameraPosition.y, z + cameraPosition.z));
-            final int lightEnd = LevelRenderer.getLightColor(level, LIGHT_POS.set(nextX + cameraPosition.x, nextY + cameraPosition.y, nextZ + cameraPosition.z));
+            final int lightStart = rope.lights()[i];
+            final int lightEnd = rope.lights()[i + 1];
 
             final double length = Math.sqrt((nextX - x) * (nextX - x) + (nextY - y) * (nextY - y) + (nextZ - z) * (nextZ - z));
             nextV = v + (float) (length * (17 / 16f));
@@ -330,68 +359,73 @@ public class LaunchedPlungerEntityRenderer extends EntityRenderer<LaunchedPlunge
             NEXT_ORIENTATION.transform(NEXT_NORMAL.set(0, -1, 0));
 
             NEXT_ORIENTATION.transform(POS.set(-nextCableRadius, -nextCableRadius, 0));
-            builder.addVertex((float) (nextX - origin.x() + POS.x), (float) (nextY - origin.y() + POS.y), (float) (nextZ - origin.z() + POS.z)).setColor(color).setUv(0, nextV).setLight(lightEnd).setNormal(NEXT_NORMAL.x, NEXT_NORMAL.y, NEXT_NORMAL.z);
+            vertex(builder, nextX - origin.x() + POS.x, nextY - origin.y() + POS.y, nextZ - origin.z() + POS.z, color, 0, nextV, lightEnd, NEXT_NORMAL);
 
             ORIENTATION.transform(POS.set(-cableRadius, -cableRadius, 0));
-            builder.addVertex((float) (x - origin.x() + POS.x), (float) (y - origin.y() + POS.y), (float) (z - origin.z() + POS.z)).setColor(color).setUv(0, v).setLight(lightStart).setNormal(NORMAL.x, NORMAL.y, NORMAL.z);
+            vertex(builder, x - origin.x() + POS.x, y - origin.y() + POS.y, z - origin.z() + POS.z, color, 0, v, lightStart, NORMAL);
 
             ORIENTATION.transform(POS.set(cableRadius, -cableRadius, 0));
-            builder.addVertex((float) (x - origin.x() + POS.x), (float) (y - origin.y() + POS.y), (float) (z - origin.z() + POS.z)).setColor(color).setUv(u, v).setLight(lightStart).setNormal(NORMAL.x, NORMAL.y, NORMAL.z);
+            vertex(builder, x - origin.x() + POS.x, y - origin.y() + POS.y, z - origin.z() + POS.z, color, u, v, lightStart, NORMAL);
 
             NEXT_ORIENTATION.transform(POS.set(nextCableRadius, -nextCableRadius, 0));
-            builder.addVertex((float) (nextX - origin.x() + POS.x), (float) (nextY - origin.y() + POS.y), (float) (nextZ - origin.z() + POS.z)).setColor(color).setUv(u, nextV).setLight(lightEnd).setNormal(NEXT_NORMAL.x, NEXT_NORMAL.y, NEXT_NORMAL.z);
+            vertex(builder, nextX - origin.x() + POS.x, nextY - origin.y() + POS.y, nextZ - origin.z() + POS.z, color, u, nextV, lightEnd, NEXT_NORMAL);
 
             // Up
             ORIENTATION.transform(NORMAL.set(0, 1, 0));
             NEXT_ORIENTATION.transform(NEXT_NORMAL.set(0, 1, 0));
 
             ORIENTATION.transform(POS.set(-cableRadius, cableRadius, 0));
-            builder.addVertex((float) (x - origin.x() + POS.x), (float) (y - origin.y() + POS.y), (float) (z - origin.z() + POS.z)).setColor(color).setUv(0, v).setLight(lightStart).setNormal(NORMAL.x, NORMAL.y, NORMAL.z);
+            vertex(builder, x - origin.x() + POS.x, y - origin.y() + POS.y, z - origin.z() + POS.z, color, 0, v, lightStart, NORMAL);
 
             NEXT_ORIENTATION.transform(POS.set(-nextCableRadius, nextCableRadius, 0));
-            builder.addVertex((float) (nextX - origin.x() + POS.x), (float) (nextY - origin.y() + POS.y), (float) (nextZ - origin.z() + POS.z)).setColor(color).setUv(0, nextV).setLight(lightEnd).setNormal(NEXT_NORMAL.x, NEXT_NORMAL.y, NEXT_NORMAL.z);
+            vertex(builder, nextX - origin.x() + POS.x, nextY - origin.y() + POS.y, nextZ - origin.z() + POS.z, color, 0, nextV, lightEnd, NEXT_NORMAL);
 
             NEXT_ORIENTATION.transform(POS.set(nextCableRadius, nextCableRadius, 0));
-            builder.addVertex((float) (nextX - origin.x() + POS.x), (float) (nextY - origin.y() + POS.y), (float) (nextZ - origin.z() + POS.z)).setColor(color).setUv(u, nextV).setLight(lightEnd).setNormal(NEXT_NORMAL.x, NEXT_NORMAL.y, NEXT_NORMAL.z);
+            vertex(builder, nextX - origin.x() + POS.x, nextY - origin.y() + POS.y, nextZ - origin.z() + POS.z, color, u, nextV, lightEnd, NEXT_NORMAL);
 
             ORIENTATION.transform(POS.set(cableRadius, cableRadius, 0));
-            builder.addVertex((float) (x - origin.x() + POS.x), (float) (y - origin.y() + POS.y), (float) (z - origin.z() + POS.z)).setColor(color).setUv(u, v).setLight(lightStart).setNormal(NORMAL.x, NORMAL.y, NORMAL.z);
+            vertex(builder, x - origin.x() + POS.x, y - origin.y() + POS.y, z - origin.z() + POS.z, color, u, v, lightStart, NORMAL);
 
             // West
             ORIENTATION.transform(NORMAL.set(-1, 0, 0));
             NEXT_ORIENTATION.transform(NEXT_NORMAL.set(-1, 0, 0));
 
             NEXT_ORIENTATION.transform(POS.set(-nextCableRadius, -nextCableRadius, 0));
-            builder.addVertex((float) (nextX - origin.x() + POS.x), (float) (nextY - origin.y() + POS.y), (float) (nextZ - origin.z() + POS.z)).setColor(color).setUv(u, nextV).setLight(lightEnd).setNormal(NEXT_NORMAL.x, NEXT_NORMAL.y, NEXT_NORMAL.z);
+            vertex(builder, nextX - origin.x() + POS.x, nextY - origin.y() + POS.y, nextZ - origin.z() + POS.z, color, u, nextV, lightEnd, NEXT_NORMAL);
 
             NEXT_ORIENTATION.transform(POS.set(-nextCableRadius, nextCableRadius, 0));
-            builder.addVertex((float) (nextX - origin.x() + POS.x), (float) (nextY - origin.y() + POS.y), (float) (nextZ - origin.z() + POS.z)).setColor(color).setUv(0, nextV).setLight(lightEnd).setNormal(NEXT_NORMAL.x, NEXT_NORMAL.y, NEXT_NORMAL.z);
+            vertex(builder, nextX - origin.x() + POS.x, nextY - origin.y() + POS.y, nextZ - origin.z() + POS.z, color, 0, nextV, lightEnd, NEXT_NORMAL);
 
             ORIENTATION.transform(POS.set(-cableRadius, cableRadius, 0));
-            builder.addVertex((float) (x - origin.x() + POS.x), (float) (y - origin.y() + POS.y), (float) (z - origin.z() + POS.z)).setColor(color).setUv(0, v).setLight(lightStart).setNormal(NORMAL.x, NORMAL.y, NORMAL.z);
+            vertex(builder, x - origin.x() + POS.x, y - origin.y() + POS.y, z - origin.z() + POS.z, color, 0, v, lightStart, NORMAL);
 
             ORIENTATION.transform(POS.set(-cableRadius, -cableRadius, 0));
-            builder.addVertex((float) (x - origin.x() + POS.x), (float) (y - origin.y() + POS.y), (float) (z - origin.z() + POS.z)).setColor(color).setUv(u, v).setLight(lightStart).setNormal(NORMAL.x, NORMAL.y, NORMAL.z);
+            vertex(builder, x - origin.x() + POS.x, y - origin.y() + POS.y, z - origin.z() + POS.z, color, u, v, lightStart, NORMAL);
 
             // East
             ORIENTATION.transform(NORMAL.set(1, 0, 0));
             NEXT_ORIENTATION.transform(NEXT_NORMAL.set(1, 0, 0));
 
             ORIENTATION.transform(POS.set(cableRadius, -cableRadius, 0));
-            builder.addVertex((float) (x - origin.x() + POS.x), (float) (y - origin.y() + POS.y), (float) (z - origin.z() + POS.z)).setColor(color).setUv(u, v).setLight(lightStart).setNormal(NORMAL.x, NORMAL.y, NORMAL.z);
+            vertex(builder, x - origin.x() + POS.x, y - origin.y() + POS.y, z - origin.z() + POS.z, color, u, v, lightStart, NORMAL);
 
             ORIENTATION.transform(POS.set(cableRadius, cableRadius, 0));
-            builder.addVertex((float) (x - origin.x() + POS.x), (float) (y - origin.y() + POS.y), (float) (z - origin.z() + POS.z)).setColor(color).setUv(0, v).setLight(lightStart).setNormal(NORMAL.x, NORMAL.y, NORMAL.z);
+            vertex(builder, x - origin.x() + POS.x, y - origin.y() + POS.y, z - origin.z() + POS.z, color, 0, v, lightStart, NORMAL);
 
             NEXT_ORIENTATION.transform(POS.set(nextCableRadius, nextCableRadius, 0));
-            builder.addVertex((float) (nextX - origin.x() + POS.x), (float) (nextY - origin.y() + POS.y), (float) (nextZ - origin.z() + POS.z)).setColor(color).setUv(0, nextV).setLight(lightEnd).setNormal(NEXT_NORMAL.x, NEXT_NORMAL.y, NEXT_NORMAL.z);
+            vertex(builder, nextX - origin.x() + POS.x, nextY - origin.y() + POS.y, nextZ - origin.z() + POS.z, color, 0, nextV, lightEnd, NEXT_NORMAL);
 
             NEXT_ORIENTATION.transform(POS.set(nextCableRadius, -nextCableRadius, 0));
-            builder.addVertex((float) (nextX - origin.x() + POS.x), (float) (nextY - origin.y() + POS.y), (float) (nextZ - origin.z() + POS.z)).setColor(color).setUv(u, nextV).setLight(lightEnd).setNormal(NEXT_NORMAL.x, NEXT_NORMAL.y, NEXT_NORMAL.z);
+            vertex(builder, nextX - origin.x() + POS.x, nextY - origin.y() + POS.y, nextZ - origin.z() + POS.z, color, u, nextV, lightEnd, NEXT_NORMAL);
 
             ORIENTATION.set(NEXT_ORIENTATION);
             v = nextV;
         }
+    }
+
+    private static void vertex(final VertexConsumer builder, final double x, final double y, final double z, final int color, final float u, final float v, final int light, final Vector3f normal) {
+        // overlay is ignored by formats without it
+        builder.addVertex((float) x, (float) y, (float) z).setColor(color).setUv(u, v).setOverlay(OverlayTexture.NO_OVERLAY).setLight(light).setNormal(normal.x, normal.y, normal.z);
     }
 
     private static void calculateOrientation(final Quaternionf store, final double x, final double y, final double z, final Vec3 nextPoint) {
@@ -403,12 +437,27 @@ public class LaunchedPlungerEntityRenderer extends EntityRenderer<LaunchedPlunge
     }
 
     @Override
-    public Identifier getTextureLocation(final LaunchedPlungerEntity entity) {
-        return Identifier.withDefaultNamespace("missing");
-    }
-
-    @Override
     public boolean shouldRender(final LaunchedPlungerEntity entity, final Frustum frustum, final double d, final double e, final double f) {
         return true;
+    }
+
+    /**
+     * A rope from a launched plunger, as camera relative spline points and their packed light
+     */
+    public record Rope(List<Vec3> points, int[] lights) {
+    }
+
+    public static class PlungerRenderState extends EntityRenderState {
+        @Nullable
+        private Rope rope;
+        private double distanceIncludingSublevels;
+        private boolean plunged;
+        private Direction plungedDirection = Direction.UP;
+        private float yaw;
+        private float pitch;
+        private float jointAngle;
+        private SuperByteBuffer body;
+        private SuperByteBuffer spool;
+        private SuperByteBuffer joint;
     }
 }

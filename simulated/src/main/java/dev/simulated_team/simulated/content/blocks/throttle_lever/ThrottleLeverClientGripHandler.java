@@ -91,7 +91,7 @@ public class ThrottleLeverClientGripHandler {
         final Vector3f localViewPosition = pose.transformPosition(new Vector3f());
         final Vector3f localViewDirection = pose.transformDirection(new Vector3f((float) viewVector.x, (float) viewVector.y, (float) viewVector.z));
 
-        final VoxelShape leverShape = SimBlocks.THROTTLE_LEVER.get().getHandleShape(SimBlocks.THROTTLE_LEVER.getDefaultState());
+        final VoxelShape leverShape = SimBlocks.THROTTLE_LEVER.getHandleShape(SimBlocks.THROTTLE_LEVER.defaultBlockState());
 
         eyePos.set(localViewPosition);
         viewVector.set(localViewDirection).mul(player.blockInteractionRange()).add(eyePos);

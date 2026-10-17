@@ -1,23 +1,12 @@
 package dev.eriksonn.aeronautics;
 
-import com.zurrtum.create.client.foundation.item.ItemDescription;
-import com.zurrtum.create.client.foundation.item.KineticStats;
-import com.zurrtum.create.client.foundation.item.TooltipHelper;
-import com.zurrtum.create.client.foundation.item.TooltipModifier;
-import dev.simulated_team.simulated.util.SimColors;
-import com.tterrag.registrate.providers.ProviderType;
-import com.tterrag.registrate.util.nullness.NonNullSupplier;
-import dev.eriksonn.aeronautics.data.AeroLang;
+import dev.eriksonn.aeronautics.data.AeroAdvancementTriggers;
 import dev.eriksonn.aeronautics.events.AeronauticsCommonEvents;
 import dev.eriksonn.aeronautics.index.*;
 import dev.eriksonn.aeronautics.network.AeroPacketManager;
 import dev.eriksonn.aeronautics.registry.AeroRegistrate;
 import dev.ryanhcode.sable.platform.SableEventPlatform;
-import net.createmod.catnip.lang.FontHelper;
-import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.Identifier;
-import net.minecraft.world.item.CreativeModeTab;
-import net.minecraft.world.item.Rarity;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -25,40 +14,39 @@ public class Aeronautics {
 	public static final String MOD_ID = "aeronautics";
 	public static final Logger LOGGER = LoggerFactory.getLogger(MOD_ID);
 
-	private static final NonNullSupplier<AeroRegistrate> REGISTRATE = NonNullSupplier.lazy(() ->
-			(AeroRegistrate) new AeroRegistrate(Aeronautics.path("aeronautics"), MOD_ID).defaultCreativeTab((ResourceKey<CreativeModeTab>) null));
+	// Aeronautics' items go into their own section of the Simulated creative tab
+	private static final AeroRegistrate REGISTRATE = new AeroRegistrate(Aeronautics.path("aeronautics"), MOD_ID);
 
+	/**
+	 * Common initialization: registers all content. Called from the Fabric main entrypoint
+	 * ({@code fabric.AeronauticsFabric}); the server config is created there right after, since it needs the stress
+	 * defaults collected here. (Item tooltips, upstream's registrate tooltip modifier factory, are client-side now:
+	 * {@code AeronauticsClient}.)
+	 */
 	public static void init() {
-		setTooltips();
-		getRegistrate().addDataGenerator(ProviderType.LANG, AeroLang::registrateLang);
-
-		AeroBlocks.init();
-		AeroBlockEntityTypes.init();
-		AeroItems.init();
-		AeroEntityTypes.init();
-		AeroArmorMaterials.init();
-		AeroSoundEvents.init();
-		AeroLiftingGasTypes.init();
-		AeroBlockMovementChecks.init();
-		AeroRegistries.init();
-		AeroPacketManager.init();
-		AeroLevititeBlendPropagationContexts.init();
+		AeroRegistries.register();
 		AeroDataComponents.init();
+		AeroSoundEvents.init();
+		AeroDisplaySources.register();
+		AeroBlocks.register();
+		// block items before anything calls Block#asItem() on an Aeronautics block (it caches the result)
+		AeroItems.register();
+		AeroFluids.register();
+		AeroBlockEntityTypes.register();
+		AeroEntityTypes.register();
+		AeroParticleTypes.register();
+		AeroArmorMaterials.register();
+		AeroLiftingGasTypes.register();
+		AeroBlockMovementChecks.init();
+		AeroPacketManager.init();
+		AeroLevititeBlendPropagationContexts.register();
+		AeroArmInteractionPoints.register();
+
+		// advancement triggers ("<id>_builtin" criteria of the shipped advancement JSON)
+		AeroAdvancements.register();
+		AeroAdvancementTriggers.register();
 
 		listenCommonEvents();
-	}
-
-	public static void setTooltips() {
-		getRegistrate().setTooltipModifierFactory(item -> {
-			final Rarity rarity = item.getDefaultInstance().getRarity();
-			FontHelper.Palette color = FontHelper.Palette.STANDARD_CREATE;
-			if (rarity == Rarity.EPIC)
-				color = new FontHelper.Palette(TooltipHelper.styleFromColor(SimColors.EPIC_OURPLE), TooltipHelper.styleFromColor(rarity.color()));
-
-			return new ItemDescription
-					.Modifier(item, color)
-					.andThen(TooltipModifier.mapNull(KineticStats.create(item)));
-		});
 	}
 
 	private static void listenCommonEvents() {
@@ -67,7 +55,7 @@ public class Aeronautics {
 	}
 
 	public static AeroRegistrate getRegistrate() {
-		return REGISTRATE.get();
+		return REGISTRATE;
 	}
 
 	public static Identifier path(final String path) {

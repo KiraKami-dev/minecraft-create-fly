@@ -1,5 +1,6 @@
 package dev.eriksonn.aeronautics.content.blocks.levitite;
 
+import dev.eriksonn.aeronautics.content.blocks.levitite.render.LevititeRenderer;
 import dev.eriksonn.aeronautics.index.AeroBlocks;
 import dev.ryanhcode.sable.companion.math.Pose3dc;
 import dev.ryanhcode.sable.physics.config.block_properties.PhysicsBlockPropertyHelper;
@@ -7,18 +8,25 @@ import dev.ryanhcode.sable.physics.config.dimension_physics.DimensionPhysicsData
 import dev.ryanhcode.sable.physics.floating_block.FloatingBlockMaterial;
 import dev.ryanhcode.sable.sublevel.ClientSubLevel;
 import dev.ryanhcode.sable.util.SableMathUtils;
-import dev.ryanhcode.sable.veillite.api.client.render.VeilRenderSystem;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.ShaderInstance;
+import net.minecraft.core.BlockPos;
 import org.joml.Matrix3f;
+import org.joml.Matrix4f;
 import org.joml.Quaterniond;
 import org.joml.Vector3d;
+import org.joml.Vector3dc;
 import org.joml.Vector3f;
+import org.joml.Vector4f;
+import org.joml.Vector4fc;
 
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 
+/**
+ * Tracks the smoothed motion of sub-levels and computes the levitite effect parameters
+ * ({@link LevititeRenderer.LevititeUniform}). Upstream set them as uniforms of the Veil levitite shader.
+ */
 public class LevititeShaderManager {
     private static final double SMOOTHING_SPEED = 0.5;
 
@@ -29,7 +37,6 @@ public class LevititeShaderManager {
     private static final Quaterniond currentOrientation = new Quaterniond();
     private static final Vector3d offset = new Vector3d();
     private static final Matrix3f matrix = new Matrix3f();
-    private static final Vector3d gravityVector1 = new Vector3d();
     private static final Vector3f gravityVector2 = new Vector3f();
     private static boolean enabled = false;
 
@@ -40,6 +47,8 @@ public class LevititeShaderManager {
     private final Vector3d smoothedAngularVelocity = new Vector3d();
     private final Vector3d lastSmoothedAngularVelocity = new Vector3d();
     private final Vector3d accumulatedPosition = new Vector3d();
+    // upstream kept this in a static field shared by all sub-levels, overwritten by every tick and frame
+    private final Vector3d gravityVector1 = new Vector3d();
 
     public static void tick() {
         if (managers.isEmpty()) {
@@ -65,32 +74,16 @@ public class LevititeShaderManager {
         return managers.get(subLevel);
     }
 
+    /**
+     * Upstream disabled the shader while ponder scenes rendered; levitite effects are only drawn for sub-levels by the
+     * {@link LevititeRenderer} now, which ponder never reaches. Kept for API compatibility.
+     */
     public static void disableShader() {
         enabled = false;
     }
 
-    public static void prepareShaderForWorld(ShaderInstance shader, double camX, double camY, double camZ) {
-        camX = camX % 10000;
-        camY = camY % 10000;
-        camZ = camZ % 10000;
-        setMaterialProperties(shader);
-        shader.safeGetUniform("offset").set(-(float) camX, -(float) camY, -(float) camZ);
-        shader.safeGetUniform("currentOrientation").set(matrix.identity());
-        shader.safeGetUniform("sublevelPosition").set(0f, 0f, 0f);
-        shader.safeGetUniform("linearVelocity").set(0f, 0f, 0f);
-        shader.safeGetUniform("angularVelocity").set(0f, 0f, 0f);
-        shader.safeGetUniform("onSublevel").set(0);
-        shader.safeGetUniform("gravityStrength").set(0);
+    public static void enableShader() {
         enabled = true;
-    }
-
-    public static void setMaterialProperties(ShaderInstance shader) {
-        FloatingBlockMaterial material = PhysicsBlockPropertyHelper.getFloatingMaterial(AeroBlocks.LEVITITE.getDefaultState());
-        if (material == null)
-            return;
-        shader.safeGetUniform("materialTransitionSpeed").set((float) material.transitionSpeed());
-        shader.safeGetUniform("materialMatrixSlow").set(getGravityMatrix(gravityVector2, (float) material.slowVerticalFriction(), (float) material.slowHorizontalFriction(), matrix));
-        shader.safeGetUniform("materialMatrixFast").set(getGravityMatrix(gravityVector2, (float) material.fastVerticalFriction(), (float) material.fastHorizontalFriction(), matrix));
     }
 
     private static Matrix3f getGravityMatrix(final Vector3f g, final float verticalDrag, final float horizontalDrag, Matrix3f target) {
@@ -138,33 +131,58 @@ public class LevititeShaderManager {
         return (smoothedAngularVelocity.lengthSquared() > 1E-6 || smoothedLinearVelocity.lengthSquared() > 1E-6) && gravityVector1.lengthSquared() > 0.001;
     }
 
-    public void prepareShaderForSublevel(ClientSubLevel subLevel, ShaderInstance shader, double camX, double camY, double camZ) {
-        final float pt = Minecraft.getInstance().getTimer().getGameTimeDeltaPartialTick(true);
-
-        Pose3dc currentPose = subLevel.renderPose(pt);
+    /**
+     * Computes the effect parameters of a sub-level (upstream {@code prepareShaderForSublevel} + {@code setMaterialProperties}).
+     *
+     * @param subLevel    The sub-level
+     * @param anchor      The anchor block its sections are drawn relative to
+     * @param layerIndex  0 for the block itself, 1 / -1 for the ghost layers
+     * @param spriteRects The block atlas rectangles of the levitite sprites
+     * @param partialTick The partial tick
+     */
+    public LevititeRenderer.LevititeUniform createUniform(final ClientSubLevel subLevel, final BlockPos anchor, final int layerIndex, final Vector4fc[] spriteRects, final float partialTick) {
+        final Pose3dc currentPose = subLevel.renderPose(partialTick);
         currentPos.set(currentPose.position());
         currentOrientation.set(currentPose.orientation());
-        currentPos.sub(camX, camY, camZ, offset);
 
-        lastSmoothedLinearVelocity.lerp(smoothedLinearVelocity, pt, linearVelocity);
-        lastSmoothedAngularVelocity.lerp(smoothedAngularVelocity, pt, angularVelocity);
+        lastSmoothedLinearVelocity.lerp(smoothedLinearVelocity, partialTick, linearVelocity);
+        lastSmoothedAngularVelocity.lerp(smoothedAngularVelocity, partialTick, angularVelocity);
 
-        currentOrientation.transformInverse(offset);
         currentOrientation.transformInverse(linearVelocity);
         currentOrientation.transformInverse(angularVelocity);
-        currentOrientation.transformInverse(gravityVector1);
-        gravityVector2.set(gravityVector1);
+        currentOrientation.transformInverse(gravityVector1, temp);
+        gravityVector2.set(temp);
 
-        shader.safeGetUniform("offset").set((float) offset.x, (float) offset.y, (float) offset.z);
-        shader.safeGetUniform("linearVelocity").set((float) linearVelocity.x * 20, (float) linearVelocity.y * 20, (float) linearVelocity.z * 20);
-        shader.safeGetUniform("angularVelocity").set((float) angularVelocity.x * 20, (float) angularVelocity.y * 20, (float) angularVelocity.z * 20);
-        shader.safeGetUniform("sublevelPosition").set((float) currentPos.x % 10000, (float) currentPos.y % 10000, (float) currentPos.z % 10000);
-        shader.safeGetUniform("currentOrientation").set(matrix.set(currentOrientation));
-        shader.safeGetUniform("onSublevel").set(1);
-        shader.safeGetUniform("gravityStrength").set((float) gravityVector1.length());
+        final Vector3dc rotationPoint = currentPose.rotationPoint();
+        offset.set(anchor.getX() - rotationPoint.x(), anchor.getY() - rotationPoint.y(), anchor.getZ() - rotationPoint.z());
+
+        final Matrix4f slow = new Matrix4f();
+        final Matrix4f fast = new Matrix4f();
+        float transitionSpeed = 1.0f;
+        final FloatingBlockMaterial material = PhysicsBlockPropertyHelper.getFloatingMaterial(AeroBlocks.LEVITITE.defaultBlockState());
+        if (material != null) {
+            transitionSpeed = (float) material.transitionSpeed();
+            slow.set(getGravityMatrix(gravityVector2, (float) material.slowVerticalFriction(), (float) material.slowHorizontalFriction(), matrix));
+            fast.set(getGravityMatrix(gravityVector2, (float) material.fastVerticalFriction(), (float) material.fastHorizontalFriction(), matrix));
+        }
+
+        long ticks = subLevel.getLevel().getGameTime() % 100000;
+        final float time = ticks + Minecraft.getInstance().getDeltaTracker().getGameTimeDeltaPartialTick(true);
+
+        return new LevititeRenderer.LevititeUniform(
+                new Matrix4f().rotation(currentOrientation.get(new org.joml.Quaternionf())),
+                slow,
+                fast,
+                new Vector4f((float) offset.x, (float) offset.y, (float) offset.z, 0.0f),
+                new Vector4f((float) linearVelocity.x * 20, (float) linearVelocity.y * 20, (float) linearVelocity.z * 20, (float) gravityVector1.length()),
+                new Vector4f((float) angularVelocity.x * 20, (float) angularVelocity.y * 20, (float) angularVelocity.z * 20, transitionSpeed),
+                new Vector4f((float) (currentPos.x % 10000), (float) (currentPos.y % 10000), (float) (currentPos.z % 10000), time),
+                new Vector4f(layerIndex, 1.0f, 0.0f, 0.0f),
+                spriteRects
+        );
     }
 
     public static boolean isEnabled() {
-        return VeilRenderSystem.tessellationSupported() && enabled;
+        return enabled;
     }
 }

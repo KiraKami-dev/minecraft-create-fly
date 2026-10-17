@@ -19,9 +19,12 @@ import dev.simulated_team.simulated.util.SimColors;
 import dev.simulated_team.simulated.util.SimDistUtil;
 import dev.simulated_team.simulated.util.click_interactions.InteractCallback;
 import dev.ryanhcode.sable.veillite.api.network.VeilPacketManager;
-import net.createmod.catnip.data.Pair;
-import net.createmod.catnip.outliner.Outliner;
+import com.zurrtum.create.catnip.data.Pair;
+import com.zurrtum.create.client.catnip.outliner.Outliner;
+import com.mojang.blaze3d.platform.InputConstants;
+import com.mojang.blaze3d.platform.Window;
 import net.minecraft.client.KeyMapping;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -93,7 +96,7 @@ public class HoneyGlueClientHandler implements InteractCallback {
             }
 
             final BlockHitResult bhr = this.getHitResult();
-            if (AllKeys.altDown() && bhr.getType() == HitResult.Type.MISS) {
+            if (altDown() && bhr.getType() == HitResult.Type.MISS) {
                 final boolean success = this.selectPos(bhr.getBlockPos(), player, player.getItemInHand(hand));
                 if (success) {
                     player.swing(InteractionHand.MAIN_HAND);
@@ -134,7 +137,7 @@ public class HoneyGlueClientHandler implements InteractCallback {
 
         final InteractionHand hand = this.getHoneyGlueHand(player);
 
-        if (hand == null || !AllKeys.ctrlDown()) {
+        if (hand == null || !AllKeys.hasControlDown()) {
             return Result.empty();
         } else if (this.currentState == State.UNBOUND && this.hoveredGlue != null) {
             this.hoveredGlue.updateClientBounds();
@@ -181,17 +184,17 @@ public class HoneyGlueClientHandler implements InteractCallback {
         this.renderSelection(bhr, player.isShiftKeyDown() ? SimColors.DISCARDABLE_ORANGE : SimColors.ACTIVE_YELLOW);
         this.updateHovered();
         this.renderHoneyGlue();
-        this.checkBBValidity(player, player.getItemInHand(hand), bhr.getBlockPos(), AllKeys.altDown() || bhr.getType() != HitResult.Type.MISS);
+        this.checkBBValidity(player, player.getItemInHand(hand), bhr.getBlockPos(), altDown() || bhr.getType() != HitResult.Type.MISS);
     }
 
     private void renderSelection(final BlockHitResult bhr, final int color) {
-        if (AllKeys.altDown() && !AllKeys.shiftDown() && this.currentState == State.UNBOUND) {
+        if (altDown() && !AllKeys.hasShiftDown() && this.currentState == State.UNBOUND) {
             Outliner.getInstance().showAABB("HoneyGlue", new AABB(bhr.getBlockPos()))
                     .colored(color)
                     .withFaceTexture(SimSpecialTextures.HONEY_GLUE)
                     .disableLineNormals()
                     .lineWidth(1 / 16f);
-        } else if ((AllKeys.altDown() || bhr.getType() != HitResult.Type.MISS) && this.currentState == State.BINDING) {
+        } else if ((altDown() || bhr.getType() != HitResult.Type.MISS) && this.currentState == State.BINDING) {
             if (Sable.HELPER.getContainingClient(bhr.getBlockPos()) != Sable.HELPER.getContainingClient(this.selectedPos)) {
                 return;
             }
@@ -354,12 +357,17 @@ public class HoneyGlueClientHandler implements InteractCallback {
         return new AABB(bb.minX, bb.minY, bb.minZ, maxX, maxY, maxZ);
     }
 
+    private static boolean altDown() {
+        final Window window = Minecraft.getInstance().getWindow();
+        return InputConstants.isKeyDown(window, GLFW.GLFW_KEY_LEFT_ALT) || InputConstants.isKeyDown(window, GLFW.GLFW_KEY_RIGHT_ALT);
+    }
+
     private static @NotNull String getDimensionalText(final AABB bb) {
         return "" /*". (X: " + (int) bounds.getXsize() + ", Y: " + (int) bounds.getYsize() + ", Z: " + (int) bounds.getZsize() + ")"*/;
     }
 
     private static @NotNull List<HoneyGlueEntity> getHoneyGlue(final Player player) {
-        return player.level().getEntities(SimEntityTypes.HONEY_GLUE.get(), player.getBoundingBox().inflate(SimConfigService.INSTANCE.server().assembly.honeyGlueRange.get()), e -> true);
+        return player.level().getEntities(SimEntityTypes.HONEY_GLUE, player.getBoundingBox().inflate(SimConfigService.INSTANCE.server().assembly.honeyGlueRange.get()), e -> true);
     }
 
     @Nullable

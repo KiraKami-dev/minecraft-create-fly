@@ -1,29 +1,22 @@
 package dev.simulated_team.simulated.content.blocks.redstone.linked_typewriter;
 
-import com.mojang.datafixers.util.Pair;
 import com.mojang.serialization.Codec;
-import com.mojang.serialization.DataResult;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import com.zurrtum.create.Create;
 import com.zurrtum.create.content.redstone.link.IRedstoneLinkable;
 import com.zurrtum.create.content.redstone.link.RedstoneLinkNetworkHandler;
-import dev.simulated_team.simulated.Simulated;
 import it.unimi.dsi.fastutil.ints.Int2ObjectLinkedOpenHashMap;
-import net.createmod.catnip.data.Couple;
+import com.zurrtum.create.catnip.data.Couple;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.HolderLookup;
-import net.minecraft.core.RegistryAccess;
-import net.minecraft.nbt.ListTag;
-import net.minecraft.nbt.NbtOps;
-import net.minecraft.nbt.Tag;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
-import net.minecraft.resources.RegistryOps;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -43,20 +36,17 @@ public class LinkedTypewriterEntries {
         this.newlyDeactivatedKeyboardEntries = new HashSet<>();
     }
 
-    public static LinkedTypewriterEntries readKeys(final HolderLookup.Provider registryAccess, final ListTag tags, final BlockPos pos) {
+    /**
+     * Reads the entries stored as a list under the given key (same format as on 1.21.1: a list of
+     * {@link KeyboardEntry#CODEC} compounds). Entries that fail to decode are skipped and reported by the view.
+     */
+    public static LinkedTypewriterEntries readKeys(final ValueInput view, final String key, final BlockPos pos) {
         final LinkedTypewriterEntries keys = new LinkedTypewriterEntries();
 
-        for (final Tag tag : tags) {
-            final RegistryOps<Tag> ops = registryAccess.createSerializationContext(NbtOps.INSTANCE);
-            final DataResult<Pair<KeyboardEntry, Tag>> result = KeyboardEntry.CODEC.decode(ops, tag);
-            if (result.isError()) { //if there was an error saving the entry, we want to output to the console instead of crashing
-                Simulated.LOGGER.error(result.error().get().message());
-            } else {
-                final KeyboardEntry entry = result.getOrThrow().getFirst();
-                entry.setLocation(pos);
-                keys.setKey(entry.glfwKeyCode, entry);
-            }
-        }
+        view.listOrEmpty(key, KeyboardEntry.CODEC).stream().forEach(entry -> {
+            entry.setLocation(pos);
+            keys.setKey(entry.glfwKeyCode, entry);
+        });
 
         return keys;
     }
@@ -65,7 +55,7 @@ public class LinkedTypewriterEntries {
      * Handles all redstoneLinkFrequency handling when adding and removing and updating to the server handler
      */
     public void updateNetworks(final Level level) {
-        if (!level.isClientSide) { //Iterate through activated keys first then deactivated keys to make sure if a key is activated and deactivated in the same tick it always deactivates
+        if (!level.isClientSide()) { //Iterate through activated keys first then deactivated keys to make sure if a key is activated and deactivated in the same tick it always deactivates
             for (final KeyboardEntry keyboardEntry : this.newlyActivatedKeyboardEntries) {
                 Create.REDSTONE_LINK_NETWORK_HANDLER.addToNetwork(level, keyboardEntry);
             }
@@ -138,23 +128,11 @@ public class LinkedTypewriterEntries {
         this.keyMap.putAll(newMap);
     }
 
-    public ListTag saveKeys(final HolderLookup.Provider registryAccess) {
-        final ListTag tags = new ListTag();
-        if (this.keyMap.isEmpty()) {
-            return tags;
+    public void saveKeys(final ValueOutput view, final String key) {
+        final ValueOutput.TypedOutputList<KeyboardEntry> list = view.list(key, KeyboardEntry.CODEC);
+        for (final KeyboardEntry entry : this.keyMap.values()) {
+            list.add(entry);
         }
-
-        for (final Map.Entry<Integer, KeyboardEntry> set : this.keyMap.entrySet()) {
-            final RegistryOps<Tag> ops = registryAccess.createSerializationContext(NbtOps.INSTANCE);
-            final DataResult<Tag> result = KeyboardEntry.CODEC.encodeStart(ops, set.getValue());
-            if (result.isError()) { //if there was an error saving the entry, we want to output to the console instead of crashing
-                Simulated.LOGGER.error(result.error().get().message());
-            } else {
-                tags.add(result.getOrThrow());
-            }
-        }
-
-        return tags;
     }
 
     /**

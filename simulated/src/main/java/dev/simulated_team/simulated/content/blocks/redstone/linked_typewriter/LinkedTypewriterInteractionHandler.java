@@ -1,24 +1,28 @@
 package dev.simulated_team.simulated.content.blocks.redstone.linked_typewriter;
 
 import com.zurrtum.create.AllDataComponents;
-import com.zurrtum.create.content.redstone.link.RedstoneLinkNetworkHandler;
+import com.zurrtum.create.client.content.redstone.link.controller.LinkedControllerClientHandler;
 import com.zurrtum.create.client.foundation.utility.ControlsUtil;
+import com.zurrtum.create.content.redstone.link.RedstoneLinkNetworkHandler;
+import dev.ryanhcode.sable.veillite.api.network.VeilPacketManager;
+import dev.simulated_team.simulated.data.SimLang;
 import dev.simulated_team.simulated.index.SimSoundEvents;
-import dev.simulated_team.simulated.mixin.accessor.KeyMappingsAccessor;
 import dev.simulated_team.simulated.network.packets.linked_typewriter.TypewriterDisconnectUser;
 import dev.simulated_team.simulated.network.packets.linked_typewriter.TypewriterKeyInteractionPacket;
 import dev.simulated_team.simulated.network.packets.linked_typewriter.TypewriterKeySavePacket;
-import dev.ryanhcode.sable.veillite.api.network.VeilPacketManager;
 import it.unimi.dsi.fastutil.ints.Int2IntMap;
 import it.unimi.dsi.fastutil.ints.Int2IntOpenHashMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
+import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.core.BlockPos;
 import net.minecraft.util.RandomSource;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.component.ItemContainerContents;
 import net.minecraft.world.level.Level;
@@ -29,6 +33,9 @@ import java.lang.ref.WeakReference;
 import java.util.List;
 import java.util.Vector;
 
+/**
+ * Client side typewriter state and key handling (client only).
+ */
 public class LinkedTypewriterInteractionHandler {
 
     private static final Vector<Integer> renderPressed = new Vector<>();
@@ -141,8 +148,9 @@ public class LinkedTypewriterInteractionHandler {
                     }
                 }
 
+                final KeyEvent event = new KeyEvent(key, scanCode, modifiers);
                 for (final KeyMapping control : ControlsUtil.getControls()) {
-                    if (control.matches(key, scanCode)) {
+                    if (control.matches(event)) {
                         control.consumeClick();
                         control.setDown(false);
                         break;
@@ -157,8 +165,9 @@ public class LinkedTypewriterInteractionHandler {
     }
 
     public static void preventPress(final int key, final int scanCode) {
+        final KeyEvent event = new KeyEvent(key, scanCode, 0);
         for (final KeyMapping mapping : Minecraft.getInstance().options.keyMappings) {
-            if (mapping.matches(key, scanCode)) {
+            if (mapping.matches(event)) {
                 // TODO: there might be a better, more robust way to prevent keystrokes from propagating
                 mapping.consumeClick();
                 mapping.setDown(false);
@@ -194,6 +203,15 @@ public class LinkedTypewriterInteractionHandler {
 
     public static Vector<Integer> getPressedKeys() {
         return renderPressed;
+    }
+
+    /**
+     * A typewriter was clicked with a linked controller: copy its frequencies onto the controls' keys.
+     */
+    public static void copyFromLinkedController(final Player player, final Level level, final BlockPos blockPos, final ItemStack item) {
+        player.displayClientMessage(SimLang.translate("linked_typewriter.linked_controller_copy").component(), true);
+        sendLinkedControllerData(level, blockPos, item);
+        LinkedControllerClientHandler.MODE = LinkedControllerClientHandler.Mode.IDLE;
     }
 
     /**
@@ -236,7 +254,7 @@ public class LinkedTypewriterInteractionHandler {
 
         int controlIndex = 0;
         for (final KeyMapping mapping : ControlsUtil.getControls()) {
-            final int control = ((KeyMappingsAccessor) mapping).getKey().getValue();
+            final int control = KeyBindingHelper.getBoundKeyOf(mapping).getValue();
             final ItemStack first = linkedControllerItems.get(2 * controlIndex);
             final ItemStack second = linkedControllerItems.get(2 * controlIndex + 1);
             newKeyBindings.put(control, new LinkedTypewriterEntries.KeyboardEntry(RedstoneLinkNetworkHandler.Frequency.of(first),

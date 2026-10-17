@@ -4,11 +4,16 @@ import com.zurrtum.create.content.redstone.analogLever.AnalogLeverBlockEntity;
 import com.zurrtum.create.content.redstone.nixieTube.NixieTubeBlockEntity;
 import dev.eriksonn.aeronautics.content.blocks.hot_air.hot_air_burner.HotAirBurnerBlockEntity;
 import dev.eriksonn.aeronautics.content.blocks.hot_air.steam_vent.SteamVentBlockEntity;
-import net.createmod.ponder.api.level.PonderLevel;
-import net.createmod.ponder.api.scene.Selection;
-import net.createmod.ponder.foundation.PonderScene;
-import net.createmod.ponder.foundation.instruction.WorldModifyInstruction;
+import com.zurrtum.create.client.ponder.api.level.PonderLevel;
+import com.zurrtum.create.client.ponder.api.scene.Selection;
+import com.zurrtum.create.client.ponder.foundation.PonderScene;
+import com.zurrtum.create.client.ponder.foundation.instruction.WorldModifyInstruction;
+import dev.eriksonn.aeronautics.Aeronautics;
+import net.minecraft.core.RegistryAccess;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.util.ProblemReporter;
+import net.minecraft.world.level.storage.TagValueInput;
+import net.minecraft.world.level.storage.TagValueOutput;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.RedstoneTorchBlock;
 import net.minecraft.world.level.block.entity.BlockEntity;
@@ -26,7 +31,7 @@ public class RedstoneSignalInstruction extends WorldModifyInstruction {
 
 	@Override
 	protected void runModification(final Selection selection, final PonderScene scene) {
-		final PonderLevel level = scene.getWorld();
+		final PonderLevel level = scene.getLevel();
 		selection.forEach(pos -> {
 			if (!level.getBounds().isInside(pos)) {
 				return;
@@ -37,10 +42,14 @@ public class RedstoneSignalInstruction extends WorldModifyInstruction {
 				nixie.updateDisplayedStrings();
 			}
 			if (BE instanceof final AnalogLeverBlockEntity lever) {
-				final CompoundTag tag = new CompoundTag();
-				lever.write(tag, level.registryAccess(), false);
-				tag.putInt("State", this.signal);
-				lever.readClient(tag, level.registryAccess());
+				final RegistryAccess registryAccess = level.registryAccess();
+				try (final ProblemReporter.ScopedCollector logging = new ProblemReporter.ScopedCollector(lever.problemPath(), Aeronautics.LOGGER)) {
+					final TagValueOutput output = TagValueOutput.createWithContext(logging, registryAccess);
+					lever.write(output, false);
+					final CompoundTag tag = output.buildResult();
+					tag.putInt("State", this.signal);
+					lever.readClient(TagValueInput.create(logging, registryAccess, tag));
+				}
 			}
 			final BlockState state = level.getBlockState(pos);
 			BlockState newState = null;

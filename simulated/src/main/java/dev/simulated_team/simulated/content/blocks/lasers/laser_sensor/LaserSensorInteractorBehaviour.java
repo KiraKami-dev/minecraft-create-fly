@@ -5,7 +5,7 @@ import com.zurrtum.create.foundation.blockEntity.behaviour.BehaviourType;
 import dev.ryanhcode.sable.Sable;
 import dev.ryanhcode.sable.api.SubLevelHelper;
 import dev.simulated_team.simulated.content.blocks.lasers.LaserBehaviour;
-import net.createmod.catnip.data.Couple;
+import com.zurrtum.create.catnip.data.Couple;
 import net.minecraft.core.Direction;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
@@ -55,7 +55,7 @@ public class LaserSensorInteractorBehaviour extends LaserBehaviour {
             return false;
         }
 
-        final BlockEntity be = this.getWorld().getBlockEntity(bhr.getBlockPos());
+        final BlockEntity be = this.getLevel().getBlockEntity(bhr.getBlockPos());
         if (be instanceof final LaserSensorBlockEntity lbe) {
             if (this.getProperFacing(be.getBlockState()) != bhr.getDirection() || !this.filter.test(lbe)) {
                 return false;

@@ -1,8 +1,8 @@
 package dev.simulated_team.simulated.mixin.new_ponder;
 
 import dev.simulated_team.simulated.ponder.new_ponder_tooltip.NewPonderTooltipManager;
-import net.createmod.ponder.foundation.PonderScene;
-import net.createmod.ponder.foundation.ui.PonderUI;
+import com.zurrtum.create.client.ponder.foundation.PonderScene;
+import com.zurrtum.create.client.ponder.foundation.ui.PonderUI;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -14,10 +14,10 @@ import java.util.List;
 
 @Mixin(PonderUI.class)
 public class PonderUIMixin {
-    @Shadow @Final private List<PonderScene> scenes;
-    @Shadow private int index;
+    @Shadow(remap = false) @Final private List<PonderScene> scenes;
+    @Shadow(remap = false) private int index;
 
-    @Inject(method = "scroll", at = @At(value = "INVOKE", target = "Lnet/createmod/ponder/foundation/PonderScene;begin()V"))
+    @Inject(method = "scroll", at = @At(value = "INVOKE", target = "Lcom/zurrtum/create/client/ponder/foundation/PonderScene;begin()V"), remap = false)
     private void simulated$begin(final boolean forward, final CallbackInfoReturnable<Boolean> cir) {
         NewPonderTooltipManager.setSceneWatched(this.scenes.get(this.index).getId());
     }

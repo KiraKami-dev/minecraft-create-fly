@@ -18,7 +18,8 @@ public class BearingContraptionMixin implements BearingContraptionExtension {
     @Shadow(remap = false)
     protected int sailBlocks;
 
-    @Shadow private boolean isWindmill;
+    @Shadow(remap = false)
+    private boolean isWindmill;
 
     @Unique
     protected float aeronautics$tempSailStrength;
@@ -28,8 +29,8 @@ public class BearingContraptionMixin implements BearingContraptionExtension {
 
     @Inject(method = "assemble",
             at = @At(value = "INVOKE",
-                    target = "Lcom/simibubi/create/content/contraptions/bearing/BearingContraption;expandBoundsAroundAxis(Lnet/minecraft/core/Direction$Axis;)V",
-                    shift = At.Shift.AFTER),
+                    target = "Lcom/zurrtum/create/content/contraptions/bearing/BearingContraption;expandBoundsAroundAxis(Lnet/minecraft/core/Direction$Axis;)V",
+                    shift = At.Shift.AFTER, remap = true),
             remap = false)
     private void aeronautics$addSailsWithTempSails(final Level world, final BlockPos pos, final CallbackInfoReturnable<Boolean> cir) throws AssemblyException {
         this.aeronautics$tryCustomFailAssembly();

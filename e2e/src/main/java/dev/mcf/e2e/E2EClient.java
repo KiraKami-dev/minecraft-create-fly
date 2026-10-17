@@ -4,6 +4,8 @@ import dev.ryanhcode.sable.SableClient;
 import dev.ryanhcode.sable.render.water_occlusion.WaterOcclusionRenderer;
 import dev.ryanhcode.sable.sublevel.water_occlusion.WaterOcclusionContainer;
 import dev.ryanhcode.sable.util.BoundedBitVolume3i;
+import dev.ryanhcode.sable.veillite.api.client.editor.EditorManager;
+import dev.ryanhcode.sable.veillite.api.client.render.VeilRenderSystem;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.minecraft.client.Minecraft;
@@ -16,6 +18,10 @@ import net.minecraft.client.Screenshot;
 public final class E2EClient implements ClientModInitializer {
     private static final int[] SHOT_TICKS = {80, 140, 220, 320, 440};
     private static final int STOP_TICK = 480;
+    // flight scene (E2EFlight): the server builds the ship about 40 ticks in, assembles at +20, starts the motor at +40
+    private static final int[] FLIGHT_SHOT_TICKS = {75, 100, 125, 145, 165, 190, 220, 260};
+    private static final int FLIGHT_STOP_TICK = 290;
+    private final boolean flight = "flight".equals(System.getProperty("e2e.scene"));
 
     private int inWorldTicks;
     private int doneTicks;
@@ -79,14 +85,24 @@ public final class E2EClient implements ClientModInitializer {
             return;
         }
 
-        for (final int shot : SHOT_TICKS) {
+        // inspector scenario: open the ImGui inspector (what /sableinspector does) while the default scene plays
+        if (this.inWorldTicks == 40 && "inspector".equals(System.getProperty("e2e.scenario"))) {
+            E2E.LOG.info("E2E: ImGui available: {}", VeilRenderSystem.hasImGui());
+            if (VeilRenderSystem.hasImGui()) {
+                final EditorManager editorManager = VeilRenderSystem.renderer().getEditorManager();
+                editorManager.getInspectors().forEach(editorManager::show);
+                E2E.LOG.info("E2E: inspectors shown: {}", editorManager.getVisible().size());
+            }
+        }
+
+        for (final int shot : this.flight ? FLIGHT_SHOT_TICKS : SHOT_TICKS) {
             if (this.inWorldTicks == shot) {
-                final String name = "e2e-" + shot + ".png";
+                final String name = (this.flight ? "flight-" : "e2e-") + shot + ".png";
                 Screenshot.grab(minecraft.gameDirectory, name, minecraft.getMainRenderTarget(), 1,
                         message -> E2E.LOG.info("E2E: screenshot {}", name));
             }
         }
-        if (this.inWorldTicks == STOP_TICK) {
+        if (this.inWorldTicks == (this.flight ? FLIGHT_STOP_TICK : STOP_TICK)) {
             E2E.LOG.info("E2E: done, closing client");
             minecraft.stop();
         }

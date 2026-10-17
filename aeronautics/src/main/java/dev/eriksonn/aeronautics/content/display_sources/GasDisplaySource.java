@@ -3,18 +3,33 @@ package dev.eriksonn.aeronautics.content.display_sources;
 import com.zurrtum.create.content.redstone.displayLink.DisplayLinkContext;
 import com.zurrtum.create.content.redstone.displayLink.source.NumericSingleLineDisplaySource;
 import com.zurrtum.create.content.redstone.displayLink.target.DisplayTargetStats;
-import com.zurrtum.create.client.foundation.gui.ModularGuiLineBuilder;
 import dev.eriksonn.aeronautics.content.blocks.hot_air.balloon.ServerBalloon;
 import dev.eriksonn.aeronautics.content.blocks.hot_air.BlockEntityLiftingGasProvider;
-import dev.eriksonn.aeronautics.data.AeroLang;
 import joptsimple.internal.Strings;
-import net.createmod.catnip.lang.LangNumberFormat;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.util.Mth;
 
+import java.text.NumberFormat;
+import java.util.Locale;
+
+/**
+ * The configuration widgets (upstream {@code initConfigurationWidgets}) are client-side, see
+ * {@link GasDisplaySourceRender}.
+ */
 public class GasDisplaySource extends NumericSingleLineDisplaySource {
+
+    /**
+     * Server-safe stand-in for catnip's {@code LangNumberFormat} (client-only in Create Fly): same settings, root locale
+     */
+    private static final NumberFormat NUMBER_FORMAT = NumberFormat.getNumberInstance(Locale.ROOT);
+
+    static {
+        NUMBER_FORMAT.setMaximumFractionDigits(2);
+        NUMBER_FORMAT.setMinimumFractionDigits(0);
+        NUMBER_FORMAT.setGroupingUsed(true);
+    }
 
     @Override
     protected MutableComponent provideLine(final DisplayLinkContext displayLinkContext, final DisplayTargetStats displayTargetStats) {
@@ -26,7 +41,7 @@ public class GasDisplaySource extends NumericSingleLineDisplaySource {
             return noBalloon();
         }
 
-        switch (displayLinkContext.sourceConfig().getInt("GasDataSelection")) {
+        switch (displayLinkContext.sourceConfig().getIntOr("GasDataSelection", 0)) {
             case 0 -> { // volume
                 final int totalBar = 15;
                 final int capacity = info.getCapacity();
@@ -36,15 +51,23 @@ public class GasDisplaySource extends NumericSingleLineDisplaySource {
                 return barComponent(volume, targetBar, totalBar);
             }
             case (1) -> { // total lift
-                return AeroLang.text(LangNumberFormat.format(info.getTotalLift())).component();
+                // upstream AeroLang.text(LangNumberFormat.format(lift)).component()
+                return Component.literal(formatNumber(info.getTotalLift()));
             }
         }
 
         return ZERO.copy();
     }
 
+    private static String formatNumber(double value) {
+        if (Mth.equal(value, 0)) {
+            value = 0;
+        }
+        return NUMBER_FORMAT.format(value).replace(" ", " ");
+    }
+
     private static MutableComponent noBalloon() {
-        return AeroLang.text("No Balloon above").component();
+        return Component.literal("No Balloon above");
     }
 
     static MutableComponent barComponent(final int amount, final int target, final int total) {
@@ -67,19 +90,7 @@ public class GasDisplaySource extends NumericSingleLineDisplaySource {
     }
 
     @Override
-    public void initConfigurationWidgets(final DisplayLinkContext context, final ModularGuiLineBuilder builder, final boolean isFirstLine) {
-        super.initConfigurationWidgets(context, builder, isFirstLine);
-        if (isFirstLine) {
-            return;
-        }
-
-        builder.addSelectionScrollInput(0, 60, (selectionScrollInput, label) -> {
-            selectionScrollInput.forOptions(AeroLang.translatedOptions("display_source.lifting_gas", "volume", "total_lift"));
-        }, "GasDataSelection");
-    }
-
-    @Override
-    protected boolean allowsLabeling(final DisplayLinkContext displayLinkContext) {
+    public boolean allowsLabeling(final DisplayLinkContext displayLinkContext) {
         return true;
     }
 

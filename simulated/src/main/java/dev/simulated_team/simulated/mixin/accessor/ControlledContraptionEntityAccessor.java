@@ -10,10 +10,10 @@ import org.spongepowered.asm.mixin.gen.Invoker;
 @Mixin(ControlledContraptionEntity.class)
 public interface ControlledContraptionEntityAccessor {
 
-    @Accessor
+    @Accessor(remap = false)
     BlockPos getControllerPos();
 
-    @Invoker
+    @Invoker(remap = false)
     StructureTransform invokeMakeStructureTransform();
 
 }

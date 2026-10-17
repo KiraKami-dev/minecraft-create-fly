@@ -1,12 +1,9 @@
 package dev.simulated_team.simulated.content.blocks.redstone.linked_typewriter.screen;
 
 import com.google.common.collect.ImmutableList;
-import com.mojang.blaze3d.vertex.PoseStack;
 import com.zurrtum.create.client.foundation.gui.AllIcons;
 import com.zurrtum.create.client.foundation.gui.menu.AbstractSimiContainerScreen;
 import com.zurrtum.create.client.foundation.gui.widget.IconButton;
-import dev.engine_room.flywheel.lib.transform.PoseTransformStack;
-import dev.engine_room.flywheel.lib.transform.TransformStack;
 import dev.simulated_team.simulated.content.blocks.redstone.linked_typewriter.LinkedTypewriterBlock;
 import dev.simulated_team.simulated.content.blocks.redstone.linked_typewriter.LinkedTypewriterBlockEntity;
 import dev.simulated_team.simulated.content.blocks.redstone.linked_typewriter.LinkedTypewriterEntries;
@@ -20,14 +17,22 @@ import dev.simulated_team.simulated.network.packets.linked_typewriter.Typewriter
 import dev.simulated_team.simulated.network.packets.linked_typewriter.TypewriterKeySavePacket;
 import dev.simulated_team.simulated.util.SimColors;
 import dev.ryanhcode.sable.veillite.api.network.VeilPacketManager;
-import net.createmod.catnip.gui.element.GuiGameElement;
-import net.createmod.catnip.gui.element.ScreenElement;
+import com.zurrtum.create.client.catnip.gui.render.EntityBlockRenderState;
+import com.zurrtum.create.client.catnip.gui.render.EntityBlockRenderer;
+import com.zurrtum.create.foundation.gui.menu.MenuType;
+import dev.simulated_team.simulated.Simulated;
+import com.zurrtum.create.client.catnip.gui.element.ScreenElement;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.events.GuiEventListener;
 import net.minecraft.client.gui.narration.NarratableEntry;
 import net.minecraft.client.renderer.Rect2i;
-import net.minecraft.client.renderer.texture.OverlayTexture;
+import net.minecraft.client.input.MouseButtonEvent;
+import net.minecraft.core.BlockPos;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.util.ProblemReporter;
+import net.minecraft.world.level.storage.TagValueInput;
 import net.minecraft.core.Direction;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Inventory;
@@ -38,6 +43,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class LinkedTypewriterScreen extends AbstractSimiContainerScreen<LinkedTypewriterMenuCommon> {
+    /**
+     * Texture key of the typewriter preview in Create Fly's {@link EntityBlockRenderer}
+     */
+    private static final int TYPEWRITER_RENDER_ID = 0x51A7_0001;
+
     public final LinkedTypewriterBlockEntity clientBe;
     private final LinkedTypewriterEntries newEntries;
 
@@ -73,6 +83,32 @@ public class LinkedTypewriterScreen extends AbstractSimiContainerScreen<LinkedTy
 
         this.keyEditorScreen = new KeyEditorScreen(this);
         this.modifier = new EntryModifierScreen(this);
+    }
+
+    /**
+     * Screen factory for Create Fly's menu screens ({@code AllMenuScreens.register(SimMenuTypes.LINKED_TYPEWRITER, LinkedTypewriterScreen::create)}).
+     */
+    public static LinkedTypewriterScreen create(final Minecraft mc, final MenuType<LinkedTypewriterBlockEntity> type, final int syncId,
+                                                final Inventory inventory, final Component title, final RegistryFriendlyByteBuf extraData) {
+        return type.create(LinkedTypewriterScreen::new, syncId, inventory, title, readBlockEntity(mc, extraData));
+    }
+
+    /**
+     * Reads what {@link LinkedTypewriterBlockEntity#createMenu} wrote: the position and the block entity data
+     */
+    private static LinkedTypewriterBlockEntity readBlockEntity(final Minecraft mc, final RegistryFriendlyByteBuf extraData) {
+        final BlockPos pos = extraData.readBlockPos();
+        final CompoundTag tag = extraData.readNbt();
+        if (mc.level != null && mc.level.getBlockEntity(pos) instanceof final LinkedTypewriterBlockEntity be) {
+            if (tag != null) {
+                try (final ProblemReporter.ScopedCollector reporter = new ProblemReporter.ScopedCollector(be.problemPath(), Simulated.LOGGER)) {
+                    be.readClient(TagValueInput.create(reporter, extraData.registryAccess(), tag));
+                }
+            }
+            return be;
+        }
+
+        return null;
     }
 
     @Override
@@ -242,38 +278,24 @@ public class LinkedTypewriterScreen extends AbstractSimiContainerScreen<LinkedTy
 
     @Override
     public void render(final GuiGraphics guiGraphics, final int mouseX, final int mouseY, final float pt) {
-        final PoseStack ps = guiGraphics.pose();
-        ps.pushPose();
-        ps.translate(0, 0, -1);
-
         super.render(guiGraphics, mouseX, mouseY, pt);
 
         if (this.hoveredSlot != null && this.hoveredSlot.isActive() && this.hoveredSlot.hasItem()) {
-//            new ClientTextTooltip(Component.literal("awa").getVisualOrderText()).renderText(this.font, mouseX, mouseY, ps.last().pose(), guiGraphics.bufferSource());
-            guiGraphics.renderTooltip(this.font, this.hoveredSlot.getItem(), mouseX, mouseY);
+            guiGraphics.setTooltipForNextFrame(this.font, this.hoveredSlot.getItem(), mouseX, mouseY);
         }
-
-        ps.pushPose();
 
         if (this.keyEditorScreen.active) {
-            this.keyEditorScreen.render(guiGraphics, mouseX, mouseY, pt, ps);
+            this.keyEditorScreen.render(guiGraphics, mouseX, mouseY, pt);
         }
-
-        ps.popPose();
-        ps.popPose();
     }
 
     @Override
     protected void renderForeground(final GuiGraphics graphics, final int mouseX, final int mouseY, final float partialTicks) {
-
-        final PoseStack ps = graphics.pose();
-        ps.pushPose();
-
         if (this.modifier.modifying) {
-            ps.translate(0, 0, 200);
-            this.modifier.render(graphics, mouseX, mouseY, partialTicks, ps);
+            // drawn on top of everything (was a z offset of 200)
+            graphics.nextStratum();
+            this.modifier.render(graphics, mouseX, mouseY, partialTicks);
         }
-        ps.popPose();
     }
 
     @Override
@@ -314,36 +336,30 @@ public class LinkedTypewriterScreen extends AbstractSimiContainerScreen<LinkedTy
     }
 
     private void renderTypeWriter(final GuiGraphics graphics, final int x, final int y) {
-        final PoseStack ps = graphics.pose();
-
-        final TransformStack<PoseTransformStack> msr = TransformStack.of(ps);
-        ps.pushPose();
-        msr.pushPose()
-                .translate(x + this.backgroundMain.width + 4, y + this.backgroundMain.height + 4, 100)
-                .scale(40)
-                .rotateXDegrees(-22)
-                .rotateYDegrees(63);
-
-        GuiGameElement.of(this.clientBe.getBlockState().setValue(LinkedTypewriterBlock.HORIZONTAL_FACING, Direction.WEST))
-                .render(graphics);
-
-        msr.scale(-1);
-        msr.translate(-1, 0, -1);
-        msr.rotateCentered((float) -(0.25f * Math.PI * 2.0f), Direction.UP);
-
-        final float yRot = this.clientBe.getBlockState().getValue(LinkedTypewriterBlock.FACING).getOpposite().toYRot();
-        msr.rotateCentered((float) Math.toRadians(yRot), Direction.UP);
-
-        Minecraft.getInstance().getBlockEntityRenderDispatcher().renderItem(
+        // the block and its keys (block entity renderer), facing west, like the 40px block of the 1.21.1 screen
+        final int originX = x + this.backgroundMain.width + 4;
+        final int originY = y + this.backgroundMain.height + 4;
+        graphics.guiRenderState.submitPicturesInPictureState(EntityBlockRenderState.create(
+                TYPEWRITER_RENDER_ID,
+                graphics,
+                this.clientBe.getLevel(),
+                this.clientBe.getBlockPos(),
                 this.clientBe,
-                ps,
-                graphics.bufferSource(),
-                255,
-                OverlayTexture.NO_OVERLAY
-        );
+                this.clientBe.getBlockState().setValue(LinkedTypewriterBlock.HORIZONTAL_FACING, Direction.WEST),
+                originX - 9,
+                originY - 58,
+                2.5f,
+                32,
+                22,
+                63,
+                0
+        ));
+    }
 
-        msr.popPose();
-        ps.popPose();
+    @Override
+    public void removed() {
+        super.removed();
+        EntityBlockRenderer.clear(TYPEWRITER_RENDER_ID);
     }
 
     private void switchStates(final boolean newState) {
@@ -359,14 +375,16 @@ public class LinkedTypewriterScreen extends AbstractSimiContainerScreen<LinkedTy
     }
 
     @Override
-    public boolean mouseClicked(final double pMouseX, final double pMouseY, final int pButton) {
+    public boolean mouseClicked(final MouseButtonEvent event, final boolean doubleClick) {
         final int x = this.leftPos;
         final int y = this.topPos;
+        final double pMouseX = event.x();
+        final double pMouseY = event.y();
         if (this.confirmingReset && !(pMouseX > x + 8 && pMouseX < x + 26 && pMouseY > y + this.backgroundMain.height - 24 && pMouseY < y + this.backgroundMain.height - 6)) {
             this.confirmingReset = false;
         }
 
-        return super.mouseClicked(pMouseX, pMouseY, pButton);
+        return super.mouseClicked(event, doubleClick);
     }
 
     public LinkedTypewriterEntries getNewEntries() {

@@ -1,5 +1,6 @@
 package dev.mcf.e2e;
 
+import dev.mcf.e2e.gametest.E2ETestReporter;
 import dev.ryanhcode.sable.api.sublevel.ServerSubLevelContainer;
 import dev.ryanhcode.sable.api.sublevel.SubLevelContainer;
 import dev.ryanhcode.sable.sublevel.SubLevel;
@@ -20,6 +21,7 @@ import java.util.UUID;
 /**
  * Applies every mixin up front (so broken injections fail loudly at start-up instead of
  * silently later), then runs the configured commands and, on a dedicated server, shuts down.
+ * On the GameTest server (e2e.gametest) it only installs the test reporter; the tests run by themselves.
  * Log lines are prefixed "E2E:" so tools/e2e.sh can grep them.
  */
 public final class E2E implements ModInitializer {
@@ -29,13 +31,16 @@ public final class E2E implements ModInitializer {
 
     private int ticks;
     private int commandTick = -1;
+    private final E2EFlight flight = E2EFlight.enabled() ? new E2EFlight() : null;
     private final Map<UUID, Vector3dc> spawnPositions = new HashMap<>();
     private final Playtest playtest = "playtest".equals(System.getProperty("e2e.scenario")) ? new Playtest() : null;
     private final WaterScenario water = "water".equals(System.getProperty("e2e.scenario")) ? new WaterScenario() : null;
 
     @Override
     public void onInitialize() {
-        if (!Boolean.getBoolean("e2e.enabled")) {
+        final boolean scene = Boolean.getBoolean("e2e.enabled");
+        final boolean gameTests = Boolean.getBoolean("e2e.gametest");
+        if (!scene && !gameTests) {
             return;
         }
 
@@ -47,6 +52,11 @@ public final class E2E implements ModInitializer {
                 LOG.error("E2E: mixin audit FAILED", t);
             }
         });
+
+        if (gameTests) {
+            E2ETestReporter.install(System.getProperty("e2e.gametest.report"));
+            return;
+        }
 
         ServerTickEvents.END_SERVER_TICK.register(this::tick);
     }
@@ -80,6 +90,9 @@ public final class E2E implements ModInitializer {
         }
 
         final int since = this.ticks - this.commandTick;
+        if (this.flight != null) {
+            this.flight.tick(server.overworld(), since);
+        }
         if (since == 1 || since % 100 == 0) {
             if (since > 1) {
                 LOG.info("E2E: {} ticks after spawn, server alive", since);

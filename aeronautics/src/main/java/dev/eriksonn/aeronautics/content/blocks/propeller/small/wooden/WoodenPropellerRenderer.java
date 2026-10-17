@@ -1,6 +1,6 @@
 package dev.eriksonn.aeronautics.content.blocks.propeller.small.wooden;
 
-import dev.engine_room.flywheel.lib.model.baked.PartialModel;
+import com.zurrtum.create.client.flywheel.lib.model.baked.PartialModel;
 import dev.eriksonn.aeronautics.content.blocks.propeller.small.SimplePropellerRenderer;
 import dev.eriksonn.aeronautics.index.AeroPartialModels;
 import net.minecraft.client.renderer.blockentity.BlockEntityRendererProvider;
@@ -8,7 +8,7 @@ import net.minecraft.core.Direction;
 
 import static dev.eriksonn.aeronautics.content.blocks.propeller.small.BasePropellerBlock.REVERSED;
 
-public class WoodenPropellerRenderer extends SimplePropellerRenderer<WoodenPropellerBlockEntity> {
+public class WoodenPropellerRenderer extends SimplePropellerRenderer<WoodenPropellerBlockEntity, SimplePropellerRenderer.PropellerRenderState> {
 
     public WoodenPropellerRenderer(final BlockEntityRendererProvider.Context context) {
         super(context);

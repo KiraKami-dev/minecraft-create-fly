@@ -9,11 +9,11 @@ import com.zurrtum.create.client.foundation.ponder.CreateSceneBuilder;
 import dev.simulated_team.simulated.ponder.SceneScheduler;
 import dev.simulated_team.simulated.ponder.SmoothMovementUtils;
 import dev.simulated_team.simulated.ponder.instructions.*;
-import net.createmod.catnip.animation.LerpedFloat;
-import net.createmod.ponder.api.PonderPalette;
-import net.createmod.ponder.api.element.ElementLink;
-import net.createmod.ponder.api.element.WorldSectionElement;
-import net.createmod.ponder.api.scene.*;
+import com.zurrtum.create.catnip.animation.LerpedFloat;
+import com.zurrtum.create.client.ponder.api.PonderPalette;
+import com.zurrtum.create.client.ponder.api.element.ElementLink;
+import com.zurrtum.create.client.ponder.api.element.WorldSectionElement;
+import com.zurrtum.create.client.ponder.api.scene.*;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.item.ItemStack;
@@ -21,10 +21,7 @@ import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.material.Fluids;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
-import net.neoforged.neoforge.capabilities.Capabilities;
-import net.neoforged.neoforge.common.NeoForgeMod;
-import net.neoforged.neoforge.fluids.FluidStack;
-import net.neoforged.neoforge.fluids.capability.IFluidHandler;
+import com.zurrtum.create.infrastructure.fluids.FluidStack;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -156,8 +153,9 @@ public class DockingConnectorScenes {
         scene.idle(5);
         world.showSection(mainBeltSelection,Direction.DOWN);
 
+        // Create Fly fluids: Fabric droplets (81 per mB) and FluidInventory#insert instead of IFluidHandler#fill(EXECUTE)
         scene.world().modifyBlockEntity(new BlockPos(11,1,4), FluidTankBlockEntity.class, be -> be.getTankInventory()
-                .fill(new FluidStack(Fluids.LAVA,12000), IFluidHandler.FluidAction.EXECUTE));
+                .insert(new FluidStack(Fluids.LAVA,12000 * 81)));
         scene.idle(10);
 
         BlockPos entryBeltCart = new BlockPos(3,2,4);

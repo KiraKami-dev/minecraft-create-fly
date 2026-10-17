@@ -1,8 +1,7 @@
 package dev.simulated_team.simulated.content.physics_staff;
 
-import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
-import com.zurrtum.create.CreateClient;
+import com.zurrtum.create.client.Create;
 import dev.ryanhcode.sable.Sable;
 import dev.ryanhcode.sable.companion.math.JOMLConversion;
 import dev.ryanhcode.sable.sublevel.ClientSubLevel;
@@ -20,11 +19,11 @@ import dev.ryanhcode.sable.veillite.api.network.VeilPacketManager;
 import it.unimi.dsi.fastutil.objects.Object2ObjectMap;
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
-import net.createmod.catnip.animation.AnimationTickHolder;
-import net.createmod.catnip.data.Pair;
-import net.createmod.catnip.outliner.LineOutline;
-import net.createmod.catnip.render.DefaultSuperRenderTypeBuffer;
-import net.createmod.catnip.render.SuperRenderTypeBuffer;
+import com.zurrtum.create.client.catnip.animation.AnimationTickHolder;
+import com.zurrtum.create.catnip.data.Pair;
+import com.zurrtum.create.client.catnip.outliner.LineOutline;
+import com.zurrtum.create.client.catnip.render.DefaultSuperRenderTypeBuffer;
+import com.zurrtum.create.client.catnip.render.SuperRenderTypeBuffer;
 import net.minecraft.client.Camera;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
@@ -97,7 +96,7 @@ public class PhysicsStaffClientHandler {
     }
 
     private static void spawnParticles(final InteractionHand hand, final SubLevel subLevel, final Vec3 hitLocation, final Level level) {
-        CreateClient.ZAPPER_RENDER_HANDLER.shoot(hand, subLevel.logicalPose().transformPosition(hitLocation));
+        Create.ZAPPER_RENDER_HANDLER.shoot(hand, subLevel.logicalPose().transformPosition(hitLocation));
 
         final RandomSource random = level.getRandom();
         final Supplier<Double> randomSpeed = () -> (random.nextDouble() - .5d) * .2f;
@@ -358,7 +357,7 @@ public class PhysicsStaffClientHandler {
         final SuperRenderTypeBuffer buffer = DefaultSuperRenderTypeBuffer.getInstance();
         final float pt = AnimationTickHolder.getPartialTicks();
         final Minecraft client = Minecraft.getInstance();
-        final Vec3 camera = client.gameRenderer.getMainCamera().getPosition();
+        final Vec3 camera = client.gameRenderer.getMainCamera().position();
 
         this.beams.forEach((uuid, beam) -> {
             final Player player = client.level.getPlayerByUUID(uuid);
@@ -386,7 +385,6 @@ public class PhysicsStaffClientHandler {
         });
 
         buffer.draw();
-        RenderSystem.enableCull();
     }
 
     public void updateBeam(final Level level, final UUID uuid, final Vec3 start, final Vec3 end) {
@@ -509,7 +507,7 @@ public class PhysicsStaffClientHandler {
             for (int i = 1; i < this.nodes.size(); i++) {
                 final Vec3 offset = this.nodes.get(i).previousPosition.lerp(this.nodes.get(i).position, pt);
                 final Vec3 currentPos = start.add(relative.scale(i / (float) this.nodes.size()).add(offset.scale(this.currentNodeRadius)));
-                this.line.set(lastPos, currentPos).render(ms, buffer, camera, pt);
+                this.line.set(lastPos, currentPos).render(Minecraft.getInstance(), ms, buffer, camera, pt);
                 lastPos = currentPos;
             }
         }

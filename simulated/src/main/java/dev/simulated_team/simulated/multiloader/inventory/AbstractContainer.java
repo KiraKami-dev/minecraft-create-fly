@@ -10,7 +10,8 @@ import java.util.Set;
 
 /**
  * An abstract container that inventories can extend from. Used for multiloader compatibility through wrappers that each loader creates. <p>
- * Inspired by {@link net.neoforged.neoforge.items.ItemStackHandler ItemStackHandler} In <b>Porting lib</b> by the <b>fabricators of create</b> team
+ * Inspired by NeoForge's {@code ItemStackHandler} In <b>Porting lib</b> by the <b>fabricators of create</b> team <p>
+ * On Fabric it is exposed to other blocks through {@code dev.simulated_team.simulated.fabric.transfer.AbstractContainerStorage}.
  */
 public interface AbstractContainer extends NBTSerializable, Container {
 
@@ -117,6 +118,30 @@ public interface AbstractContainer extends NBTSerializable, Container {
      * @param newSlotStack The new stack taking over that slot
      */
     default void onStackItemChange(final ContainerSlot slot, final ItemStack oldSlotStack, final ItemStack newSlotStack) {
+    }
+
+    /**
+     * Replaces the stack in the given slot without notifying this container ({@link #onStackItemChange} and
+     * {@link #setChanged()} are not called). Used by the Fabric transfer wrapper while a transaction is open, so aborted
+     * transfers (simulations) have no side effects; the change is reported through {@link #onTransferCommitted} once the
+     * transaction commits.
+     *
+     * @param slot  The slot index, as used by {@link #getItem(int)}
+     * @param stack The new stack
+     */
+    default void setItemSilently(final int slot, final ItemStack stack) {
+        this.setItem(slot, stack);
+    }
+
+    /**
+     * Called once per slot changed by a committed Fabric transfer.
+     *
+     * @param slot     The slot index, as used by {@link #getItem(int)}
+     * @param oldStack The stack before the transaction
+     * @param newStack The stack after the transaction
+     */
+    default void onTransferCommitted(final int slot, final ItemStack oldStack, final ItemStack newStack) {
+        this.setChanged();
     }
 
     /**

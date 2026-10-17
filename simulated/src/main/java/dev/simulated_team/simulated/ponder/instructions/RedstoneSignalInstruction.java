@@ -2,16 +2,21 @@ package dev.simulated_team.simulated.ponder.instructions;
 
 import com.zurrtum.create.content.redstone.analogLever.AnalogLeverBlockEntity;
 import com.zurrtum.create.content.redstone.nixieTube.NixieTubeBlockEntity;
-import net.createmod.ponder.api.level.PonderLevel;
-import net.createmod.ponder.api.scene.Selection;
-import net.createmod.ponder.foundation.PonderScene;
-import net.createmod.ponder.foundation.instruction.WorldModifyInstruction;
+import com.zurrtum.create.client.ponder.api.level.PonderLevel;
+import com.zurrtum.create.client.ponder.api.scene.Selection;
+import com.zurrtum.create.client.ponder.foundation.PonderScene;
+import com.zurrtum.create.client.ponder.foundation.instruction.WorldModifyInstruction;
+import dev.simulated_team.simulated.Simulated;
+import net.minecraft.core.RegistryAccess;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.util.ProblemReporter;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.RedstoneTorchBlock;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
+import net.minecraft.world.level.storage.TagValueInput;
+import net.minecraft.world.level.storage.TagValueOutput;
 
 public class RedstoneSignalInstruction extends WorldModifyInstruction {
 
@@ -24,7 +29,7 @@ public class RedstoneSignalInstruction extends WorldModifyInstruction {
 
     @Override
     protected void runModification(final Selection selection, final PonderScene scene) {
-        final PonderLevel level = scene.getWorld();
+        final PonderLevel level = scene.getLevel();
         selection.forEach(pos -> {
             if (!level.getBounds().isInside(pos)) {
                 return;
@@ -35,10 +40,14 @@ public class RedstoneSignalInstruction extends WorldModifyInstruction {
                 nixie.updateDisplayedStrings();
             }
             if (BE instanceof final AnalogLeverBlockEntity lever) {
-                final CompoundTag tag = new CompoundTag();
-                lever.write(tag, level.registryAccess(), false);
-                tag.putInt("State", this.signal);
-                lever.readClient(tag, level.registryAccess());
+                final RegistryAccess registryAccess = level.registryAccess();
+                try (final ProblemReporter.ScopedCollector logging = new ProblemReporter.ScopedCollector(lever.problemPath(), Simulated.LOGGER)) {
+                    final TagValueOutput output = TagValueOutput.createWithContext(logging, registryAccess);
+                    lever.write(output, false);
+                    final CompoundTag tag = output.buildResult();
+                    tag.putInt("State", this.signal);
+                    lever.readClient(TagValueInput.create(logging, registryAccess, tag));
+                }
             }
             final BlockState state = level.getBlockState(pos);
             BlockState newState = null;

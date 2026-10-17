@@ -1,10 +1,12 @@
 package dev.simulated_team.simulated.content.blocks.auger_shaft;
 
-import com.google.common.base.Predicates;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 import com.zurrtum.create.AllBlocks;
 import com.zurrtum.create.AllItems;
+import com.zurrtum.create.catnip.placement.IPlacementHelper;
+import com.zurrtum.create.catnip.placement.PlacementHelpers;
+import com.zurrtum.create.catnip.placement.PlacementOffset;
 import com.zurrtum.create.content.equipment.wrench.IWrenchable;
 import com.zurrtum.create.content.kinetics.base.KineticBlockEntity;
 import com.zurrtum.create.content.kinetics.base.RotatedPillarKineticBlock;
@@ -16,28 +18,25 @@ import dev.simulated_team.simulated.index.SimBlockEntityTypes;
 import dev.simulated_team.simulated.index.SimBlockShapes;
 import dev.simulated_team.simulated.index.SimBlocks;
 import dev.simulated_team.simulated.index.SimSoundEvents;
-import net.createmod.catnip.placement.IPlacementHelper;
-import net.createmod.catnip.placement.PlacementHelpers;
-import net.createmod.catnip.placement.PlacementOffset;
-import net.minecraft.MethodsReturnNonnullByDefault;
-import net.minecraft.util.Util;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.RegistryAccess;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.sounds.SoundSource;
+import net.minecraft.util.ProblemReporter;
+import net.minecraft.util.RandomSource;
 import net.minecraft.util.StringRepresentable;
+import net.minecraft.util.Util;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
-import net.minecraft.world.ItemInteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.LevelReader;
+import net.minecraft.world.level.ScheduledTickAccess;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
@@ -45,6 +44,9 @@ import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.BooleanProperty;
 import net.minecraft.world.level.block.state.properties.EnumProperty;
+import net.minecraft.world.level.redstone.Orientation;
+import net.minecraft.world.level.storage.TagValueInput;
+import net.minecraft.world.level.storage.TagValueOutput;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.Shapes;
@@ -110,28 +112,28 @@ public class AugerShaftBlock extends RotatedPillarKineticBlock implements IBE<Au
     }
 
     @Override
-    protected ItemInteractionResult useItemOn(final ItemStack heldItem, final BlockState blockState, final Level level, final BlockPos blockPos, final Player player, final InteractionHand interactionHand, final BlockHitResult blockHitResult) {
+    protected InteractionResult useItemOn(final ItemStack heldItem, final BlockState blockState, final Level level, final BlockPos blockPos, final Player player, final InteractionHand interactionHand, final BlockHitResult blockHitResult) {
         final IPlacementHelper helper = PlacementHelpers.get(placementHelperId);
         if (helper.matchesItem(heldItem))
             return helper.getOffset(player, level, blockState, blockPos, blockHitResult)
-                    .placeInWorld(level, (BlockItem) heldItem.getItem(), player, interactionHand, blockHitResult);
+                    .placeInWorld(level, (BlockItem) heldItem.getItem(), player, interactionHand);
 
         if (!(blockState.getBlock() instanceof AugerCogBlock)) {
             final Boolean encased = blockState.getValue(ENCASED);
-            if (encased && AllItems.WRENCH.isIn(player.getItemInHand(interactionHand))) {
-                if (level.isClientSide)
-                    return ItemInteractionResult.SUCCESS;
+            if (encased && player.getItemInHand(interactionHand).is(AllItems.WRENCH)) {
+                if (level.isClientSide())
+                    return InteractionResult.SUCCESS;
 
                 level.setBlockAndUpdate(blockPos, blockState.cycle(ENCASED));
-                level.levelEvent(2001, blockPos, Block.getId(AllBlocks.INDUSTRIAL_IRON_BLOCK.getDefaultState()));
-                return ItemInteractionResult.SUCCESS;
+                level.levelEvent(2001, blockPos, Block.getId(AllBlocks.INDUSTRIAL_IRON_BLOCK.defaultBlockState()));
+                return InteractionResult.SUCCESS;
             } else if (!encased && player.getItemInHand(interactionHand).is(AllBlocks.INDUSTRIAL_IRON_BLOCK.asItem())) {
-                if (level.isClientSide)
-                    return ItemInteractionResult.SUCCESS;
+                if (level.isClientSide())
+                    return InteractionResult.SUCCESS;
 
                 level.setBlockAndUpdate(blockPos, blockState.cycle(ENCASED));
                 level.playSound(null, blockPos, SimSoundEvents.AUGER_SHAFT_ENCASING.event(), SoundSource.BLOCKS, 0.5F, 1.05F);
-                return ItemInteractionResult.SUCCESS;
+                return InteractionResult.SUCCESS;
             }
         }
 
@@ -141,10 +143,10 @@ public class AugerShaftBlock extends RotatedPillarKineticBlock implements IBE<Au
     @Override
     public InteractionResult onWrenched(final BlockState state, final UseOnContext context) {
         final Level level = context.getLevel();
-        if (level.isClientSide)
+        if (level.isClientSide())
             return InteractionResult.SUCCESS;
 
-        return this.transformAuger(state, SimBlocks.AUGER_COG.getDefaultState(), context, level);
+        return this.transformAuger(state, SimBlocks.AUGER_COG.defaultBlockState(), context, level);
     }
 
     @Nullable
@@ -153,14 +155,16 @@ public class AugerShaftBlock extends RotatedPillarKineticBlock implements IBE<Au
 
         final AugerShaftBlockEntity abe = this.getBlockEntity(level, context.getClickedPos());
         if (abe != null) {
-            final CompoundTag tag = new CompoundTag();
-            abe.write(tag, reg, false);
+            // carry the block entity data (inventories, kinetics) over to the replacement block entity
+            final TagValueOutput output = TagValueOutput.createWithContext(ProblemReporter.DISCARDING, reg);
+            abe.write(output, false);
+            final CompoundTag tag = output.buildResult();
             abe.beingWrenched = true;
 
             KineticBlockEntity.switchToBlockState(level, context.getClickedPos(), newState.setValue(AXIS, state.getValue(AXIS)));
             final AugerShaftBlockEntity newBE = this.getBlockEntity(level, context.getClickedPos());
             if (newBE != null) {
-                newBE.read(tag, reg, false);
+                newBE.read(TagValueInput.create(ProblemReporter.DISCARDING, reg, tag), false);
                 newBE.notifyUpdate();
 
                 IWrenchable.playRotateSound(level, context.getClickedPos());
@@ -174,7 +178,8 @@ public class AugerShaftBlock extends RotatedPillarKineticBlock implements IBE<Au
     }
 
     @Override
-    public BlockState updateShape(final BlockState state, final Direction dir, final BlockState neighborState, final LevelAccessor level, final BlockPos pos, final BlockPos neighborPos) {
+    protected BlockState updateShape(final BlockState state, final LevelReader level, final ScheduledTickAccess tickAccess, final BlockPos pos,
+                                     final Direction dir, final BlockPos neighborPos, final BlockState neighborState, final RandomSource random) {
         //gather axis information
         final Direction.Axis axis = state.getValue(AXIS);
         final Direction directionPos = Direction.get(Direction.AxisDirection.POSITIVE, axis);
@@ -212,7 +217,7 @@ public class AugerShaftBlock extends RotatedPillarKineticBlock implements IBE<Au
             mutState = mutState.setValue(PROPERTY_BY_DIRECTION.get(dir), false);
         }
 
-        return super.updateShape(mutState, dir, neighborState, level, pos, neighborPos);
+        return super.updateShape(mutState, level, tickAccess, pos, dir, neighborPos, neighborState, random);
     }
 
     @Override
@@ -231,10 +236,10 @@ public class AugerShaftBlock extends RotatedPillarKineticBlock implements IBE<Au
     }
 
     @Override
-    protected void neighborChanged(final BlockState state, final Level level, final BlockPos pos, final Block neighborBlock, final BlockPos neighborPos, final boolean movedByPiston) {
+    protected void neighborChanged(final BlockState state, final Level level, final BlockPos pos, final Block neighborBlock, @Nullable final Orientation orientation, final boolean movedByPiston) {
 //        this.withBlockEntityDo(level, pos, (be) -> be.stopped = false);
 
-        super.neighborChanged(state, level, pos, neighborBlock, neighborPos, movedByPiston);
+        super.neighborChanged(state, level, pos, neighborBlock, orientation, movedByPiston);
     }
 
     @Override
@@ -249,7 +254,7 @@ public class AugerShaftBlock extends RotatedPillarKineticBlock implements IBE<Au
 
     @Override
     public BlockEntityType<? extends AugerShaftBlockEntity> getBlockEntityType() {
-        return SimBlockEntityTypes.AUGER_SHAFT.get();
+        return SimBlockEntityTypes.AUGER_SHAFT;
     }
 
     @Override
@@ -269,7 +274,6 @@ public class AugerShaftBlock extends RotatedPillarKineticBlock implements IBE<Au
         }
     }
 
-    @MethodsReturnNonnullByDefault
     private static class PlacementHelper extends PoleHelper<Direction.Axis> {
         private PlacementHelper() {
             super(state -> state.getBlock() instanceof AugerShaftBlock, state -> state.getValue(AXIS), AXIS);
@@ -282,7 +286,7 @@ public class AugerShaftBlock extends RotatedPillarKineticBlock implements IBE<Au
 
         @Override
         public Predicate<BlockState> getStatePredicate() {
-            return Predicates.or(SimBlocks.AUGER_SHAFT::has, SimBlocks.AUGER_COG::has);
+            return state -> state.is(SimBlocks.AUGER_SHAFT) || state.is(SimBlocks.AUGER_COG);
         }
 
         @Override

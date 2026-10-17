@@ -2,36 +2,41 @@ package dev.simulated_team.simulated.content.blocks.redstone.linked_typewriter;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
+import com.zurrtum.create.catnip.animation.LerpedFloat;
+import com.zurrtum.create.catnip.math.AngleHelper;
+import com.zurrtum.create.client.catnip.animation.AnimationTickHolder;
+import com.zurrtum.create.client.catnip.render.CachedBuffers;
+import com.zurrtum.create.client.catnip.render.SuperByteBuffer;
 import com.zurrtum.create.client.foundation.blockEntity.renderer.SmartBlockEntityRenderer;
-import dev.engine_room.flywheel.lib.transform.PoseTransformStack;
-import dev.engine_room.flywheel.lib.transform.TransformStack;
 import dev.simulated_team.simulated.index.SimPartialModels;
-import net.createmod.catnip.animation.AnimationTickHolder;
-import net.createmod.catnip.animation.LerpedFloat;
-import net.createmod.catnip.math.AngleHelper;
-import net.createmod.catnip.render.CachedBuffers;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.MultiBufferSource;
-import net.minecraft.client.renderer.rendertype.RenderType;
+import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.client.renderer.blockentity.BlockEntityRendererProvider;
-import net.minecraft.core.Direction;
+import net.minecraft.client.renderer.feature.ModelFeatureRenderer;
+import net.minecraft.client.renderer.rendertype.RenderTypes;
+import net.minecraft.client.renderer.state.CameraRenderState;
 import net.minecraft.util.Mth;
-import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
+import net.minecraft.world.phys.Vec3;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Vector;
 
 
-public class LinkedTypewriterRenderer extends SmartBlockEntityRenderer<LinkedTypewriterBlockEntity> {
+public class LinkedTypewriterRenderer extends SmartBlockEntityRenderer<LinkedTypewriterBlockEntity, LinkedTypewriterRenderer.TypewriterRenderState> {
 
-    static Vector<LerpedFloat> keys = new Vector<>(14);
+    private static final int KEY_COUNT = 14;
+    private static final float S = 0.0625F;
+    private static final float B = S * -0.75F;
+
+    static Vector<LerpedFloat> keys = new Vector<>(KEY_COUNT);
 
     public LinkedTypewriterRenderer(final BlockEntityRendererProvider.Context context) {
         super(context);
     }
 
     static {
-        for (int i = 0; i < 14; ++i) {
+        for (int i = 0; i < KEY_COUNT; ++i) {
             keys.add(LerpedFloat.linear().startWithValue(0.0));
         }
     }
@@ -59,86 +64,70 @@ public class LinkedTypewriterRenderer extends SmartBlockEntityRenderer<LinkedTyp
     }
 
     @Override
-    protected void renderSafe(final LinkedTypewriterBlockEntity be, final float partialTicks, final PoseStack ms, final MultiBufferSource buffer,
-                              int light, final int overlay) {
-        super.renderSafe(be, partialTicks, ms, buffer, light, overlay);
-
-        final VertexConsumer vb = buffer.getBuffer(RenderType.cutout());
-        final BlockState blockState = be.getBlockState();
-        final Direction facing = blockState.getValue(BlockStateProperties.HORIZONTAL_FACING);
-
-        final TransformStack<PoseTransformStack> ps = TransformStack.of(ms);
-
-        final float pt = AnimationTickHolder.getPartialTicks();
-        final float s = 0.0625F;
-        final float b = s * -0.75F;
-        int index = 0;
-
-        // Account for block rotation
-        ps.translate(0.5, 4 * s, 0.5);
-        ps.rotateYDegrees(AngleHelper.horizontalAngle(facing));
-        ps.pushPose();
-
-        // Render Carriage (Might go unused)
-        /*
-        float carriagePos = be.useFloat.getValue(pt);
-        ps.pushPose();
-        ps.rotateY(180);
-        float carriageAnimation = (float) Math.pow(carriagePos, 3);
-        ps.translate(carriageAnimation * 0.375 + -3 * s, 3 * s, s);
-        CachedBufferer.partial(CSimPartialModels.LINKED_TYPEWRITER_CARRIAGE, blockState).light(light).renderInto(ms, vb);
-        ms.popPose();
-         */
-
-        // Render Keys
-        if (LinkedTypewriterInteractionHandler.getMode() == LinkedTypewriterInteractionHandler.Mode.BIND) {
-            final int i = (int) Mth.lerp((Mth.sin(AnimationTickHolder.getRenderTime() / 4.0F) + 1.0F) / 2.0F, 5.0F, 15.0F);
-            light = i << 20;
-        }
-
-        // Top Row
-        ps.translate(-7 * s, s, 2 * s);
-        ps.pushPose();
-        for (int i = 0; i < 6; i++) {
-            ps.translate(2 * s, 0.0, 0.0);
-            renderKey(ms, vb, light, pt, blockState, be, b, index++, false);
-        }
-        ms.popPose();
-
-        // Bottom Row
-        ps.translate(-1 * s, -s, 2 * s);
-        ps.pushPose();
-        for (int i = 0; i < 7; i++) {
-            ps.translate(2 * s, 0.0, 0.0);
-            renderKey(ms, vb, light, pt, blockState, be, b, index++, false);
-        }
-        ms.popPose();
-
-        // Space Bar
-        ps.translate(8 * s, -s, 2 * s);
-        ps.pushPose();
-        renderKey(ms, vb, light, pt, blockState, be, b, index, true);
-        ms.popPose();
-
-        ms.popPose();
+    public TypewriterRenderState createRenderState() {
+        return new TypewriterRenderState();
     }
 
-    protected static void renderKey(final PoseStack ms, final VertexConsumer vb, final int light, final float pt, final BlockState blockState, final LinkedTypewriterBlockEntity be, final float b, final int index, final boolean isSpacebar) {
-        ms.pushPose();
+    @Override
+    public void extractRenderState(final LinkedTypewriterBlockEntity be, final TypewriterRenderState state, final float tickProgress,
+                                   final Vec3 cameraPos, @Nullable final ModelFeatureRenderer.CrumblingOverlay crumblingOverlay) {
+        super.extractRenderState(be, state, tickProgress, cameraPos, crumblingOverlay);
 
-        float depression = 0;
-        if (be.checkUser(Minecraft.getInstance().player.getUUID())) {
-            depression = b * (keys.get(index)).getValue(pt);
+        state.key = CachedBuffers.partial(SimPartialModels.LINKED_TYPEWRITER_KEY, state.blockState);
+        state.spacebar = CachedBuffers.partial(SimPartialModels.LINKED_TYPEWRITER_KEY_SPACEBAR, state.blockState);
+        state.angle = AngleHelper.horizontalAngle(state.blockState.getValue(BlockStateProperties.HORIZONTAL_FACING));
+
+        state.keyLight = state.lightCoords;
+        if (LinkedTypewriterInteractionHandler.getMode() == LinkedTypewriterInteractionHandler.Mode.BIND) {
+            final int i = (int) Mth.lerp((Mth.sin(AnimationTickHolder.getRenderTime() / 4.0F) + 1.0F) / 2.0F, 5.0F, 15.0F);
+            state.keyLight = i << 20;
         }
 
-        ms.translate(0.0F, depression, 0.0F);
+        final boolean using = Minecraft.getInstance().player != null && be.checkUser(Minecraft.getInstance().player.getUUID());
+        for (int index = 0; index < KEY_COUNT; index++) {
+            state.depression[index] = using ? B * keys.get(index).getValue(tickProgress) : 0;
+        }
+    }
 
-        if (!isSpacebar) {
-            CachedBuffers.partial(SimPartialModels.LINKED_TYPEWRITER_KEY, blockState).light(light).renderInto(ms, vb);
-        } else {
-            CachedBuffers.partial(SimPartialModels.LINKED_TYPEWRITER_KEY_SPACEBAR, blockState).light(light).renderInto(ms, vb);
+    @Override
+    public void submit(final TypewriterRenderState state, final PoseStack ms, final SubmitNodeCollector queue, final CameraRenderState cameraState) {
+        super.submit(state, ms, queue, cameraState);
+        queue.submitCustomGeometry(ms, RenderTypes.cutoutMovingBlock(), state);
+    }
+
+    public static class TypewriterRenderState extends SmartRenderState implements SubmitNodeCollector.CustomGeometryRenderer {
+        public SuperByteBuffer key;
+        public SuperByteBuffer spacebar;
+        public float angle;
+        public int keyLight;
+        public final float[] depression = new float[KEY_COUNT];
+
+        @Override
+        public void render(final PoseStack.Pose pose, final VertexConsumer vertexConsumer) {
+            int index = 0;
+
+            // Top Row
+            for (int i = 0; i < 6; i++) {
+                this.renderKey(this.key, pose, vertexConsumer, -7 * S + 2 * S * (i + 1), S, 2 * S, index++);
+            }
+
+            // Bottom Row
+            for (int i = 0; i < 7; i++) {
+                this.renderKey(this.key, pose, vertexConsumer, -8 * S + 2 * S * (i + 1), 0, 4 * S, index++);
+            }
+
+            // Space Bar
+            this.renderKey(this.spacebar, pose, vertexConsumer, 0, -S, 6 * S, index);
         }
 
-        ms.popPose();
+        private void renderKey(final SuperByteBuffer buffer, final PoseStack.Pose pose, final VertexConsumer vertexConsumer,
+                               final float x, final float y, final float z, final int index) {
+            // Account for block rotation, then move to the key
+            buffer.translate(0.5, 4 * S, 0.5)
+                    .rotateYDegrees(this.angle)
+                    .translate(x, y + this.depression[index], z);
+            buffer.light(this.keyLight);
+            buffer.renderInto(pose, vertexConsumer);
+        }
     }
 }

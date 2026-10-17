@@ -1,28 +1,20 @@
 package dev.simulated_team.simulated.content.blocks.lasers.laser_sensor;
 
-import com.mojang.blaze3d.vertex.PoseStack;
 import com.zurrtum.create.foundation.blockEntity.SmartBlockEntity;
 import com.zurrtum.create.api.behaviour.BlockEntityBehaviour;
-import com.zurrtum.create.client.foundation.blockEntity.behaviour.ValueBoxTransform;
-import com.zurrtum.create.client.foundation.blockEntity.behaviour.filtering.FilteringBehaviour;
-import dev.engine_room.flywheel.lib.transform.TransformStack;
+import com.zurrtum.create.foundation.blockEntity.behaviour.filtering.ServerFilteringBehaviour;
 import dev.simulated_team.simulated.data.advancements.SimAdvancements;
 import dev.simulated_team.simulated.index.SimTags;
 import dev.simulated_team.simulated.util.SimColors;
-import net.createmod.catnip.math.AngleHelper;
-import net.createmod.catnip.math.VecHelper;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.Direction;
-import net.minecraft.core.HolderLookup;
-import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.Clearable;
 import net.minecraft.world.item.DyeItem;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.phys.Vec3;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
 
 import java.util.List;
 
@@ -33,7 +25,10 @@ public class LaserSensorBlockEntity extends SmartBlockEntity implements Clearabl
     private int updateCooldown = 0;
     private static final int MAX_COOLDOWN = 3;
 
-    private FilteringBehaviour filter;
+    /**
+     * Server half of the color filter, the value box is {@link LaserSensorFilterBehaviour#create} on the client
+     */
+    private ServerFilteringBehaviour filter;
     public double closestHitDistance = Double.MAX_VALUE;
     private double trackedHitDistance = Double.MAX_VALUE;
 
@@ -43,8 +38,8 @@ public class LaserSensorBlockEntity extends SmartBlockEntity implements Clearabl
     }
 
     @Override
-    public void addBehaviours(final List<BlockEntityBehaviour> behaviours) {
-        behaviours.add(this.filter = new FilteringBehaviour(this, new FilterValueBoxTransform()).withPredicate(this::isItemValidFilter));
+    public void addBehaviours(final List<BlockEntityBehaviour<?>> behaviours) {
+        behaviours.add(this.filter = new ServerFilteringBehaviour(this).withPredicate(this::isItemValidFilter));
     }
 
     private boolean isItemValidFilter(final ItemStack itemStack) {
@@ -56,7 +51,7 @@ public class LaserSensorBlockEntity extends SmartBlockEntity implements Clearabl
     @Override
     public void tick() {
         super.tick();
-        if (this.level == null || this.level.isClientSide) {
+        if (this.level == null || this.level.isClientSide()) {
             return;
         }
 
@@ -100,19 +95,19 @@ public class LaserSensorBlockEntity extends SmartBlockEntity implements Clearabl
     }
 
     @Override
-    protected void read(final CompoundTag tag, final HolderLookup.Provider registries, final boolean clientPacket) {
-        super.read(tag, registries, clientPacket);
+    protected void read(final ValueInput view, final boolean clientPacket) {
+        super.read(view, clientPacket);
 
-        this.currentPower = tag.getInt("CurrentPower");
-        this.updateCooldown = Math.clamp(tag.getInt("UpdateCooldown"), 0, MAX_COOLDOWN);
+        this.currentPower = view.getIntOr("CurrentPower", 0);
+        this.updateCooldown = Math.clamp(view.getIntOr("UpdateCooldown", 0), 0, MAX_COOLDOWN);
     }
 
     @Override
-    protected void write(final CompoundTag tag, final HolderLookup.Provider registries, final boolean clientPacket) {
-        super.write(tag, registries, clientPacket);
+    protected void write(final ValueOutput view, final boolean clientPacket) {
+        super.write(view, clientPacket);
 
-        tag.putInt("CurrentPower", this.currentPower);
-        tag.putInt("UpdateCooldown", this.updateCooldown);
+        view.putInt("CurrentPower", this.currentPower);
+        view.putInt("UpdateCooldown", this.updateCooldown);
     }
 
     @Override
@@ -147,36 +142,5 @@ public class LaserSensorBlockEntity extends SmartBlockEntity implements Clearabl
         }
 
         return testColor == color;
-    }
-
-    private static class FilterValueBoxTransform extends ValueBoxTransform.Sided {
-
-        @Override
-        protected boolean isSideActive(final BlockState state, final Direction direction) {
-            return (switch (state.getValue(LaserSensorBlock.TARGET)) {
-                case FLOOR, CEILING -> state.getValue(LaserSensorBlock.FACING);
-                default -> Direction.UP;
-            }).getAxis() == direction.getAxis();
-        }
-
-        @Override
-        protected Vec3 getSouthLocation() {
-            return VecHelper.voxelSpace(8, 8, 15.5);
-        }
-
-        @Override
-        public void rotate(final LevelAccessor level, final BlockPos pos, final BlockState state, final PoseStack ms) {
-            super.rotate(level, pos, state, ms);
-            final Direction facing = state.getValue(LaserSensorBlock.FACING);
-
-            if (facing.getAxis() == Direction.Axis.Y)
-                return;
-
-            if (this.getSide() != Direction.UP)
-                return;
-
-            TransformStack.of(ms)
-                    .rotateZDegrees(-AngleHelper.horizontalAngle(facing) + 180);
-        }
     }
 }

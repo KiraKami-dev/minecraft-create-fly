@@ -5,6 +5,6 @@ import dev.simulated_team.simulated.Simulated;
 
 public class NaturesCompassRegistry {
     public static void init() {
-        Simulated.getRegistrate().navTarget("natures_compass", NaturesCompassNavigationTarget::new, () -> NaturesCompass.naturesCompass);
+        Simulated.getRegistrate().navTarget("natures_compass", NaturesCompassNavigationTarget::new, () -> NaturesCompass.NATURES_COMPASS_ITEM);
     }
 }

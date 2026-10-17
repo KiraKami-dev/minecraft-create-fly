@@ -5,16 +5,17 @@ import com.zurrtum.create.content.equipment.potatoCannon.PotatoProjectileEntity;
 import com.zurrtum.create.infrastructure.particle.AirParticleData;
 import com.zurrtum.create.client.foundation.ponder.CreateSceneBuilder;
 import dev.eriksonn.aeronautics.content.blocks.mounted_potato_cannon.MountedPotatoCannonBlockEntity;
-import net.createmod.catnip.math.Pointing;
-import net.createmod.catnip.nbt.NBTHelper;
-import net.createmod.ponder.api.PonderPalette;
-import net.createmod.ponder.api.element.ElementLink;
-import net.createmod.ponder.api.element.EntityElement;
-import net.createmod.ponder.api.scene.*;
+import com.zurrtum.create.catnip.math.Pointing;
+import com.zurrtum.create.catnip.nbt.NBTHelper;
+import com.zurrtum.create.client.ponder.api.PonderPalette;
+import com.zurrtum.create.client.ponder.api.element.ElementLink;
+import com.zurrtum.create.client.ponder.api.element.EntityElement;
+import com.zurrtum.create.client.ponder.api.scene.*;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtOps;
+import net.minecraft.world.entity.EntitySpawnReason;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
@@ -166,7 +167,7 @@ public class MountedPotatoCannonScenes {
 
 	private static ElementLink<EntityElement> spawnPotatoCannonProjectile(final SceneBuilder scene, final ItemStack stack, final Vec3 pos, final Vec3 aiming, final boolean physics) {
 		return scene.world().createEntity(level -> {
-			final PotatoProjectileEntity entity = Objects.requireNonNull(AllEntityTypes.POTATO_PROJECTILE.create(level), "entity");
+			final PotatoProjectileEntity entity = Objects.requireNonNull(AllEntityTypes.POTATO_PROJECTILE.create(level, EntitySpawnReason.LOAD), "entity");
 			entity.setItem(stack);
 			entity.setPos(pos);
 			entity.xo = pos.x;

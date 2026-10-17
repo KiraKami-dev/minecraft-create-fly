@@ -11,4 +11,6 @@ pluginManagement {
 
 rootProject.name = 'aeronautics-fabric'
 include('sable')
+include('simulated')
+include('aeronautics')
 include('e2e')

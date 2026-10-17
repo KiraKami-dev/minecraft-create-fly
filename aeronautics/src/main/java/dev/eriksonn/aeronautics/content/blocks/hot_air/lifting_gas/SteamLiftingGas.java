@@ -1,13 +1,13 @@
 package dev.eriksonn.aeronautics.content.blocks.hot_air.lifting_gas;
 
 import dev.eriksonn.aeronautics.config.AeroConfig;
-import dev.eriksonn.aeronautics.data.AeroLang;
+import dev.eriksonn.aeronautics.Aeronautics;
 import net.minecraft.network.chat.Component;
 
 public class SteamLiftingGas implements LiftingGasType {
     @Override
     public Component getName() {
-        return AeroLang.translate("lifting_gas.steam").component();
+        return Component.translatable(Aeronautics.MOD_ID + ".lifting_gas.steam");
     }
 
     @Override

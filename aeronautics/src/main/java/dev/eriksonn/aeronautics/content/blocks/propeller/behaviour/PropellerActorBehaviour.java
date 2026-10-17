@@ -1,6 +1,5 @@
 package dev.eriksonn.aeronautics.content.blocks.propeller.behaviour;
 
-import com.zurrtum.create.client.api.goggles.IHaveGoggleInformation;
 import com.zurrtum.create.content.contraptions.AbstractContraptionEntity;
 import com.zurrtum.create.content.equipment.armor.DivingBootsItem;
 import com.zurrtum.create.content.kinetics.fan.AirCurrent;
@@ -9,7 +8,6 @@ import com.zurrtum.create.foundation.blockEntity.behaviour.BehaviourType;
 import com.zurrtum.create.api.behaviour.BlockEntityBehaviour;
 import dev.eriksonn.aeronautics.content.particle.PropellerAirParticle;
 import dev.eriksonn.aeronautics.content.particle.PropellerAirParticleData;
-import dev.eriksonn.aeronautics.data.AeroLang;
 import dev.ryanhcode.sable.Sable;
 import dev.ryanhcode.sable.api.block.propeller.BlockEntityPropeller;
 import dev.ryanhcode.sable.companion.math.BoundingBox3d;
@@ -17,13 +15,9 @@ import dev.ryanhcode.sable.companion.math.JOMLConversion;
 import dev.ryanhcode.sable.physics.config.dimension_physics.DimensionPhysicsData;
 import dev.ryanhcode.sable.sublevel.SubLevel;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
-import net.createmod.catnip.outliner.Outliner;
-import net.minecraft.ChatFormatting;
 import net.minecraft.core.Direction;
 import net.minecraft.core.particles.BlockParticleOption;
 import net.minecraft.core.particles.ParticleTypes;
-import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.tags.BlockTags;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.Entity;
@@ -44,7 +38,11 @@ import java.util.List;
 import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 
-public class PropellerActorBehaviour extends BlockEntityBehaviour implements IHaveGoggleInformation {
+/**
+ * Thrust, entity pushing and airflow particles of a propeller. The goggle tooltip lines it added upstream are built
+ * client-side by {@code PropellerTooltipBehaviours}.
+ */
+public class PropellerActorBehaviour extends BlockEntityBehaviour<SmartBlockEntity> {
     public static final BehaviourType<PropellerActorBehaviour> TYPE = new BehaviourType<>("prop_behaviour");
     private static final int MAX_ACCELERATION = 5;
     private static final Vector3d STORED_MUT_POS = new Vector3d();
@@ -143,14 +141,14 @@ public class PropellerActorBehaviour extends BlockEntityBehaviour implements IHa
         final BoundingBox3d aabb = new BoundingBox3d(min.x, min.y, min.z, max.x, max.y, max.z);
 
         STORED_TRANSFORMED_THRUST.set(this.thrustDirection);
-        final SubLevel subLevel = Sable.HELPER.getContaining(this.getWorld(), this.getPos());
+        final SubLevel subLevel = Sable.HELPER.getContaining(this.getLevel(), this.getPos());
         if (subLevel != null) {
             aabb.transform(subLevel.logicalPose(), aabb);
 
             subLevel.logicalPose().transformNormal(STORED_TRANSFORMED_THRUST);
         }
 
-        final List<Entity> entities = this.getWorld().getEntities(null, aabb.toMojang());
+        final List<Entity> entities = this.getLevel().getEntities(null, aabb.toMojang());
         if (!entities.isEmpty()) {
             for (final Entity entity : entities) {
                 if (entity instanceof AbstractContraptionEntity ||
@@ -203,7 +201,7 @@ public class PropellerActorBehaviour extends BlockEntityBehaviour implements IHa
                             CollisionContext.empty()
                     );
 
-                    if (this.getWorld().clip(ctx).getType() == HitResult.Type.MISS) {
+                    if (this.getLevel().clip(ctx).getType() == HitResult.Type.MISS) {
                         final float modifier = entity.isShiftKeyDown() ? 0.125f : 1;
                         // 0.55 is the acceleration required to keep living entities aloft,
                         // and this scaling causes those entities to float at the edge of the particle range at asymptotically high airflows
@@ -244,7 +242,7 @@ public class PropellerActorBehaviour extends BlockEntityBehaviour implements IHa
      * Spawn simple airflow particles
      */
     public void spawnParticles() {
-        if (!this.getWorld().isClientSide)
+        if (!this.getLevel().isClientSide())
             return;
         if (this.propellerLayers.isEmpty())
             return;
@@ -253,9 +251,9 @@ public class PropellerActorBehaviour extends BlockEntityBehaviour implements IHa
 
         final Vector3d mutSpeed = new Vector3d();
 
-        final RandomSource random = this.getWorld().getRandom();
+        final RandomSource random = this.getLevel().getRandom();
         int particleCount = this.getParticleCount();
-        final SubLevel subLevel = Sable.HELPER.getContaining(this.getWorld(), this.getPos());
+        final SubLevel subLevel = Sable.HELPER.getContaining(this.getLevel(), this.getPos());
         final Vector3d origin = new Vector3d(this.getPos().getX() + 0.5, this.getPos().getY() + 0.5, this.getPos().getZ() + 0.5);
         for (int i = 0; i < particleCount; i++) {
             this.particlePositionUpdater.accept(STORED_MUT_POS, random);
@@ -264,7 +262,7 @@ public class PropellerActorBehaviour extends BlockEntityBehaviour implements IHa
             STORED_MUT_POS.fma(positionNudge, this.thrustDirection);
             this.thrustDirection.mul(speed * Math.exp(-PropellerAirParticle.frictionScale * positionNudge), mutSpeed);
 
-            this.getWorld().addParticle(new PropellerAirParticleData(true, false),
+            this.getLevel().addParticle(new PropellerAirParticleData(true, false),
                     STORED_MUT_POS.x, STORED_MUT_POS.y, STORED_MUT_POS.z,
                     mutSpeed.x, mutSpeed.y, mutSpeed.z);
         }
@@ -285,7 +283,7 @@ public class PropellerActorBehaviour extends BlockEntityBehaviour implements IHa
     }
 
     private void createHitParticle(final SubLevel subLevel, final Vector3d origin, final Vector3d start, final Vector3d end) {
-        final BlockHitResult clip = this.getWorld().clip(new ClipContext(
+        final BlockHitResult clip = this.getLevel().clip(new ClipContext(
                 JOMLConversion.toMojang(start),
                 JOMLConversion.toMojang(end),
                 ClipContext.Block.COLLIDER,
@@ -296,8 +294,8 @@ public class PropellerActorBehaviour extends BlockEntityBehaviour implements IHa
         final Vec3 hitPos = clip.getLocation();
 
         if (clip.getType() != HitResult.Type.MISS && start.distanceSquared(hitPos.x, hitPos.y, hitPos.z) > 1) {
-            final BlockState hitState = this.getWorld().getBlockState(clip.getBlockPos());
-            final Fluid fluid = this.getWorld().getFluidState(clip.getBlockPos()).getType();
+            final BlockState hitState = this.getLevel().getBlockState(clip.getBlockPos());
+            final Fluid fluid = this.getLevel().getFluidState(clip.getBlockPos()).getType();
 
             globalThrust.set(this.thrustDirection);
             relativeDiff.set(origin);
@@ -306,7 +304,7 @@ public class PropellerActorBehaviour extends BlockEntityBehaviour implements IHa
                 subLevel.logicalPose().transformPosition(relativeDiff);
             }
             normal.set(clip.getDirection().getStepX(), clip.getDirection().getStepY(), clip.getDirection().getStepZ());
-            final SubLevel other = Sable.HELPER.getContaining(this.getWorld(), clip.getBlockPos());
+            final SubLevel other = Sable.HELPER.getContaining(this.getLevel(), clip.getBlockPos());
             if (other != null)
                 other.logicalPose().orientation().transform(normal);
 
@@ -322,18 +320,18 @@ public class PropellerActorBehaviour extends BlockEntityBehaviour implements IHa
             if (other != null)
                 other.logicalPose().orientation().transformInverse(particleVelocity);
 
-            this.getWorld().addParticle(ParticleTypes.DUST_PLUME, hitPos.x, hitPos.y, hitPos.z, particleVelocity.x, particleVelocity.y, particleVelocity.z);
+            this.getLevel().addParticle(ParticleTypes.DUST_PLUME, hitPos.x, hitPos.y, hitPos.z, particleVelocity.x, particleVelocity.y, particleVelocity.z);
             if (hitState.is(BlockTags.MINEABLE_WITH_SHOVEL)) {
-                this.getWorld().addParticle(new BlockParticleOption(ParticleTypes.BLOCK, hitState), hitPos.x, hitPos.y, hitPos.z, particleVelocity.x, particleVelocity.y, particleVelocity.z);
+                this.getLevel().addParticle(new BlockParticleOption(ParticleTypes.BLOCK, hitState), hitPos.x, hitPos.y, hitPos.z, particleVelocity.x, particleVelocity.y, particleVelocity.z);
             } else if (fluid.isSame(Fluids.WATER)) {
-                this.getWorld().addParticle(ParticleTypes.SPLASH, hitPos.x, hitPos.y, hitPos.z, 0, 0, 0);
-                if (this.getWorld().getRandom().nextDouble() < 0.2)
-                    this.getWorld().addParticle(ParticleTypes.BUBBLE, hitPos.x, hitPos.y, hitPos.z, 0, 0, 0);
+                this.getLevel().addParticle(ParticleTypes.SPLASH, hitPos.x, hitPos.y, hitPos.z, 0, 0, 0);
+                if (this.getLevel().getRandom().nextDouble() < 0.2)
+                    this.getLevel().addParticle(ParticleTypes.BUBBLE, hitPos.x, hitPos.y, hitPos.z, 0, 0, 0);
 
             } else if (fluid.isSame(Fluids.LAVA)) {
-                this.getWorld().addParticle(ParticleTypes.SMOKE, hitPos.x, hitPos.y, hitPos.z, 0, 0, 0);
-                if (this.getWorld().getRandom().nextDouble() < 0.2)
-                    this.getWorld().addParticle(ParticleTypes.LAVA, hitPos.x, hitPos.y, hitPos.z, 0, 0, 0);
+                this.getLevel().addParticle(ParticleTypes.SMOKE, hitPos.x, hitPos.y, hitPos.z, 0, 0, 0);
+                if (this.getLevel().getRandom().nextDouble() < 0.2)
+                    this.getLevel().addParticle(ParticleTypes.LAVA, hitPos.x, hitPos.y, hitPos.z, 0, 0, 0);
 
             }
         }
@@ -349,7 +347,7 @@ public class PropellerActorBehaviour extends BlockEntityBehaviour implements IHa
         if (this.particleSmoothing > 0)
             count = Math.log(count / this.particleSmoothing + 1) * this.particleSmoothing;
 
-        return Math.min((int) (count + this.getWorld().random.nextFloat()), this.maxParticleAmount);
+        return Math.min((int) (count + this.getLevel().random.nextFloat()), this.maxParticleAmount);
     }
 
     public void setThrustDirection(final Vector3dc thrustDirection) {
@@ -358,7 +356,7 @@ public class PropellerActorBehaviour extends BlockEntityBehaviour implements IHa
 
 
     private double getAirPressure() {
-        return DimensionPhysicsData.getAirPressure(this.getWorld(), Sable.HELPER.projectOutOfSubLevel(this.getWorld(), JOMLConversion.atCenterOf(this.getPos())));
+        return DimensionPhysicsData.getAirPressure(this.getLevel(), Sable.HELPER.projectOutOfSubLevel(this.getLevel(), JOMLConversion.atCenterOf(this.getPos())));
     }
 
     public void setParticleAmountUpdater(final Supplier<Double> supp) {
@@ -374,36 +372,11 @@ public class PropellerActorBehaviour extends BlockEntityBehaviour implements IHa
         this.particleSmoothing = particleSmoothing;
     }
 
-    @Override
-    public boolean addToGoggleTooltip(final List<Component> tooltip, final boolean isPlayerSneaking) {
-        if (this.propeller.isActive()) {
-            AeroLang.emptyLine(tooltip);
-            AeroLang.blockName(this.blockEntity.getBlockState()).text(":")
-                    .forGoggles(tooltip);
-
-            // We use updaters here to ensure we have proper, client side information at hand, as this can be called multiple times per tick
-            final MutableComponent thrustComponent = AeroLang.pixelNewton(Math.abs(this.propeller.getScaledThrust()))
-                    .style(ChatFormatting.AQUA).component();
-            AeroLang.translate("propeller.thrust", thrustComponent)
-                    .style(ChatFormatting.GRAY)
-                    .forGoggles(tooltip, 1);
-
-            final MutableComponent airflowComponent = AeroLang.translate("unit.meters_per_second", String.format("%.2f", Math.abs(this.propeller.getAirflow())))
-                    .style(ChatFormatting.AQUA).component();
-            AeroLang.translate("propeller.airflow", airflowComponent)
-                    .style(ChatFormatting.GRAY)
-                    .forGoggles(tooltip, 1);
-
-            this.additionalTooltipInfo(tooltip, isPlayerSneaking);
-
-            return true;
-        }
-
-        return false;
-    }
-
-    public void additionalTooltipInfo(final List<Component> tooltip, final boolean isPlayerSneaking) {
-
+    /**
+     * @return the propeller driving this behaviour
+     */
+    public BlockEntityPropeller getPropeller() {
+        return this.propeller;
     }
 
     @Override

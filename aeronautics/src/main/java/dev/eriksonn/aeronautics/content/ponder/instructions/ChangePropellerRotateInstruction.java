@@ -2,10 +2,10 @@ package dev.eriksonn.aeronautics.content.ponder.instructions;
 
 import dev.eriksonn.aeronautics.content.blocks.propeller.bearing.propeller_bearing.PropellerBearingBlockEntity;
 import dev.simulated_team.simulated.api.BearingSlowdownController;
-import net.createmod.ponder.api.element.ElementLink;
-import net.createmod.ponder.api.element.WorldSectionElement;
-import net.createmod.ponder.foundation.PonderScene;
-import net.createmod.ponder.foundation.instruction.PonderInstruction;
+import com.zurrtum.create.client.ponder.api.element.ElementLink;
+import com.zurrtum.create.client.ponder.api.element.WorldSectionElement;
+import com.zurrtum.create.client.ponder.foundation.PonderScene;
+import com.zurrtum.create.client.ponder.foundation.instruction.PonderInstruction;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import org.jetbrains.annotations.Nullable;
@@ -42,7 +42,7 @@ public abstract class ChangePropellerRotateInstruction extends PonderInstruction
     public static class StopRotation extends ChangePropellerRotateInstruction {
         public StopRotation(PropellerRotateInstruction instruction, float duration) {
             super(instruction, (i,s) -> {
-                if (s.getWorld().getBlockEntity(i.pos) instanceof PropellerBearingBlockEntity bearing) {
+                if (s.getLevel().getBlockEntity(i.pos) instanceof PropellerBearingBlockEntity bearing) {
                     float angle = bearing.getInterpolatedAngle(0);
                     i.slowdownController = new BearingSlowdownController();
                     i.slowdownController.generate(duration, angle, i.currentSpeed, BearingSlowdownController.ContraptionSymmetry.QUARTER);
@@ -56,7 +56,7 @@ public abstract class ChangePropellerRotateInstruction extends PonderInstruction
             super(instruction, (i,s) -> {
                 i.particleSpeedScale = particleSpeed;
                 i.particleAmountScale = particleAmount;
-                i.spawner = new PropellerParticleSpawningInstruction.ParticleSpawner(link, i.pos.offset(i.direction.getNormal()), i.direction, 0, 0, radius, hasCollision);
+                i.spawner = new PropellerParticleSpawningInstruction.ParticleSpawner(link, i.pos.offset(i.direction.getUnitVec3i()), i.direction, 0, 0, radius, hasCollision);
             });
         }
         public SetParticles(PropellerRotateInstruction instruction,BlockPos location, @Nullable final ElementLink<WorldSectionElement> link, final float particleAmount, final float particleSpeed, final float radius, final boolean hasCollision) {

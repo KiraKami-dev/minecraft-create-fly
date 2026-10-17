@@ -1,9 +1,9 @@
 package dev.simulated_team.simulated.ponder.instructions;
 
 import dev.simulated_team.simulated.content.blocks.physics_assembler.PhysicsAssemblerBlockEntity;
-import net.createmod.ponder.api.level.PonderLevel;
-import net.createmod.ponder.foundation.PonderScene;
-import net.createmod.ponder.foundation.instruction.PonderInstruction;
+import com.zurrtum.create.client.ponder.api.level.PonderLevel;
+import com.zurrtum.create.client.ponder.foundation.PonderScene;
+import com.zurrtum.create.client.ponder.foundation.instruction.PonderInstruction;
 import net.minecraft.core.BlockPos;
 
 public class PullTheAssemblerKronkInstruction extends PonderInstruction {
@@ -24,7 +24,7 @@ public class PullTheAssemblerKronkInstruction extends PonderInstruction {
 
     @Override
     public void tick(final PonderScene scene) {
-        final PonderLevel world = scene.getWorld();
+        final PonderLevel world = scene.getLevel();
         if (world.getBlockEntity(this.assemblerPos) instanceof final PhysicsAssemblerBlockEntity be) {
             be.clientFlickLeverTo(this.isAssembling);
             if (this.instantaneous) {

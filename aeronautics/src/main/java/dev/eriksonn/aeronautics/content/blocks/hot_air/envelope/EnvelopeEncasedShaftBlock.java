@@ -14,7 +14,6 @@ import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
-import net.minecraft.world.ItemInteractionResult;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
@@ -29,15 +28,19 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.BlockHitResult;
-import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 
 public class EnvelopeEncasedShaftBlock extends EncasedShaftBlock implements Envelope, SpecialBlockItemRequirement {
 
     protected final DyeColor color;
 
+    /**
+     * Create Fly's encased shaft takes the casing block itself (upstream: a supplier, which pointed at this block and was
+     * never used since {@link #getCasing()} and the clone stack are overridden). The dyed envelope list is initialized
+     * before the encased shafts in {@code AeroBlocks}.
+     */
     protected EnvelopeEncasedShaftBlock(final Properties properties, final DyeColor color) {
-        super(properties, () -> AeroBlocks.ENVELOPE_ENCASED_SHAFTS.get(color).get());
+        super(properties, AeroBlocks.DYED_ENVELOPE_BLOCKS.get(color));
         this.color = color;
     }
 
@@ -46,7 +49,7 @@ public class EnvelopeEncasedShaftBlock extends EncasedShaftBlock implements Enve
     }
 
     @Override
-    protected ItemInteractionResult useItemOn(final ItemStack itemStack, final BlockState blockState, final Level level, final BlockPos blockPos, final Player player, final InteractionHand interactionHand, final BlockHitResult blockHitResult) {
+    protected InteractionResult useItemOn(final ItemStack itemStack, final BlockState blockState, final Level level, final BlockPos blockPos, final Player player, final InteractionHand interactionHand, final BlockHitResult blockHitResult) {
         final DyeColor color = SimItemService.getDyeColor(itemStack);
 
         if (color != null) {
@@ -54,11 +57,11 @@ public class EnvelopeEncasedShaftBlock extends EncasedShaftBlock implements Enve
                 level.playSound(null, blockPos, SoundEvents.DYE_USE, SoundSource.BLOCKS, 1.0f, 1.1f - level.random.nextFloat() * .2f);
 
             EnvelopeBlock.applyDye(blockState, level, blockPos, color);
-            return ItemInteractionResult.SUCCESS;
+            return InteractionResult.SUCCESS;
         }
 
 
-        return ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
+        return InteractionResult.TRY_WITH_EMPTY_HAND;
     }
 
     @Override
@@ -68,7 +71,7 @@ public class EnvelopeEncasedShaftBlock extends EncasedShaftBlock implements Enve
         if (world instanceof ServerLevel) {
             final Player player = context.getPlayer();
             if (player != null && !player.hasInfiniteMaterials())
-                player.getInventory().placeItemBackInInventory(AeroBlocks.WHITE_ENVELOPE_BLOCK.asStack());
+                player.getInventory().placeItemBackInInventory(new ItemStack(AeroBlocks.WHITE_ENVELOPE_BLOCK));
         }
         return InteractionResult.SUCCESS;
     }
@@ -80,7 +83,7 @@ public class EnvelopeEncasedShaftBlock extends EncasedShaftBlock implements Enve
 
     @Override
     public BlockEntityType<? extends KineticBlockEntity> getBlockEntityType() {
-        return AeroBlockEntityTypes.ENVELOPE_ENCASED_SHAFT.get();
+        return AeroBlockEntityTypes.ENVELOPE_ENCASED_SHAFT;
     }
 
     @Override
@@ -89,7 +92,7 @@ public class EnvelopeEncasedShaftBlock extends EncasedShaftBlock implements Enve
     }
 
     @Override
-    public void fallOn(final Level pLevel, final BlockState pState, final BlockPos pPos, final Entity pEntity, final float pFallDistance) {
+    public void fallOn(final Level pLevel, final BlockState pState, final BlockPos pPos, final Entity pEntity, final double pFallDistance) {
         if (pEntity.isSuppressingBounce()) {
             super.fallOn(pLevel, pState, pPos, pEntity, pFallDistance);
         } else {
@@ -98,16 +101,16 @@ public class EnvelopeEncasedShaftBlock extends EncasedShaftBlock implements Enve
     }
 
     @Override
-    public void updateEntityAfterFallOn(final BlockGetter pLevel, final Entity pEntity) {
+    public void updateEntityMovementAfterFallOn(final BlockGetter pLevel, final Entity pEntity) {
         if (pEntity.isSuppressingBounce()) {
-            super.updateEntityAfterFallOn(pLevel, pEntity);
+            super.updateEntityMovementAfterFallOn(pLevel, pEntity);
         } else {
             this.bounceUp(pEntity);
         }
     }
 
     @Override
-    public ItemStack getCloneItemStack(final BlockState state, final HitResult target, final LevelReader level, final BlockPos pos, final Player player) {
+    public ItemStack getCloneItemStack(final LevelReader level, final BlockPos pos, final BlockState state, final boolean includeData) {
         return this.getCasing().asItem().getDefaultInstance();
     }
 
@@ -121,7 +124,7 @@ public class EnvelopeEncasedShaftBlock extends EncasedShaftBlock implements Enve
 
     @Override
     public Block getCasing() {
-        return AeroBlocks.DYED_ENVELOPE_BLOCKS.get(this.color).get();
+        return AeroBlocks.DYED_ENVELOPE_BLOCKS.get(this.color);
     }
 
     @Override
@@ -134,7 +137,7 @@ public class EnvelopeEncasedShaftBlock extends EncasedShaftBlock implements Enve
 
     @Override
     public ItemRequirement getRequiredItems(BlockState state, BlockEntity be) {
-        ItemStack stack = AeroBlocks.WHITE_ENVELOPE_BLOCK.asStack();
+        ItemStack stack = new ItemStack(AeroBlocks.WHITE_ENVELOPE_BLOCK);
         return super.getRequiredItems(state, be).union(new ItemRequirement(ItemRequirement.ItemUseType.CONSUME, stack));
     }
 }

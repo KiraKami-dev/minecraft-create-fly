@@ -1,61 +1,44 @@
 package dev.simulated_team.simulated.index;
 
-
-import com.zurrtum.create.foundation.particle.ICustomParticleData;
+import com.mojang.serialization.MapCodec;
+import dev.simulated_team.simulated.Simulated;
 import dev.simulated_team.simulated.content.particle.AugerIndicatorParticleData;
 import dev.simulated_team.simulated.content.particle.MagnetFieldParticleData;
 import dev.simulated_team.simulated.content.particle.MagnetFieldParticleData2;
+import net.fabricmc.fabric.api.particle.v1.FabricParticleTypes;
+import net.minecraft.core.Registry;
 import net.minecraft.core.particles.ParticleOptions;
 import net.minecraft.core.particles.ParticleType;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.network.codec.StreamCodec;
 
-import java.util.function.Consumer;
-import java.util.function.Supplier;
+/**
+ * Particle types. Client providers are registered in {@code content.particle.SimParticleProviders}.
+ */
+public class SimParticleTypes {
 
-public enum SimParticleTypes {
+    public static final ParticleType<MagnetFieldParticleData> MAGNET_FIELD = register(
+            "magnet_field",
+            MagnetFieldParticleData.CODEC,
+            MagnetFieldParticleData.STREAM_CODEC
+    );
+    public static final ParticleType<MagnetFieldParticleData2> MAGNET_FIELD2 = register(
+            "magnet_field2",
+            MagnetFieldParticleData2.CODEC,
+            MagnetFieldParticleData2.STREAM_CODEC
+    );
+    public static final ParticleType<AugerIndicatorParticleData> AUGER_INDICATOR = register(
+            "auger_indicator",
+            AugerIndicatorParticleData.CODEC,
+            AugerIndicatorParticleData.STREAM_CODEC
+    );
 
-    MAGNET_FIELD(MagnetFieldParticleData::new),
-    MAGNET_FIELD2(MagnetFieldParticleData2::new),
-    AUGER_INDICATOR(AugerIndicatorParticleData::new)
-    ;
-
-
-    public final ParticleEntry<?> entry;
-
-    <D extends ParticleOptions> SimParticleTypes(final Supplier<? extends ICustomParticleData<D>> typeFactory) {
-        this.entry = new ParticleEntry<>(typeFactory);
+    private static <T extends ParticleOptions> ParticleType<T> register(final String name, final MapCodec<T> codec,
+                                                                        final StreamCodec<? super RegistryFriendlyByteBuf, T> streamCodec) {
+        return Registry.register(BuiltInRegistries.PARTICLE_TYPE, Simulated.path(name), FabricParticleTypes.complex(codec, streamCodec));
     }
 
     public static void register() {
-
-    }
-
-    public static void registerClientParticles(final Consumer<ParticleEntry<?>> consume) {
-        for (final SimParticleTypes value : values()) {
-            consume.accept(value.entry);
-        }
-    }
-
-    public ParticleType<?> get() {
-        return this.entry.object;
-    }
-
-    public static class ParticleEntry<D extends ParticleOptions> {
-        private final Supplier<? extends ICustomParticleData<D>> typeFactory;
-        private final ParticleType<D> object;
-
-        public ParticleEntry(final Supplier<? extends ICustomParticleData<D>> typeFactory) {
-            this.typeFactory = typeFactory;
-
-            this.object = this.typeFactory.get().createType();
-        }
-
-        public Supplier<? extends ICustomParticleData<D>> getTypeFactory() {
-            return this.typeFactory;
-        }
-
-        public ParticleType<D> getObject() {
-            return this.object;
-        }
-
     }
 }
