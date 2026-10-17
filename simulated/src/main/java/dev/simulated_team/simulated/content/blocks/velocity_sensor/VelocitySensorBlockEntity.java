@@ -1,32 +1,22 @@
 package dev.simulated_team.simulated.content.blocks.velocity_sensor;
 
-import com.google.common.collect.ImmutableList;
-import com.zurrtum.create.client.api.goggles.IHaveGoggleInformation;
-import com.zurrtum.create.foundation.blockEntity.SmartBlockEntity;
 import com.zurrtum.create.api.behaviour.BlockEntityBehaviour;
-import com.zurrtum.create.client.foundation.blockEntity.behaviour.ValueBoxTransform;
-import com.zurrtum.create.client.foundation.blockEntity.ValueSettingsBoard;
-import com.zurrtum.create.client.foundation.blockEntity.ValueSettingsFormatter;
-import com.zurrtum.create.client.foundation.blockEntity.behaviour.scrollValue.ScrollValueBehaviour;
+import com.zurrtum.create.catnip.animation.LerpedFloat;
+import com.zurrtum.create.foundation.blockEntity.SmartBlockEntity;
+import com.zurrtum.create.foundation.blockEntity.behaviour.ValueSettings;
+import com.zurrtum.create.foundation.blockEntity.behaviour.scrollValue.ServerScrollValueBehaviour;
 import dev.ryanhcode.sable.Sable;
-import dev.ryanhcode.sable.api.SubLevelHelper;
-import dev.ryanhcode.sable.sublevel.SubLevel;
 import dev.ryanhcode.sable.companion.math.JOMLConversion;
+import dev.ryanhcode.sable.sublevel.SubLevel;
 import dev.simulated_team.simulated.content.blocks.util.AbstractDirectionalAxisBlock;
-import dev.simulated_team.simulated.data.SimLang;
-import net.createmod.catnip.animation.LerpedFloat;
-import net.createmod.catnip.math.VecHelper;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.core.HolderLookup;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
 import net.minecraft.world.phys.Vec3;
 import org.joml.Vector3d;
 import org.joml.Vector3dc;
@@ -34,7 +24,7 @@ import org.joml.Vector3dc;
 import java.lang.ref.WeakReference;
 import java.util.List;
 
-public class VelocitySensorBlockEntity extends SmartBlockEntity implements IHaveGoggleInformation {
+public class VelocitySensorBlockEntity extends SmartBlockEntity {
 
     private float adjustedVelocity;
 
@@ -44,6 +34,9 @@ public class VelocitySensorBlockEntity extends SmartBlockEntity implements IHave
 
     private WeakReference<SubLevel> subLevelReference;
 
+    /**
+     * Server half of the max speed setting, the value box is {@link VelocitySensorValueBehaviour} on the client
+     */
     private VelocitySensorScrollValueBehaviour maxSpeed;
 
     // fan rendering, clientside
@@ -62,11 +55,10 @@ public class VelocitySensorBlockEntity extends SmartBlockEntity implements IHave
     }
 
     @Override
-    public void addBehaviours(final List<BlockEntityBehaviour> list) {
-        this.maxSpeed = new VelocitySensorScrollValueBehaviour(SimLang.translate("velocity_sensor.description").component(), this, new VelocitySensorValueBoxTransform());
+    public void addBehaviours(final List<BlockEntityBehaviour<?>> list) {
+        this.maxSpeed = new VelocitySensorScrollValueBehaviour(this);
         this.maxSpeed.between(1, 50);
-        this.maxSpeed.value = 10;
-        this.maxSpeed.withFormatter((value) -> value + " m/s");
+        this.maxSpeed.setValue(10);
         list.add(this.maxSpeed);
     }
 
@@ -79,12 +71,12 @@ public class VelocitySensorBlockEntity extends SmartBlockEntity implements IHave
 
     @Override
     public void tick() {
-        this.currentNormal = JOMLConversion.toJOML(Vec3.atLowerCornerOf(AbstractDirectionalAxisBlock.getDirectionOfAxis(this.getBlockState()).getNormal()));
+        this.currentNormal = JOMLConversion.toJOML(Vec3.atLowerCornerOf(AbstractDirectionalAxisBlock.getDirectionOfAxis(this.getBlockState()).getUnitVec3i()));
         super.tick();
 
         final SubLevel subLevel = this.subLevelReference.get();
         final int redstoneStrengthBefore = this.signedRedstoneStrength;
-        if (!this.level.isClientSide) {
+        if (!this.level.isClientSide()) {
             if (subLevel != null) {
                 final float dot = (float) this.getGlobalVelocity().dot(subLevel.logicalPose().transformNormal(this.currentNormal, new Vector3d()));
                 if (Math.abs(dot) > 0.05) {
@@ -128,12 +120,19 @@ public class VelocitySensorBlockEntity extends SmartBlockEntity implements IHave
         }
     }
 
-    public ScrollValueBehaviour getMaxSpeed() {
+    public ServerScrollValueBehaviour getMaxSpeed() {
         return this.maxSpeed;
     }
 
     public float getFanAngle(final float pt) {
         return Mth.lerp(pt, this.oldFanAngle, this.fanAngle);
+    }
+
+    /**
+     * @return Whether the sensor is on a sub-level (it only measures velocity on sub-levels)
+     */
+    public boolean isOnSubLevel() {
+        return this.subLevelReference.get() != null;
     }
 
     private Vector3d getGlobalVelocity() {
@@ -147,19 +146,19 @@ public class VelocitySensorBlockEntity extends SmartBlockEntity implements IHave
     }
 
     @Override
-    protected void write(final CompoundTag tag, final HolderLookup.Provider registries, final boolean clientPacket) {
-        super.write(tag, registries, clientPacket);
+    protected void write(final ValueOutput view, final boolean clientPacket) {
+        super.write(view, clientPacket);
 
-        tag.putFloat("AdjustedVelocity", this.getAdjustedVelocity());
-        tag.putInt("SignedRedstoneStrength", this.signedRedstoneStrength);
+        view.putFloat("AdjustedVelocity", this.getAdjustedVelocity());
+        view.putInt("SignedRedstoneStrength", this.signedRedstoneStrength);
     }
 
     @Override
-    protected void read(final CompoundTag tag, final HolderLookup.Provider registries, final boolean clientPacket) {
-        super.read(tag, registries, clientPacket);
+    protected void read(final ValueInput view, final boolean clientPacket) {
+        super.read(view, clientPacket);
 
-        this.adjustedVelocity = tag.getFloat("AdjustedVelocity");
-        this.signedRedstoneStrength = Mth.clamp(-15, 15, tag.getInt("SignedRedstoneStrength"));
+        this.adjustedVelocity = view.getFloatOr("AdjustedVelocity", 0);
+        this.signedRedstoneStrength = Mth.clamp(-15, 15, view.getIntOr("SignedRedstoneStrength", 0));
     }
 
     public Vector3dc getCurrentNormal() {
@@ -170,16 +169,6 @@ public class VelocitySensorBlockEntity extends SmartBlockEntity implements IHave
         return Mth.abs(this.signedRedstoneStrength);
     }
 
-    @Override
-    public boolean addToGoggleTooltip(final List<Component> tooltip, final boolean isPlayerSneaking) {
-        if (this.subLevelReference.get() != null) {
-            SimLang.number(Math.abs(this.getAdjustedVelocity()))
-                    .text(" m/s").forGoggles(tooltip);
-        }
-
-        return IHaveGoggleInformation.super.addToGoggleTooltip(tooltip, isPlayerSneaking);
-    }
-
     /**
      * Positive is towards axis normal, negative is away
      */
@@ -187,42 +176,14 @@ public class VelocitySensorBlockEntity extends SmartBlockEntity implements IHave
         return this.adjustedVelocity;
     }
 
-    private static class VelocitySensorValueBoxTransform extends ValueBoxTransform.Sided {
-
-        @Override
-        protected Vec3 getSouthLocation() {
-            return VecHelper.voxelSpace(8, 8, 12.8);
-        }
-
-        @Override
-        public float getScale() {
-            return 0.35f;
-        }
-
-        @Override
-        protected boolean isSideActive(final BlockState state, final Direction direction) {
-            return AbstractDirectionalAxisBlock.getAxis(state) == direction.getAxis();
-        }
-    }
-
-    public static class VelocitySensorScrollValueBehaviour extends ScrollValueBehaviour {
+    /**
+     * Max speed setting, the row picks the direction (away / towards the axis normal)
+     */
+    public static class VelocitySensorScrollValueBehaviour extends ServerScrollValueBehaviour {
         private boolean towards;
-        public VelocitySensorScrollValueBehaviour(final Component label, final SmartBlockEntity be, final ValueBoxTransform slot) {
-            super(label, be, slot);
-        }
 
-        @Override
-        public ValueSettingsBoard createBoard(final Player player, final BlockHitResult hitResult) {
-            final ImmutableList<Component> rows = ImmutableList.of(
-                    SimLang.translate("velocity_sensor.selection.away").component(),
-                    SimLang.translate("velocity_sensor.selection.towards").component()
-            );
-            return new ValueSettingsBoard(this.label, this.max, 10, rows,
-                    new ValueSettingsFormatter(this::formatValue));
-        }
-
-        public MutableComponent formatValue(final ValueSettings settings) {
-            return SimLang.number(settings.value()).component().append(" m/s");
+        public VelocitySensorScrollValueBehaviour(final SmartBlockEntity be) {
+            super(be);
         }
 
         @Override
@@ -246,15 +207,15 @@ public class VelocitySensorBlockEntity extends SmartBlockEntity implements IHave
         }
 
         @Override
-        public void read(final CompoundTag nbt, final HolderLookup.Provider registries, final boolean clientPacket) {
-            this.towards = nbt.getBoolean("ScrollValueTowards");
-            super.read(nbt, registries, clientPacket);
+        public void read(final ValueInput view, final boolean clientPacket) {
+            this.towards = view.getBooleanOr("ScrollValueTowards", false);
+            super.read(view, clientPacket);
         }
 
         @Override
-        public void write(final CompoundTag nbt, final HolderLookup.Provider registries, final boolean clientPacket) {
-            nbt.putBoolean("ScrollValueTowards", this.towards);
-            super.write(nbt, registries, clientPacket);
+        public void write(final ValueOutput view, final boolean clientPacket) {
+            view.putBoolean("ScrollValueTowards", this.towards);
+            super.write(view, clientPacket);
         }
     }
 }

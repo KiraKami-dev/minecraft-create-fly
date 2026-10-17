@@ -1,7 +1,7 @@
 package dev.simulated_team.simulated.content.entities.diagram.screen;
 
-import com.mojang.blaze3d.vertex.PoseStack;
-import dev.engine_room.flywheel.lib.transform.TransformStack;
+import com.mojang.blaze3d.pipeline.RenderTarget;
+import com.mojang.blaze3d.pipeline.TextureTarget;
 import dev.ryanhcode.sable.companion.math.BoundingBox3i;
 import dev.ryanhcode.sable.companion.math.BoundingBox3ic;
 import dev.ryanhcode.sable.companion.math.Pose3dc;
@@ -9,14 +9,11 @@ import dev.ryanhcode.sable.sublevel.plot.LevelPlot;
 import dev.simulated_team.simulated.content.entities.diagram.DiagramConfig;
 import dev.simulated_team.simulated.index.SimGUITextures;
 import dev.simulated_team.simulated.index.SimSoundEvents;
-import dev.ryanhcode.sable.veillite.api.client.render.VeilLevelPerspectiveRenderer;
-import dev.ryanhcode.sable.veillite.api.client.render.framebuffer.AdvancedFbo;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.renderer.MultiBufferSource;
+import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.client.sounds.SoundManager;
-import net.minecraft.core.Direction;
 import net.minecraft.network.chat.Component;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.util.Mth;
@@ -47,9 +44,8 @@ public class DiagramStickyNote extends DiagramButton {
     private float lastOffset = MIN_OFFSET;
     private float currentOffset = MIN_OFFSET;
 
-    private AdvancedFbo fbo;
-    private AdvancedFbo outlineFbo;
-    private AdvancedFbo finalFbo;
+    private RenderTarget fbo;
+    private RenderTarget finalFbo;
 
     private float renderTime = 0;
     private final int renderXStart;
@@ -92,9 +88,9 @@ public class DiagramStickyNote extends DiagramButton {
     }
 
     public void create(final DiagramConfig.NoteConfigs noteConfigs) {
-        this.fbo = AdvancedFbo.withSize(SUBLEVEL_RENDER_WIDTH_PIXELS, SUBLEVEL_RENDER_HEIGHT_PIXELS).addColorTextureBuffer().setDepthTextureBuffer().build(true);
-        this.outlineFbo = AdvancedFbo.withSize(SUBLEVEL_RENDER_WIDTH_PIXELS, SUBLEVEL_RENDER_HEIGHT_PIXELS).addColorTextureBuffer().build(true);
-        this.finalFbo = AdvancedFbo.withSize(SUBLEVEL_RENDER_WIDTH_PIXELS, SUBLEVEL_RENDER_HEIGHT_PIXELS).addColorTextureBuffer().build(true);
+        // (upstream also allocated an unused "outlined" framebuffer)
+        this.fbo = new TextureTarget("Simulated diagram sticky note", SUBLEVEL_RENDER_WIDTH_PIXELS, SUBLEVEL_RENDER_HEIGHT_PIXELS, true);
+        this.finalFbo = new TextureTarget("Simulated diagram sticky note (final)", SUBLEVEL_RENDER_WIDTH_PIXELS, SUBLEVEL_RENDER_HEIGHT_PIXELS, false);
 
         this.active = noteConfigs.isActive();
         this.updateOrientation();
@@ -112,13 +108,10 @@ public class DiagramStickyNote extends DiagramButton {
 
         NOTE_ORIENTATION.set(0, 0, 0, 0);
         if (this.fbo != null) {
-            this.fbo.free();
+            this.fbo.destroyBuffers();
             this.fbo = null;
 
-            this.outlineFbo.free();
-            this.outlineFbo = null;
-
-            this.finalFbo.free();
+            this.finalFbo.destroyBuffers();
             this.finalFbo = null;
         }
 
@@ -181,18 +174,18 @@ public class DiagramStickyNote extends DiagramButton {
 
     @Override
     protected void renderWidget(final GuiGraphics guiGraphics, final int mouseX, final int mouseY, final float partialTicks) {
-        final PoseStack ps = guiGraphics.pose();
-        ps.pushPose();
+        final Matrix3x2fStack ps = guiGraphics.pose();
+        ps.pushMatrix();
 
         final float currentX = this.renderXStart + this.lerpedOffset(partialTicks);
         final int currentY = this.getY();
-        ps.translate(currentX, currentY, 0);
+        ps.translate(currentX, currentY);
         SimGUITextures.DIAGRAM_STICKY_NOTE.render(guiGraphics, 0, 0);
 
         if (this.active) {
-            ps.pushPose();
-            ps.translate(SUBLEVEL_RENDER_X_OFFSET, SUBLEVEL_RENDER_Y_OFFSET, 0);
-            if (!VeilLevelPerspectiveRenderer.isRenderingPerspective() && this.fbo != null) {
+            ps.pushMatrix();
+            ps.translate(SUBLEVEL_RENDER_X_OFFSET, SUBLEVEL_RENDER_Y_OFFSET);
+            if (this.fbo != null) {
                 this.populateFBO(partialTicks);
                 DiagramScreen.renderFBO(guiGraphics, this.finalFbo, SUBLEVEL_RENDER_WIDTH_PIXELS, SUBLEVEL_RENDER_HEIGHT_PIXELS);
             }
@@ -208,15 +201,12 @@ public class DiagramStickyNote extends DiagramButton {
                     SUBLEVEL_RENDER_WIDTH_PIXELS,
                     SUBLEVEL_RENDER_HEIGHT_PIXELS);
 
-            final MultiBufferSource.BufferSource bufferSource = guiGraphics.bufferSource();
-            bufferSource.endBatch();
-
             this.renderCustomCOM(guiGraphics, ps);
-            ps.popPose();
+            ps.popMatrix();
 
         }
 
-        ps.popPose();
+        ps.popMatrix();
 
     }
 
@@ -224,7 +214,7 @@ public class DiagramStickyNote extends DiagramButton {
         if (this.renderTime >= 20.0f / DiagramScreen.FPS) {
             this.renderTime = 0.0f;
         } else {
-            this.renderTime += Minecraft.getInstance().getTimer().getRealtimeDeltaTicks();
+            this.renderTime += Minecraft.getInstance().getDeltaTracker().getRealtimeDeltaTicks();
             return;
         }
 
@@ -249,7 +239,7 @@ public class DiagramStickyNote extends DiagramButton {
         final Pose3dc renderPose = this.parent.subLevel.renderPose(partialTicks);
         renderPose.transformPosition(NOTE_CAMERA_POS.set(NOTE_LOCAL_CAM_POS));
 
-        DiagramScreen.draw(this.parent.subLevel, partialTicks, NOTE_ORIENTATION, NOTE_PROJ_MAT, NOTE_CAMERA_POS, SUBLEVEL_RENDER_WIDTH_PIXELS, SUBLEVEL_RENDER_HEIGHT_PIXELS, this.fbo, this.outlineFbo, this.finalFbo, 0.75f, 1.15f, 0x6e684d, 0x59543e);
+        DiagramScreen.draw(this.parent.subLevel, partialTicks, NOTE_ORIENTATION, NOTE_PROJ_MAT, NOTE_CAMERA_POS, SUBLEVEL_RENDER_WIDTH_PIXELS, SUBLEVEL_RENDER_HEIGHT_PIXELS, this.fbo, this.finalFbo, 0.75f, 1.15f, 0x6e684d, 0x59543e);
     }
 
     @Override
@@ -257,9 +247,9 @@ public class DiagramStickyNote extends DiagramButton {
 
     }
 
-    private void renderCustomCOM(final GuiGraphics guiGraphics, final PoseStack stack) {
+    private void renderCustomCOM(final GuiGraphics guiGraphics, final Matrix3x2fStack stack) {
         if (this.parent.config.displayCenterOfMass()) {
-            stack.pushPose();
+            stack.pushMatrix();
             final Vector3d centerOfMass = new Vector3d(this.parent.subLevel.logicalPose().rotationPoint());
             final Vector2d screenCoords = DiagramScreen.getScreenCoords(centerOfMass, NOTE_ORIENTATION, NOTE_LOCAL_CAM_POS, NOTE_PROJ_MAT, SUBLEVEL_RENDER_WIDTH_PIXELS, SUBLEVEL_RENDER_HEIGHT_PIXELS);
 
@@ -268,23 +258,22 @@ public class DiagramStickyNote extends DiagramButton {
             final double comOffsetY = (screenCoords.y) - 8;
 
             if (comOffsetY > 0 && comOffsetX > 0 && comOffsetY < SUBLEVEL_RENDER_HEIGHT_PIXELS && comOffsetX < SUBLEVEL_RENDER_WIDTH_PIXELS) {
-                stack.translate(comOffsetX, comOffsetY, 0);
-                guiGraphics.blit(tex.location, 0, 0, 5, tex.startX, tex.startY, tex.width, tex.height, tex.texWidth, tex.texHeight);
+                stack.translate((float) comOffsetX, (float) comOffsetY);
+                guiGraphics.blit(RenderPipelines.GUI_TEXTURED, tex.location, 0, 0, tex.startX, tex.startY, tex.width, tex.height, tex.texWidth, tex.texHeight);
             } else {
                 final float centerX = SUBLEVEL_RENDER_WIDTH_PIXELS / 2f;
                 final float centerY = SUBLEVEL_RENDER_HEIGHT_PIXELS / 2f;
 
                 final Vector2d target = new Vector2d(screenCoords.x() - centerX, screenCoords.y - centerY).normalize();
-                TransformStack.of(stack)
-                        .translate(centerX, centerY, 0)
-                        .rotate((float) Math.atan2(target.x, -target.y), Direction.Axis.Z)
-                        .translate(-8, -8, 0)
-                        .translate(0, -40, 0);
+                stack.translate(centerX, centerY)
+                        .rotate((float) Math.atan2(target.x, -target.y))
+                        .translate(-8, -8)
+                        .translate(0, -40);
 
                 tex = SimGUITextures.DIAGRAM_ICON_COM_ARROW;
-                guiGraphics.blit(tex.location, 0, 0, 5, tex.startX, tex.startY, tex.width, tex.height, tex.texWidth, tex.texHeight);
+                guiGraphics.blit(RenderPipelines.GUI_TEXTURED, tex.location, 0, 0, tex.startX, tex.startY, tex.width, tex.height, tex.texWidth, tex.texHeight);
             }
-            stack.popPose();
+            stack.popMatrix();
         }
     }
 }

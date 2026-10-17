@@ -18,7 +18,6 @@ import dev.ryanhcode.sable.sublevel.system.SubLevelPhysicsSystem;
 import dev.ryanhcode.sable.sublevel.system.ticket.PhysicsChunkTicketManager;
 import dev.ryanhcode.sable.companion.math.JOMLConversion;
 import dev.simulated_team.simulated.content.blocks.rope.RopeStrandHolderBehavior;
-import dev.ryanhcode.sable.veillite.api.util.CodecUtil;
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
@@ -28,6 +27,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.Mth;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Quaterniond;
 import org.joml.Vector3d;
@@ -40,9 +40,14 @@ import java.util.*;
  */
 public class ServerRopeStrand extends RopePhysicsObject {
 
+    /**
+     * Same encoding as Veil's {@code CodecUtil.VECTOR3D_CODEC} (a list of three doubles)
+     */
+    private static final Codec<Vector3d> VECTOR3D_CODEC = Vec3.CODEC.xmap(JOMLConversion::toJOML, JOMLConversion::toMojang);
+
     public static final Codec<ServerRopeStrand> CODEC = RecordCodecBuilder.create(instance -> instance.group(
             Codec.STRING.xmap(UUID::fromString, UUID::toString).fieldOf("uuid").forGetter(ServerRopeStrand::getUUID),
-            CodecUtil.VECTOR3D_CODEC.listOf().fieldOf("points").forGetter(strand -> List.copyOf(strand.getPoints())),
+            VECTOR3D_CODEC.listOf().fieldOf("points").forGetter(strand -> List.copyOf(strand.getPoints())),
             RopeAttachment.CODEC.listOf().fieldOf("attachments").forGetter(strand -> List.copyOf(strand.attachments.values())),
             Codec.DOUBLE.fieldOf("extension_goal").forGetter(strand -> strand.extensionGoal)
     ).apply(instance, (uuid, points, attachments, extensionGoal) -> {

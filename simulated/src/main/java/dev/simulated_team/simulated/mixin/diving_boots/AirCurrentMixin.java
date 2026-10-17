@@ -13,10 +13,10 @@ import org.spongepowered.asm.mixin.Shadow;
 public class AirCurrentMixin {
 
 
-	@Shadow
+	@Shadow(remap = false)
 	public Direction direction;
 
-	@WrapMethod(method = "isPlayerCreativeFlying")
+	@WrapMethod(method = "isPlayerCreativeFlying", remap = false)
 	private static boolean simulated$testDivingBoots(final Entity entity, final Operation<Boolean> original) {
 		if (DivingBootsItem.isWornBy(entity)) {
 			return true;

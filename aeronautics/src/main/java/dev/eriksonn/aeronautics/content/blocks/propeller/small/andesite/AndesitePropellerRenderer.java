@@ -1,6 +1,6 @@
 package dev.eriksonn.aeronautics.content.blocks.propeller.small.andesite;
 
-import dev.engine_room.flywheel.lib.model.baked.PartialModel;
+import com.zurrtum.create.client.flywheel.lib.model.baked.PartialModel;
 import dev.eriksonn.aeronautics.content.blocks.propeller.small.SimplePropellerRenderer;
 import dev.eriksonn.aeronautics.index.AeroPartialModels;
 import net.minecraft.client.renderer.blockentity.BlockEntityRendererProvider;
@@ -8,7 +8,7 @@ import net.minecraft.core.Direction;
 
 import static dev.eriksonn.aeronautics.content.blocks.propeller.small.BasePropellerBlock.REVERSED;
 
-public class AndesitePropellerRenderer extends SimplePropellerRenderer<AndesitePropellerBlockEntity> {
+public class AndesitePropellerRenderer extends SimplePropellerRenderer<AndesitePropellerBlockEntity, SimplePropellerRenderer.PropellerRenderState> {
 
     public AndesitePropellerRenderer(final BlockEntityRendererProvider.Context context) {
         super(context);

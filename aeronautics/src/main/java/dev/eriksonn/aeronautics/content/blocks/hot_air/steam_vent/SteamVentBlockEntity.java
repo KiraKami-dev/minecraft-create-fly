@@ -1,15 +1,8 @@
 package dev.eriksonn.aeronautics.content.blocks.hot_air.steam_vent;
 
-import com.mojang.blaze3d.vertex.PoseStack;
-import com.zurrtum.create.client.api.goggles.IHaveGoggleInformation;
-import com.zurrtum.create.client.content.contraptions.DirectionalExtenderScrollOptionSlot;
 import com.zurrtum.create.content.fluids.tank.FluidTankBlockEntity;
-import com.zurrtum.create.content.kinetics.base.IRotate;
 import com.zurrtum.create.foundation.blockEntity.SmartBlockEntity;
 import com.zurrtum.create.api.behaviour.BlockEntityBehaviour;
-import com.zurrtum.create.client.foundation.blockEntity.behaviour.ValueBoxTransform;
-import com.zurrtum.create.client.foundation.blockEntity.behaviour.scrollValue.ScrollValueBehaviour;
-import dev.engine_room.flywheel.lib.transform.TransformStack;
 import dev.eriksonn.aeronautics.config.AeroConfig;
 import dev.eriksonn.aeronautics.config.server.AeroBlockConfigs;
 import dev.eriksonn.aeronautics.content.blocks.hot_air.BlockEntityLiftingGasProvider;
@@ -18,30 +11,20 @@ import dev.eriksonn.aeronautics.content.blocks.hot_air.balloon.Balloon;
 import dev.eriksonn.aeronautics.content.blocks.hot_air.balloon.ServerBalloon;
 import dev.eriksonn.aeronautics.content.blocks.hot_air.hot_air_burner.HotAirBurnerValueBehaviour;
 import dev.eriksonn.aeronautics.content.blocks.hot_air.lifting_gas.LiftingGasType;
-import dev.eriksonn.aeronautics.data.AeroLang;
 import dev.eriksonn.aeronautics.index.AeroLiftingGasTypes;
 import dev.eriksonn.aeronautics.index.AeroSoundEvents;
 import dev.eriksonn.aeronautics.util.AeroSoundDistUtil;
-import net.createmod.catnip.animation.LerpedFloat;
-import net.createmod.catnip.data.Iterate;
-import net.createmod.catnip.math.AngleHelper;
-import net.createmod.catnip.math.VecHelper;
-import net.minecraft.client.Minecraft;
+import com.zurrtum.create.catnip.animation.LerpedFloat;
+import com.zurrtum.create.catnip.data.Iterate;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.core.HolderLookup;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.Mth;
-import net.minecraft.world.level.Level;
-import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.phys.BlockHitResult;
-import net.minecraft.world.phys.HitResult;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
 import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.Nullable;
 
@@ -51,14 +34,16 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-public class SteamVentBlockEntity extends SmartBlockEntity implements BlockEntityLiftingGasProvider, IHaveGoggleInformation {
+/**
+ * Client-only parts (hot air amount value box on {@link SteamVentValueBoxTransform}, goggle tooltip) are attached by
+ * {@code HotAirClient}.
+ */
+public class SteamVentBlockEntity extends SmartBlockEntity implements BlockEntityLiftingGasProvider {
     // Steam vents can only be placed on top of fluid tanks, so this is valid
     public static final Direction CHECKING_DIR = Direction.DOWN;
-    private static final MutableComponent SCROLL_OPTION_TITLE = AeroLang.translate("scroll_option.hot_air_amount").component();
-    private static final String VALUE_FORMAT = "%s m³";
     public int signalStrength = 0;
     public int rawSignalStrength = 0;
-    protected ScrollValueBehaviour steamAmountBehaviour;
+    protected HotAirBurnerValueBehaviour steamAmountBehaviour;
     private GasEmitterRenderHandler renderHandler;
     private Balloon currentBalloon;
     private ClientBalloonInfo clientBalloonInfo;
@@ -77,14 +62,12 @@ public class SteamVentBlockEntity extends SmartBlockEntity implements BlockEntit
     }
 
     @Override
-    public void addBehaviours(final List<BlockEntityBehaviour> behaviours) {
+    public void addBehaviours(final List<BlockEntityBehaviour<?>> behaviours) {
         final AeroBlockConfigs config = AeroConfig.server().blocks;
         this.setMaxCapacity(config.steamVentMaxHotAir.get());
-        this.steamAmountBehaviour = new SteamVentValueBehaviour(SCROLL_OPTION_TITLE, this,
-                new SteamVentValueBoxTransform())
-                .between(() -> 50, config.steamVentMaxHotAir::get)
-                .withFormatter(VALUE_FORMAT::formatted);
-        this.steamAmountBehaviour.value = this.maxCapacity;
+        this.steamAmountBehaviour = new SteamVentValueBehaviour(this)
+                .between(() -> 50, config.steamVentMaxHotAir::get);
+        this.steamAmountBehaviour.initValue(this.maxCapacity);
 
         behaviours.add(this.steamAmountBehaviour);
     }
@@ -124,7 +107,7 @@ public class SteamVentBlockEntity extends SmartBlockEntity implements BlockEntit
         this.intensity.chase(intensityGoal, 0.1, LerpedFloat.Chaser.EXP);
         this.intensity.tickChaser();
 
-        if (this.level.isClientSide) {
+        if (this.level.isClientSide()) {
             final GasEmitterRenderHandler renderHandler = this.getRenderHandler();
 
             if (this.isVirtual()) {
@@ -156,7 +139,7 @@ public class SteamVentBlockEntity extends SmartBlockEntity implements BlockEntit
     public void invalidate() {
         super.invalidate();
 
-        if (this.level.isClientSide) {
+        if (this.level.isClientSide()) {
             AeroSoundDistUtil.removePosSteamVentSound(this.getBlockPos());
         } else {
             this.removeFromBalloon();
@@ -184,7 +167,7 @@ public class SteamVentBlockEntity extends SmartBlockEntity implements BlockEntit
         final int newStrength = this.level.getBestNeighborSignal(this.getBlockPos());
 
         if (newStrength != this.rawSignalStrength) {
-            if (!this.level.isClientSide) {
+            if (!this.level.isClientSide()) {
                 final BlockState existentState = this.level.getBlockState(this.getBlockPos()); // this.getBlockState() might not be up to date with the variant yet
                 if (newStrength > 0 && this.rawSignalStrength == 0) { //if new signal is not 0, and current signal is 0 power
                     this.level.setBlockAndUpdate(this.worldPosition, existentState.setValue(SteamVentBlock.POWERED, true));
@@ -278,37 +261,36 @@ public class SteamVentBlockEntity extends SmartBlockEntity implements BlockEntit
     }
 
     @Override
-    protected void write(final CompoundTag tag, final HolderLookup.Provider registries, final boolean clientPacket) {
-        super.write(tag, registries, clientPacket);
+    protected void write(final ValueOutput view, final boolean clientPacket) {
+        super.write(view, clientPacket);
 
-        tag.putInt("SignalStrength", this.signalStrength);
-        tag.putInt("RawSignalStrength", this.rawSignalStrength);
+        view.putInt("SignalStrength", this.signalStrength);
+        view.putInt("RawSignalStrength", this.rawSignalStrength);
         if (clientPacket) {
-            ClientBalloonInfo.writeToNBT(tag, (ServerBalloon) this.currentBalloon);
+            ClientBalloonInfo.writeToNBT(view, (ServerBalloon) this.currentBalloon);
         }
     }
 
     @Override
-    protected void read(final CompoundTag tag, final HolderLookup.Provider registries, final boolean clientPacket) {
-        super.read(tag, registries, clientPacket);
+    protected void read(final ValueInput view, final boolean clientPacket) {
+        super.read(view, clientPacket);
 
-        this.signalStrength = tag.getInt("SignalStrength");
-        this.rawSignalStrength = tag.getInt("RawSignalStrength");
+        this.signalStrength = view.getIntOr("SignalStrength", 0);
+        this.rawSignalStrength = view.getIntOr("RawSignalStrength", 0);
         if (clientPacket) {
             this.ticksSinceSync = 0;
-            this.clientBalloonInfo = ClientBalloonInfo.readFromNBT(tag);
+            this.clientBalloonInfo = ClientBalloonInfo.readFromNBT(view);
         }
     }
 
     @Override
-    public boolean addToGoggleTooltip(final List<Component> tooltip, final boolean isPlayerSneaking) {
-        if (!this.canOutputGas()) return false;
+    public @Nullable ClientBalloonInfo getClientBalloonInfo() {
+        return this.clientBalloonInfo;
+    }
 
-        AeroLang.blockName(this.getBlockState()).text(":").forGoggles(tooltip, 1);
-        if (this.clientBalloonInfo != null) {
-            this.addBalloonGoggleInformation(tooltip, this.clientBalloonInfo, this.ticksSinceSync, this.getAirPressure(this.clientBalloonInfo, this.level));
-        }
-        return true;
+    @Override
+    public int getTicksSinceSync() {
+        return this.ticksSinceSync;
     }
 
     @Override
@@ -328,7 +310,7 @@ public class SteamVentBlockEntity extends SmartBlockEntity implements BlockEntit
 
     @Override
     public LiftingGasType getLiftingGasType() {
-        return AeroLiftingGasTypes.STEAM.get();
+        return AeroLiftingGasTypes.STEAM;
     }
 
     @Override
@@ -355,93 +337,13 @@ public class SteamVentBlockEntity extends SmartBlockEntity implements BlockEntit
         return this.renderHandler;
     }
 
-    public static class SteamVentValueBoxTransform extends ValueBoxTransform.Sided {
-        BlockEntity be;
-
-        @Override
-        public Sided fromSide(final Direction direction) {
-            this.direction = direction;
-
-            Level level = this.be.getLevel();
-            if (level != null && level.isClientSide && direction == Direction.UP) {
-                final Minecraft mc = Minecraft.getInstance();
-                final HitResult target = mc.hitResult;
-                if (target instanceof BlockHitResult) {
-                    final Vec3 hit = target.getLocation();
-                    final Vec3 localHit = hit.subtract(Vec3.atCenterOf(this.be.getBlockPos()));
-                    if (localHit.y < 0.4) {
-                        this.direction = Direction.getNearest(localHit.x, 0, localHit.z);
-                    }
-                }
-            }
-            return this;
-        }
-
-        @Override
-        protected Vec3 getSouthLocation() {
-            return VecHelper.voxelSpace(8, 8f, 12);
-        }
-
-        @Override
-        public float getScale() {
-            return 0.45f;
-        }
-
-        protected ValueBoxTransform getMovementModeSlot() {
-            return new DirectionalExtenderScrollOptionSlot((state, d) -> {
-                final Direction.Axis axis = d.getAxis();
-
-                final Direction.Axis shaftAxis = ((IRotate) state.getBlock()).getRotationAxis(state);
-
-                return shaftAxis != axis;
-            });
-        }
-
-        @Override
-        public void rotate(final LevelAccessor level, final BlockPos pos, final BlockState state, final PoseStack ms) {
-            final float yRot = AngleHelper.horizontalAngle(this.getSide()) + 180;
-            float xRot = this.getSide() == Direction.UP ? 90 : this.getSide() == Direction.DOWN ? 270 : 0;
-            xRot += 22.5f;
-            TransformStack.of(ms)
-                    .rotateYDegrees(yRot)
-                    .rotateXDegrees(xRot);
-        }
-
-        @Override
-        protected boolean isSideActive(final BlockState state, final Direction direction) {
-            Level level = this.be.getLevel();
-            if (level != null && level.isClientSide && direction == Direction.UP) {
-                final Minecraft mc = Minecraft.getInstance();
-                final HitResult target = mc.hitResult;
-                if (target instanceof BlockHitResult) {
-                    final Vec3 hit = target.getLocation();
-                    final Vec3 localHit = hit.subtract(Vec3.atCenterOf(this.be.getBlockPos()));
-                    return localHit.y < 0.4;
-                }
-            }
-            return true;
-        }
-
-        @Override
-        public Vec3 getLocalOffset(final LevelAccessor level, final BlockPos pos, final BlockState state) {
-            if (this.getSide() == Direction.DOWN) {
-                return VecHelper.voxelSpace(8, 0, 8);
-            }
-
-            Vec3 location = this.getSouthLocation();
-
-            location = location.add(VecHelper.voxelSpace(0, -3, 1.75));
-            location = VecHelper.rotateCentered(location, AngleHelper.horizontalAngle(this.getSide()), Direction.Axis.Y);
-
-            return location;
-        }
-    }
-
+    /**
+     * The steam vent's hot air amount (upstream also carried the label and {@link SteamVentValueBoxTransform}, now client-side)
+     */
     public static class SteamVentValueBehaviour extends HotAirBurnerValueBehaviour {
 
-        public SteamVentValueBehaviour(final Component label, final SmartBlockEntity be, final SteamVentValueBoxTransform slot) {
-            super(label, be, slot);
-            slot.be = be;
+        public SteamVentValueBehaviour(final SmartBlockEntity be) {
+            super(be);
         }
     }
 }

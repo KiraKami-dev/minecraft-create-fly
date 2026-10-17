@@ -18,14 +18,14 @@ import dev.simulated_team.simulated.util.SimAssemblyHelper;
 import dev.simulated_team.simulated.util.SimMathUtils;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.core.HolderLookup;
 import net.minecraft.core.Vec3i;
-import net.minecraft.nbt.CompoundTag;
 import net.minecraft.util.Mth;
 import net.minecraft.world.level.block.Rotation;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Quaterniond;
 import org.joml.Vector3d;
@@ -179,30 +179,28 @@ public class MergingGlueBlockEntity extends SmartBlockEntity implements BlockEnt
     }
 
     @Override
-    public void addBehaviours(final List<BlockEntityBehaviour> behaviours) {
+    public void addBehaviours(final List<BlockEntityBehaviour<?>> behaviours) {
 
     }
 
     @Override
-    protected void write(final CompoundTag tag, final HolderLookup.Provider registries, final boolean clientPacket) {
-        super.write(tag, registries, clientPacket);
+    protected void write(final ValueOutput view, final boolean clientPacket) {
+        super.write(view, clientPacket);
 
-        tag.putBoolean("Controller", this.isController);
+        view.putBoolean("Controller", this.isController);
 
         if (this.partnerPosition != null) {
-            tag.putLong("PartnerPosition", this.partnerPosition.asLong());
+            view.putLong("PartnerPosition", this.partnerPosition.asLong());
         }
     }
 
     @Override
-    protected void read(final CompoundTag tag, final HolderLookup.Provider registries, final boolean clientPacket) {
-        super.read(tag, registries, clientPacket);
+    protected void read(final ValueInput view, final boolean clientPacket) {
+        super.read(view, clientPacket);
 
-        this.isController = tag.getBoolean("Controller");
+        this.isController = view.getBooleanOr("Controller", false);
 
-        if (tag.contains("PartnerPosition")) {
-            this.partnerPosition = BlockPos.of(tag.getLong("PartnerPosition"));
-        }
+        view.getLong("PartnerPosition").ifPresent(pos -> this.partnerPosition = BlockPos.of(pos));
     }
 
     public void removeConstraint() {
@@ -264,8 +262,8 @@ public class MergingGlueBlockEntity extends SmartBlockEntity implements BlockEnt
             this.endPartnerOrientation.rotateY(turns * ninety);
             this.endRotation = SimAssemblyHelper.rotationFrom90DegRots(-turns);
         } else {
-            final Vec3i normal = direction.getNormal();
-            final Vec3i partnerNormal = partnerDirection.getNormal();
+            final Vec3i normal = direction.getUnitVec3i();
+            final Vec3i partnerNormal = partnerDirection.getUnitVec3i();
 
             double angle = Math.atan2(partnerNormal.getX(), partnerNormal.getZ()) - Math.atan2(normal.getX(), normal.getZ());
             if (direction.getAxis() == partnerDirection.getAxis()) {

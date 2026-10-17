@@ -14,17 +14,17 @@ import dev.simulated_team.simulated.ponder.SmoothMovementUtils;
 import dev.simulated_team.simulated.ponder.instructions.*;
 import dev.simulated_team.simulated.ponder.records.PonderLineRecord;
 import dev.simulated_team.simulated.ponder.records.ScrollingSceneRecord;
-import net.createmod.catnip.data.Iterate;
-import net.createmod.catnip.math.Pointing;
-import net.createmod.ponder.api.PonderPalette;
-import net.createmod.ponder.api.element.ElementLink;
-import net.createmod.ponder.api.element.ParrotElement;
-import net.createmod.ponder.api.element.ParrotPose;
-import net.createmod.ponder.api.element.WorldSectionElement;
-import net.createmod.ponder.api.scene.*;
-import net.createmod.ponder.foundation.element.TextWindowElement;
-import net.createmod.ponder.foundation.instruction.RotateSceneInstruction;
-import net.createmod.ponder.foundation.instruction.TextInstruction;
+import com.zurrtum.create.catnip.data.Iterate;
+import com.zurrtum.create.catnip.math.Pointing;
+import com.zurrtum.create.client.ponder.api.PonderPalette;
+import com.zurrtum.create.client.ponder.api.element.ElementLink;
+import com.zurrtum.create.client.ponder.api.element.ParrotElement;
+import com.zurrtum.create.client.ponder.api.element.ParrotPose;
+import com.zurrtum.create.client.ponder.api.element.WorldSectionElement;
+import com.zurrtum.create.client.ponder.api.scene.*;
+import com.zurrtum.create.client.ponder.foundation.element.TextWindowElement;
+import com.zurrtum.create.client.ponder.foundation.instruction.RotateSceneInstruction;
+import com.zurrtum.create.client.ponder.foundation.instruction.TextInstruction;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.particles.ParticleTypes;
@@ -96,7 +96,7 @@ public class SymmetricSailScenes {
         scene.idle(19);
 
         scene.overlay().showControls(vector.of(9 + offset, 3.5, 4.5), Pointing.UP, 70)
-                .withItem(SimBlocks.WHITE_SYMMETRIC_SAIL.asStack());
+                .withItem(new ItemStack(SimBlocks.WHITE_SYMMETRIC_SAIL));
 
         scene.idle(2);
 
@@ -109,7 +109,7 @@ public class SymmetricSailScenes {
         scene.idle(20);
 
         scene.overlay().showControls(vector.centerOf(5 + offset, 2, 2), Pointing.DOWN, 48)
-                .withItem(AllBlocks.SAIL.asStack());
+                .withItem(new ItemStack(AllBlocks.SAIL));
 
         scene.idle(2);
 
@@ -134,7 +134,7 @@ public class SymmetricSailScenes {
         scene.idle(12);
 
         scene.overlay().showControls(vector.topOf(portableEngine), Pointing.DOWN, 20)
-                .withItem(AllItems.BLAZE_CAKE.asStack());
+                .withItem(new ItemStack(AllItems.BLAZE_CAKE));
         scene.world().modifyBlockEntity(portableEngine, PortableEngineBlockEntity.class, be -> {
             be.openHatchOverride = true;
             be.hatchOpenTime = 1.0f;
@@ -547,7 +547,7 @@ public class SymmetricSailScenes {
     public static void setSymSailKinetics(final CreateSceneBuilder scene, final SceneBuildingUtil util, final float rpm) {
         for (int i = 0; i < 2; i++) {
             scene.world().modifyBlockEntityNBT(util.select().position(93, 2, 3 + (2 * i)), AnalogTransmissionBlockEntity.class, nbt -> {
-                nbt.getCompound("ExtraCogwheel").putFloat("Speed", rpm);
+                nbt.getCompoundOrEmpty("ExtraCogwheel").putFloat("Speed", rpm);
             });
         }
 
@@ -654,7 +654,7 @@ public class SymmetricSailScenes {
                 .withItem(new ItemStack(Items.BLUE_DYE));
         scene.idle(7);
         scene.world().setBlock(util.grid().at(2, 3, 3), SimBlocks.DYED_SYMMETRIC_SAILS.get(DyeColor.BLUE)
-                .getDefaultState()
+                .defaultBlockState()
                 .setValue(SymmetricSailBlock.AXIS, Direction.Axis.X), false);
         scene.idle(10);
         scene.overlay().showText(40)
@@ -668,7 +668,7 @@ public class SymmetricSailScenes {
                 .withItem(new ItemStack(Items.BLUE_DYE));
         scene.idle(7);
         scene.world().replaceBlocks(util.select().fromTo(2, 2, 3, 2, 4, 3), SimBlocks.DYED_SYMMETRIC_SAILS.get(DyeColor.BLUE)
-                .getDefaultState()
+                .defaultBlockState()
                 .setValue(SymmetricSailBlock.AXIS, Direction.Axis.X), false);
 
         scene.idle(20);

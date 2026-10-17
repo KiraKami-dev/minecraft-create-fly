@@ -5,7 +5,7 @@ import com.zurrtum.create.foundation.blockEntity.behaviour.BehaviourType;
 import com.zurrtum.create.api.behaviour.BlockEntityBehaviour;
 import dev.ryanhcode.sable.Sable;
 import dev.simulated_team.simulated.index.SimTags;
-import net.createmod.catnip.data.Couple;
+import com.zurrtum.create.catnip.data.Couple;
 import net.minecraft.world.entity.projectile.ProjectileUtil;
 import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.level.Level;
@@ -16,7 +16,7 @@ import org.jetbrains.annotations.NotNull;
 import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
 
-public class LaserBehaviour extends BlockEntityBehaviour {
+public class LaserBehaviour extends BlockEntityBehaviour<SmartBlockEntity> {
     private static final BehaviourType<LaserBehaviour> TYPE = new BehaviourType<>();
 
     /**
@@ -105,8 +105,8 @@ public class LaserBehaviour extends BlockEntityBehaviour {
                 this.entityHitResult = null;
             }
 
-            if (this.entityHitResult != null && Sable.HELPER.distanceSquaredWithSubLevels(this.getWorld(), positions.getFirst(), this.entityHitResult.getLocation())
-                    < Sable.HELPER.distanceSquaredWithSubLevels(this.getWorld(), positions.getFirst(), this.blockHitResult.getLocation())) {
+            if (this.entityHitResult != null && Sable.HELPER.distanceSquaredWithSubLevels(this.getLevel(), positions.getFirst(), this.entityHitResult.getLocation())
+                    < Sable.HELPER.distanceSquaredWithSubLevels(this.getLevel(), positions.getFirst(), this.blockHitResult.getLocation())) {
                 this.closestHitResult = this.entityHitResult;
             } else {
                 this.closestHitResult = this.blockHitResult;

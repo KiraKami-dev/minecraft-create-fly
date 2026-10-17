@@ -6,8 +6,9 @@ import com.mojang.authlib.GameProfile;
 import dev.simulated_team.simulated.util.hold_interaction.HoldInteractionManager;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.player.AbstractClientPlayer;
-import net.minecraft.client.player.Input;
+import net.minecraft.client.player.ClientInput;
 import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.world.entity.player.Input;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -26,8 +27,15 @@ public abstract class LocalPlayerMixin extends AbstractClientPlayer {
         }
     }
 
-    @WrapOperation(method = "tick", at = @At(value = "FIELD", target = "Lnet/minecraft/client/player/Input;shiftKeyDown:Z"))
-    private boolean simulated$shhhhDontTellTheServer(final Input instance, final Operation<Boolean> original) {
-        return original.call(instance) && HoldInteractionManager.canCrouch();
+    // 1.21.11 sends the shift key to the server as part of ServerboundPlayerInputPacket(input.keyPresses), compared
+    // against lastSentInput every tick (upstream wrapped Input.shiftKeyDown, which only the riding packet read).
+    // Masking every keyPresses read in tick() keeps the packet, its change detection and lastSentInput consistent.
+    @WrapOperation(method = "tick", at = @At(value = "FIELD", target = "Lnet/minecraft/client/player/ClientInput;keyPresses:Lnet/minecraft/world/entity/player/Input;", opcode = 180/* GETFIELD */))
+    private Input simulated$shhhhDontTellTheServer(final ClientInput instance, final Operation<Input> original) {
+        final Input input = original.call(instance);
+        if (input.shift() && !HoldInteractionManager.canCrouch()) {
+            return new Input(input.forward(), input.backward(), input.left(), input.right(), input.jump(), false, input.sprint());
+        }
+        return input;
     }
 }

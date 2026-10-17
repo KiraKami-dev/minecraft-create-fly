@@ -1,8 +1,8 @@
 package dev.eriksonn.aeronautics.content.ponder.instructions;
 
 import dev.eriksonn.aeronautics.content.blocks.propeller.bearing.propeller_bearing.PropellerBearingBlockEntity;
-import net.createmod.ponder.foundation.PonderScene;
-import net.createmod.ponder.foundation.instruction.PonderInstruction;
+import com.zurrtum.create.client.ponder.foundation.PonderScene;
+import com.zurrtum.create.client.ponder.foundation.instruction.PonderInstruction;
 import net.minecraft.core.BlockPos;
 
 public class SetPropellerSailsInstruction extends PonderInstruction {
@@ -21,7 +21,7 @@ public class SetPropellerSailsInstruction extends PonderInstruction {
 
     @Override
     public void tick(PonderScene scene) {
-        if(scene.getWorld().getBlockEntity(pos) instanceof PropellerBearingBlockEntity propeller)
+        if(scene.getLevel().getBlockEntity(pos) instanceof PropellerBearingBlockEntity propeller)
         {
             propeller.totalSailPower = sails;
         }

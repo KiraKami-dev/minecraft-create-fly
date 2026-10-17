@@ -1,11 +1,13 @@
 package dev.simulated_team.simulated.content.blocks.redstone.linked_typewriter.screen.widgets;
 
 import com.mojang.blaze3d.platform.InputConstants;
+import com.zurrtum.create.client.catnip.gui.widget.AbstractSimiWidget;
 import dev.simulated_team.simulated.content.blocks.redstone.linked_typewriter.screen.EntryModifierScreen;
 import dev.simulated_team.simulated.data.SimLang;
-import net.createmod.catnip.gui.widget.AbstractSimiWidget;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.input.KeyEvent;
+import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
 
 public class PromptWidget extends AbstractSimiWidget {
@@ -23,7 +25,7 @@ public class PromptWidget extends AbstractSimiWidget {
         super.doRender(graphics, mouseX, mouseY, partialTicks);
 
         if (this.entryModifierScreen.modifying && this.entryModifierScreen.psuedoEntry != null) {
-            Component displayName = InputConstants.getKey(this.entryModifierScreen.psuedoEntry.glfwKeyCode, -1).getDisplayName();
+            Component displayName = InputConstants.getKey(new KeyEvent(this.entryModifierScreen.psuedoEntry.glfwKeyCode, -1, 0)).getDisplayName();
 
             if (this.bindingActive) {
                 displayName = SimLang.translate("linked_typewriter.bind_screen_prompt").component();
@@ -31,26 +33,28 @@ public class PromptWidget extends AbstractSimiWidget {
                 displayName = SimLang.translate("linked_typewriter.bind_new_key").component();
             }
 
-            graphics.pose().translate(3, 4, 0);
-            graphics.drawString(Minecraft.getInstance().font, displayName, this.getX(), this.getY(), 0xFFFFFF, true);
+            graphics.pose().pushMatrix();
+            graphics.pose().translate(3, 4);
+            graphics.drawString(Minecraft.getInstance().font, displayName, this.getX(), this.getY(), 0xFFFFFFFF, true);
+            graphics.pose().popMatrix();
         }
     }
 
     @Override
-    public void onClick(final double mouseX, final double mouseY) {
-        super.onClick(mouseX, mouseY);
+    public void onClick(final MouseButtonEvent event, final boolean doubleClick) {
+        super.onClick(event, doubleClick);
         this.bindingActive ^= true;
     }
 
     @Override
-    public boolean keyPressed(final int keyCode, final int scanCode, final int modifiers) {
+    public boolean keyPressed(final KeyEvent event) {
         if (this.bindingActive && this.entryModifierScreen.psuedoEntry != null) {
-            this.entryModifierScreen.psuedoEntry.keyCode(keyCode);
+            this.entryModifierScreen.psuedoEntry.keyCode(event.key());
             this.bindingActive = false;
             return true;
         }
 
         this.bindingActive = false;
-        return super.keyPressed(keyCode, scanCode, modifiers);
+        return super.keyPressed(event);
     }
 }

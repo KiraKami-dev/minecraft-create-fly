@@ -2,7 +2,7 @@ package dev.simulated_team.simulated.content.worldgen;
 
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
-import net.minecraft.world.level.GameRules;
+import net.minecraft.world.level.gamerules.GameRules;
 import org.jetbrains.annotations.Nullable;
 
 public class AirshipReadyPreset extends SimulatedWorldPreset {
@@ -12,9 +12,9 @@ public class AirshipReadyPreset extends SimulatedWorldPreset {
 
 	@Override
 	public void modifyGameRules(final GameRules gameRules) {
-		gameRules.getRule(GameRules.RULE_DOMOBSPAWNING).set(false, null);
-		gameRules.getRule(GameRules.RULE_DO_TRADER_SPAWNING).set(false, null);
-		gameRules.getRule(GameRules.RULE_WEATHER_CYCLE).set(false, null);
-		gameRules.getRule(GameRules.RULE_DAYLIGHT).set(false, null);
+		gameRules.set(GameRules.SPAWN_MOBS, false, null);
+		gameRules.set(GameRules.SPAWN_WANDERING_TRADERS, false, null);
+		gameRules.set(GameRules.ADVANCE_WEATHER, false, null);
+		gameRules.set(GameRules.ADVANCE_TIME, false, null);
 	}
 }

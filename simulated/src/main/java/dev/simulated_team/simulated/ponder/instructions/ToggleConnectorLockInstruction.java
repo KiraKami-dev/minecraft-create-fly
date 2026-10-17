@@ -1,9 +1,9 @@
 package dev.simulated_team.simulated.ponder.instructions;
 
 import dev.simulated_team.simulated.content.blocks.docking_connector.DockingConnectorBlockEntity;
-import net.createmod.ponder.api.level.PonderLevel;
-import net.createmod.ponder.foundation.PonderScene;
-import net.createmod.ponder.foundation.instruction.PonderInstruction;
+import com.zurrtum.create.client.ponder.api.level.PonderLevel;
+import com.zurrtum.create.client.ponder.foundation.PonderScene;
+import com.zurrtum.create.client.ponder.foundation.instruction.PonderInstruction;
 import net.minecraft.core.BlockPos;
 
 public class ToggleConnectorLockInstruction extends PonderInstruction {
@@ -21,7 +21,7 @@ public class ToggleConnectorLockInstruction extends PonderInstruction {
 
     @Override
     public void tick(PonderScene scene) {
-        final PonderLevel world = scene.getWorld();
+        final PonderLevel world = scene.getLevel();
         if (world.getBlockEntity(pos) instanceof final DockingConnectorBlockEntity be) {
             be.setVirtualLock(lock);
             if(!lock)

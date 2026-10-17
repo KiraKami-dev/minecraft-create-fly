@@ -3,6 +3,7 @@ package dev.simulated_team.simulated.network.packets.linked_typewriter;
 import com.mojang.serialization.DataResult;
 import dev.simulated_team.simulated.Simulated;
 import dev.simulated_team.simulated.content.blocks.redstone.linked_typewriter.LinkedTypewriterEntries;
+import dev.simulated_team.simulated.index.SimBlockEntityTypes;
 import dev.simulated_team.simulated.index.SimBlocks;
 import dev.ryanhcode.sable.veillite.api.network.handler.ServerPacketContext;
 import net.minecraft.core.component.DataComponents;
@@ -19,8 +20,9 @@ import net.minecraft.resources.RegistryOps;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.component.CustomData;
+import net.minecraft.world.item.component.TypedEntityData;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.entity.BlockEntityType;
 
 public record TypewriterSaveKeyToItemPacket(InteractionHand hand, LinkedTypewriterEntries.KeyboardEntry entry) implements CustomPacketPayload {
 
@@ -35,12 +37,9 @@ public record TypewriterSaveKeyToItemPacket(InteractionHand hand, LinkedTypewrit
         final ServerPlayer player = context.player();
         final ItemStack item = player.getItemInHand(this.hand);
 
-        CompoundTag currentTag = new CompoundTag();
-        if (item.has(DataComponents.BLOCK_ENTITY_DATA)) {
-            currentTag = item.get(DataComponents.BLOCK_ENTITY_DATA).copyTag();
-        } else {
-            currentTag.putString("id", item.getItem().toString());
-        }
+        // on 1.21.11 block entity data is a TypedEntityData: the block entity type replaces the "id" key of the tag
+        final TypedEntityData<BlockEntityType<?>> existingData = item.get(DataComponents.BLOCK_ENTITY_DATA);
+        final CompoundTag currentTag = existingData != null ? existingData.copyTagWithoutId() : new CompoundTag();
 
         final RegistryOps<Tag> ops = context.level().registryAccess().createSerializationContext(NbtOps.INSTANCE);
         final DataResult<Tag> result = LinkedTypewriterEntries.KeyboardEntry.CODEC.encodeStart(ops, this.entry);
@@ -54,12 +53,12 @@ public record TypewriterSaveKeyToItemPacket(InteractionHand hand, LinkedTypewrit
             currentTag.put("Keys", new ListTag());
         }
 
-        final ListTag keys = currentTag.getList("Keys", Tag.TAG_COMPOUND);
+        final ListTag keys = currentTag.getListOrEmpty("Keys");
         boolean alreadyPresent = false;
 
         for (int i = 0; i < keys.size(); i++) {
             final Tag key = keys.get(i);
-            final int glfwKey = ((CompoundTag) key).getInt("GLFWKey");
+            final int glfwKey = key instanceof final CompoundTag keyTag ? keyTag.getIntOr("GLFWKey", 0) : 0;
 
             if (glfwKey == this.entry.glfwKeyCode) {
                 alreadyPresent = true;
@@ -74,7 +73,8 @@ public record TypewriterSaveKeyToItemPacket(InteractionHand hand, LinkedTypewrit
 
         currentTag.put("Keys", keys);
         if (item.is(SimBlocks.LINKED_TYPEWRITER.asItem())) {
-            CustomData.set(DataComponents.BLOCK_ENTITY_DATA, item, currentTag);
+            final BlockEntityType<?> type = existingData != null ? existingData.type() : SimBlockEntityTypes.LINKED_TYPEWRITER;
+            item.set(DataComponents.BLOCK_ENTITY_DATA, TypedEntityData.of(type, currentTag));
         }
     }
 

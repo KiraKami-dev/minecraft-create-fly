@@ -9,35 +9,47 @@ import dev.ryanhcode.sable.api.physics.handle.RigidBodyHandle;
 import dev.ryanhcode.sable.companion.math.JOMLConversion;
 import dev.ryanhcode.sable.sublevel.ServerSubLevel;
 import dev.ryanhcode.sable.sublevel.SubLevel;
-import dev.ryanhcode.sable.util.SableBufferUtils;
+import com.zurrtum.create.infrastructure.packet.s2c.NbtSpawnPacket;
 import dev.ryanhcode.sable.util.SableNBTUtils;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.network.protocol.Packet;
+import net.minecraft.network.protocol.game.ClientGamePacketListener;
+import net.minecraft.network.protocol.game.ClientboundAddEntityPacket;
 import net.minecraft.network.syncher.SynchedEntityData;
+import net.minecraft.server.level.ServerEntity;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundSource;
+import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.material.PushReaction;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
-import net.neoforged.neoforge.entity.IEntityWithComplexSpawn;
 import org.jetbrains.annotations.NotNull;
 import org.joml.Quaterniond;
 import org.joml.Quaterniondc;
 import org.joml.Quaternionf;
 import org.joml.Vector3d;
 
-public class GustEntity extends Entity implements IEntityWithComplexSpawn {
+/**
+ * The orientation is sent with the spawn packet (upstream: NeoForge {@code IEntityWithComplexSpawn}; here Create Fly's
+ * {@link NbtSpawnPacket}).
+ */
+public class GustEntity extends Entity {
+    private static final String ORIENTATION_KEY = "GustOrientation";
+
     private final Quaterniond orientation = new Quaterniond();
     private boolean spawnedInitialBurst = false;
 
     public static void addGust(final Level level, final BlockPos pos, final Direction direction) {
         final Quaterniond orientation = new Quaterniond(direction.getRotation());
 
-        final GustEntity gust = new GustEntity(AeroEntityTypes.GUST.get(), level, orientation);
+        final GustEntity gust = new GustEntity(AeroEntityTypes.GUST, level, orientation);
         gust.setPos(pos.getCenter());
 
         level.addFreshEntity(gust);
@@ -56,7 +68,7 @@ public class GustEntity extends Entity implements IEntityWithComplexSpawn {
     public void tick() {
         super.tick();
 
-        if (this.level().isClientSide) {
+        if (this.level().isClientSide()) {
             this.spawnClientEffects();
         } else {
             final SubLevel subLevel = Sable.HELPER.getContaining(this);
@@ -137,8 +149,8 @@ public class GustEntity extends Entity implements IEntityWithComplexSpawn {
     }
 
     @Override
-    protected @NotNull AABB makeBoundingBox() {
-        final AABB boundingBox = this.getDimensions(this.getPose()).makeBoundingBox(this.position());
+    protected @NotNull AABB makeBoundingBox(final Vec3 position) {
+        final AABB boundingBox = this.getDimensions(this.getPose()).makeBoundingBox(position);
         return boundingBox.move(0, -boundingBox.getYsize() / 2.0, 0);
     }
 
@@ -148,22 +160,36 @@ public class GustEntity extends Entity implements IEntityWithComplexSpawn {
     }
 
     @Override
-    protected void readAdditionalSaveData(final CompoundTag compoundTag) {
-        compoundTag.put("GustOrientation", SableNBTUtils.writeQuaternion(this.orientation));
+    public boolean hurtServer(final ServerLevel level, final DamageSource source, final float amount) {
+        return false;
+    }
+
+    /**
+     * Upstream had load and save swapped (load wrote the tag, save read it); saved under the same key the right way round
+     */
+    @Override
+    protected void readAdditionalSaveData(final ValueInput view) {
+        view.read(ORIENTATION_KEY, CompoundTag.CODEC).ifPresent(tag -> this.orientation.set(SableNBTUtils.readQuaternion(tag)));
     }
 
     @Override
-    protected void addAdditionalSaveData(final @NotNull CompoundTag compoundTag) {
-        this.orientation.set(SableNBTUtils.readQuaternion(compoundTag));
+    protected void addAdditionalSaveData(final @NotNull ValueOutput view) {
+        view.store(ORIENTATION_KEY, CompoundTag.CODEC, SableNBTUtils.writeQuaternion(this.orientation));
     }
 
     @Override
-    public void writeSpawnData(final @NotNull RegistryFriendlyByteBuf buffer) {
-        SableBufferUtils.write(buffer, this.orientation);
+    public Packet<ClientGamePacketListener> getAddEntityPacket(final ServerEntity entityTrackerEntry) {
+        final CompoundTag spawnData = new CompoundTag();
+        spawnData.put(ORIENTATION_KEY, SableNBTUtils.writeQuaternion(this.orientation));
+        return new NbtSpawnPacket(this, entityTrackerEntry, spawnData);
     }
 
     @Override
-    public void readSpawnData(final @NotNull RegistryFriendlyByteBuf buffer) {
-        SableBufferUtils.read(buffer, this.orientation);
+    public void recreateFromPacket(final ClientboundAddEntityPacket packet) {
+        super.recreateFromPacket(packet);
+
+        if (packet instanceof final NbtSpawnPacket spawnPacket && spawnPacket.getNbt() != null) {
+            spawnPacket.getNbt().getCompound(ORIENTATION_KEY).ifPresent(tag -> this.orientation.set(SableNBTUtils.readQuaternion(tag)));
+        }
     }
 }

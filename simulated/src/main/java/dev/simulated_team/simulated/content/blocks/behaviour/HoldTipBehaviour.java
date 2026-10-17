@@ -9,7 +9,7 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.block.state.BlockState;
 import org.jetbrains.annotations.Nullable;
 
-public class HoldTipBehaviour extends BlockEntityBehaviour {
+public class HoldTipBehaviour extends BlockEntityBehaviour<SmartBlockEntity> {
     public static final BehaviourType<HoldTipBehaviour> TYPE = new BehaviourType<>();
     private HoldTipGetter hoverTip;
 

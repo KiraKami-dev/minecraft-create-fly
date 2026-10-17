@@ -4,7 +4,7 @@ import dev.simulated_team.simulated.Simulated;
 import dev.simulated_team.simulated.SimulatedClient;
 import dev.ryanhcode.sable.veillite.api.network.handler.PacketContext;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
-import net.createmod.catnip.codecs.stream.CatnipStreamCodecBuilders;
+import com.zurrtum.create.catnip.codecs.stream.CatnipStreamCodecBuilders;
 import net.minecraft.core.UUIDUtil;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.RegistryFriendlyByteBuf;

@@ -1,8 +1,5 @@
 package dev.eriksonn.aeronautics.content.blocks.propeller.bearing.gyroscopic_propeller_bearing;
 
-import com.zurrtum.create.client.content.contraptions.DirectionalExtenderScrollOptionSlot;
-import com.zurrtum.create.content.contraptions.bearing.BearingBlock;
-import com.zurrtum.create.client.foundation.blockEntity.behaviour.ValueBoxTransform;
 import dev.ryanhcode.sable.Sable;
 import dev.simulated_team.simulated.util.SimMathUtils;
 import dev.eriksonn.aeronautics.content.blocks.propeller.bearing.contraption.PropellerBearingContraptionEntity;
@@ -17,18 +14,20 @@ import dev.ryanhcode.sable.sublevel.SubLevel;
 import dev.ryanhcode.sable.companion.math.JOMLConversion;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.core.HolderLookup;
-import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
-import net.minecraft.world.phys.Vec3;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
 import org.joml.Quaternionf;
 import org.joml.Vector3d;
 import org.joml.Vector3dc;
 
+/**
+ * The thrust direction value box sits on a custom slot here (upstream {@code getMovementModeSlot}), see
+ * {@code PropellerBearingClient}.
+ */
 public class GyroscopicPropellerBearingBlockEntity extends PropellerBearingBlockEntity {
     private static final Vector3d PHYSICS_THRUST = new Vector3d();
     protected Quaternionf previousTiltQuat; //for client smoothing
@@ -53,16 +52,16 @@ public class GyroscopicPropellerBearingBlockEntity extends PropellerBearingBlock
     }
 
     @Override
-    public void write(final CompoundTag compound, final HolderLookup.Provider registries, final boolean clientPacket) {
-        compound.putBoolean("IsPowered", this.powered);
-        super.write(compound, registries, clientPacket);
+    public void write(final ValueOutput view, final boolean clientPacket) {
+        view.putBoolean("IsPowered", this.powered);
+        super.write(view, clientPacket);
     }
 
     @Override
-    protected void read(final CompoundTag compound, final HolderLookup.Provider registries, final boolean clientPacket) {
-        this.powered = compound.getBoolean("IsPowered");
+    protected void read(final ValueInput view, final boolean clientPacket) {
+        this.powered = view.getBooleanOr("IsPowered", false);
 
-        super.read(compound, registries, clientPacket);
+        super.read(view, clientPacket);
     }
 
     public void tick() {
@@ -205,27 +204,6 @@ public class GyroscopicPropellerBearingBlockEntity extends PropellerBearingBlock
 
         if (this.isActive()) {
             super.applyForces(subLevel, JOMLConversion.toMojang(this.thrustDirection), timeStep);
-        }
-    }
-
-    @Override
-    public ValueBoxTransform getMovementModeSlot() {
-        return new GyroscopicPropellerValueBoxTransform();
-    }
-
-    private static class GyroscopicPropellerValueBoxTransform extends DirectionalExtenderScrollOptionSlot {
-
-        public GyroscopicPropellerValueBoxTransform() {
-            super((state, d) -> {
-                final Direction.Axis axis = d.getAxis();
-                final Direction.Axis bearingAxis = state.getValue(BearingBlock.FACING).getAxis();
-                return bearingAxis != axis;
-            });
-        }
-
-        @Override
-        public Vec3 getLocalOffset(final LevelAccessor level, final BlockPos pos, final BlockState state) {
-            return super.getLocalOffset(level, pos, state).add(Vec3.atLowerCornerOf((state.getValue(BlockStateProperties.FACING)).getNormal()).scale(-0.125));
         }
     }
 }

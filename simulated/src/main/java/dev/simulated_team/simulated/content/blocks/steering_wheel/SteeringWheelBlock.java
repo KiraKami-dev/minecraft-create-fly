@@ -3,7 +3,6 @@ package dev.simulated_team.simulated.content.blocks.steering_wheel;
 import com.mojang.serialization.MapCodec;
 import com.zurrtum.create.content.kinetics.base.IRotate;
 import com.zurrtum.create.foundation.block.IBE;
-import com.zurrtum.create.foundation.block.IHaveBigOutline;
 import com.zurrtum.create.foundation.block.ProperWaterloggedBlock;
 import dev.ryanhcode.sable.Sable;
 import dev.ryanhcode.sable.companion.math.Pose3dc;
@@ -18,16 +17,16 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.util.Mth;
+import net.minecraft.util.RandomSource;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
-import net.minecraft.world.ItemInteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.LevelReader;
+import net.minecraft.world.level.ScheduledTickAccess;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.HorizontalDirectionalBlock;
 import net.minecraft.world.level.block.entity.BlockEntityType;
@@ -45,8 +44,9 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.Arrays;
 
+// The big outline (IHaveBigOutline upstream) is registered client side in SimKineticBlocksClient (AllExtensions.BIG_OUTLINE)
 public class SteeringWheelBlock extends HorizontalDirectionalBlock
-        implements IBE<SteeringWheelBlockEntity>, ProperWaterloggedBlock, IRotate, IHaveBigOutline, QuietUse, IDirectionalAnalogOutput {
+        implements IBE<SteeringWheelBlockEntity>, ProperWaterloggedBlock, IRotate, QuietUse, IDirectionalAnalogOutput {
 
     public static final BooleanProperty ON_FLOOR = BooleanProperty.create("on_floor");
     public static final MapCodec<SteeringWheelBlock> CODEC = simpleCodec(SteeringWheelBlock::new);
@@ -71,7 +71,7 @@ public class SteeringWheelBlock extends HorizontalDirectionalBlock
                 player.isLocalPlayer()) {
             final VoxelShape wheel = (onFloor ? SimBlockShapes.STEERING_WHEEL_FLOOR : SimBlockShapes.STEERING_WHEEL_CEILING).get(facing);
             final VoxelShape mount = SimBlockShapes.STEERING_WHEEL_MOUNT.get(facing);
-            return lookingAtWheel(player, pos, Minecraft.getInstance().getTimer().getGameTimeDeltaPartialTick(true), wheel, mount) ? wheel : mount;
+            return lookingAtWheel(player, pos, Minecraft.getInstance().getDeltaTracker().getGameTimeDeltaPartialTick(true), wheel, mount) ? wheel : mount;
         }
 
         if (state.getValue(ON_FLOOR)) {
@@ -130,7 +130,7 @@ public class SteeringWheelBlock extends HorizontalDirectionalBlock
         }
     }
 
-    @Deprecated
+    @Override
     public VoxelShape getCollisionShape(final BlockState state, final BlockGetter pLevel, final BlockPos pPos, final CollisionContext pContext) {
         return SimBlockShapes.STEERING_WHEEL_MOUNT.get(state.getValue(FACING));
     }
@@ -140,13 +140,14 @@ public class SteeringWheelBlock extends HorizontalDirectionalBlock
         super.createBlockStateDefinition(builder.add(WATERLOGGED).add(FACING).add(ON_FLOOR));
     }
 
+    // Only called on the client (quiet_use.MultiPlayerGameModeMixin)
     @Override
     public @Nullable InteractionResult quietUse(final Player player, final InteractionHand hand, final BlockPos pos, final BlockState state) {
-        if (lookingAtWheel(player, pos, Minecraft.getInstance().getTimer().getGameTimeDeltaPartialTick(true), state)) {
+        if (lookingAtWheel(player, pos, Minecraft.getInstance().getDeltaTracker().getGameTimeDeltaPartialTick(true), state)) {
             return this.getBlockEntityOptional(player.level(), pos).map( be -> {
                 if (!be.held &&
                         !be.isMaterialValid(player.getItemInHand(hand)) &&
-                        !be.angleInput.testHit(this.getPlayerHitLocation())
+                        !SteeringWheelScrollValueBehaviour.testHit(be, this.getPlayerHitLocation())
                 ) {
                     SimClickInteractions.STEERING_WHEEL_MANAGER.startHold(player.level(), player, pos);
                     return InteractionResult.SUCCESS;
@@ -162,9 +163,9 @@ public class SteeringWheelBlock extends HorizontalDirectionalBlock
     }
 
     @Override
-    protected ItemInteractionResult useItemOn(final ItemStack stack, final BlockState state, final Level level, final BlockPos pos, final Player player, final InteractionHand hand, final BlockHitResult hitResult) {
+    protected InteractionResult useItemOn(final ItemStack stack, final BlockState state, final Level level, final BlockPos pos, final Player player, final InteractionHand hand, final BlockHitResult hitResult) {
         if (player.isShiftKeyDown()) {
-            return ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
+            return InteractionResult.TRY_WITH_EMPTY_HAND;
         }
         return this.onBlockEntityUseItemOn(level, pos, be -> be.applyMaterialIfValid(stack));
     }
@@ -188,15 +189,24 @@ public class SteeringWheelBlock extends HorizontalDirectionalBlock
     }
 
     @Override
-    public BlockState updateShape(final BlockState pState, final Direction pDirection, final BlockState pNeighborState,
-                                  final LevelAccessor pLevel, final BlockPos pCurrentPos, final BlockPos pNeighborPos) {
-        this.updateWater(pLevel, pState, pCurrentPos);
+    protected BlockState updateShape(final BlockState pState, final LevelReader pLevel, final ScheduledTickAccess tickAccess, final BlockPos pCurrentPos,
+                                     final Direction pDirection, final BlockPos pNeighborPos, final BlockState pNeighborState, final RandomSource random) {
+        this.updateWater(pLevel, tickAccess, pState, pCurrentPos);
         return pState;
     }
 
     @Override
     protected boolean hasAnalogOutputSignal(final BlockState blockState) {
         return true;
+    }
+
+    /**
+     * 1.21.11 passes the direction from this block towards the comparator; upstream's directional output takes the
+     * comparator's facing (towards this block).
+     */
+    @Override
+    protected int getAnalogOutputSignal(final BlockState blockState, final Level level, final BlockPos blockPos, final Direction direction) {
+        return this.getAnalogOutputSignalFrom(blockState, level, blockPos, direction.getOpposite());
     }
 
     @Override
@@ -246,6 +256,6 @@ public class SteeringWheelBlock extends HorizontalDirectionalBlock
 
     @Override
     public BlockEntityType<? extends SteeringWheelBlockEntity> getBlockEntityType() {
-        return SimBlockEntityTypes.STEERING_WHEEL.get();
+        return SimBlockEntityTypes.STEERING_WHEEL;
     }
 }

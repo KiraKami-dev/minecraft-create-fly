@@ -2,14 +2,12 @@ package dev.eriksonn.aeronautics.content.blocks.mounted_potato_cannon;
 
 import com.zurrtum.create.AllEntityTypes;
 import com.zurrtum.create.AllSoundEvents;
-import com.zurrtum.create.client.api.goggles.IHaveGoggleInformation;
 import com.zurrtum.create.api.equipment.potatoCannon.PotatoCannonProjectileType;
 import com.zurrtum.create.content.equipment.potatoCannon.PotatoCannonItem;
 import com.zurrtum.create.content.equipment.potatoCannon.PotatoProjectileEntity;
 import com.zurrtum.create.content.kinetics.base.DirectionalKineticBlock;
 import com.zurrtum.create.content.kinetics.base.KineticBlockEntity;
 import com.zurrtum.create.infrastructure.particle.AirParticleData;
-import dev.eriksonn.aeronautics.data.AeroLang;
 import dev.eriksonn.aeronautics.index.AeroAdvancements;
 import dev.eriksonn.aeronautics.mixinterface.PotatoProjectileEntityExtension;
 import dev.eriksonn.aeronautics.config.AeroConfig;
@@ -19,22 +17,19 @@ import dev.ryanhcode.sable.api.block.BlockEntitySubLevelActor;
 import dev.ryanhcode.sable.api.physics.handle.RigidBodyHandle;
 import dev.ryanhcode.sable.sublevel.ServerSubLevel;
 import dev.ryanhcode.sable.companion.math.JOMLConversion;
-import net.createmod.catnip.math.VecHelper;
-import net.createmod.catnip.nbt.NBTHelper;
-import net.minecraft.ChatFormatting;
+import com.zurrtum.create.catnip.math.VecHelper;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.core.HolderLookup;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.network.chat.Component;
 import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.Clearable;
-import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.entity.EntitySpawnReason;
 import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
@@ -43,9 +38,10 @@ import net.minecraft.world.phys.shapes.CollisionContext;
 import org.joml.Vector3d;
 import org.joml.Vector3dc;
 
-import java.util.List;
-
-public class MountedPotatoCannonBlockEntity extends KineticBlockEntity implements BlockEntitySubLevelActor, IHaveGoggleInformation, Clearable {
+/**
+ * The goggle tooltip is a client behaviour, see {@code MountedPotatoCannonClient}.
+ */
+public class MountedPotatoCannonBlockEntity extends KineticBlockEntity implements BlockEntitySubLevelActor, Clearable {
 
 	private static final Vector3d RECOIL_DIR = new Vector3d();
 	private static final Vector3d RECOIL_CENTER = new Vector3d();
@@ -155,7 +151,7 @@ public class MountedPotatoCannonBlockEntity extends KineticBlockEntity implement
 				animationSpeed = barrelTimer * 75;
 				//wait 2 ticks before firing to sync up visuals
 				if (this.barrelTimer > 2) {
-					if (this.level.isClientSide) {
+					if (this.level.isClientSide()) {
 						this.speed = 0.2F;
 					}
 
@@ -169,7 +165,7 @@ public class MountedPotatoCannonBlockEntity extends KineticBlockEntity implement
 							barrelPos = new Vec3(this.getBlockPos().getX() + 0.5, this.getBlockPos().getY() + 0.5, this.getBlockPos().getZ() + 0.5).add(this.getAimingVector().scale(this.blockedLength / 1.725f));
 						}
 
-						if (!this.level.isClientSide) {
+						if (!this.level.isClientSide()) {
 							final PotatoCannonProjectileType type = ammo.type();
 
 							//motion
@@ -180,7 +176,7 @@ public class MountedPotatoCannonBlockEntity extends KineticBlockEntity implement
 							final float sprayChange = 360.0f / (float) type.split();
 
 							for (int i = 0; i < type.split(); i++) {
-								final PotatoProjectileEntity shootyBoomBoom = AllEntityTypes.POTATO_PROJECTILE.create(this.getLevel());
+								final PotatoProjectileEntity shootyBoomBoom = AllEntityTypes.POTATO_PROJECTILE.create(this.getLevel(), EntitySpawnReason.TRIGGERED);
 								if (shootyBoomBoom != null) {
 									shootyBoomBoom.setItem(ammo.stack());
 									((PotatoProjectileEntityExtension) shootyBoomBoom).aeronautics$setDamageMultiplier(2);
@@ -248,7 +244,7 @@ public class MountedPotatoCannonBlockEntity extends KineticBlockEntity implement
 	@Override
 	public void sable$physicsTick(final ServerSubLevel subLevel, final RigidBodyHandle handle, final double timeStep) {
 		if (this.recoilMagnitude > 0) {
-			RECOIL_DIR.set(JOMLConversion.toJOML(Vec3.atLowerCornerOf(this.getBlockState().getValue(DirectionalKineticBlock.FACING).getOpposite().getNormal())));
+			RECOIL_DIR.set(JOMLConversion.toJOML(Vec3.atLowerCornerOf(this.getBlockState().getValue(DirectionalKineticBlock.FACING).getOpposite().getUnitVec3i())));
 			RECOIL_CENTER.set(JOMLConversion.toJOML(Vec3.atCenterOf(this.getBlockPos())));
 
 			RECOIL_DIR.mul(this.recoilMagnitude);
@@ -286,40 +282,52 @@ public class MountedPotatoCannonBlockEntity extends KineticBlockEntity implement
 	}
 
 	@Override
-	protected void write(final CompoundTag compound, final HolderLookup.Provider registries, final boolean clientPacket) {
-		super.write(compound, registries, clientPacket);
+	protected void write(final ValueOutput view, final boolean clientPacket) {
+		super.write(view, clientPacket);
 
-		compound.put("inventory", this.inventory.write(registries));
-		compound.putInt("ItemRotationID", this.itemRotationId);
-		compound.putInt("ItemTimer", this.itemTimer);
-		compound.putFloat("ChargeTimer", this.chargeTimer);
-		NBTHelper.writeEnum(compound, "State", this.currentState);
-		compound.putInt("BarrelTimer", this.barrelTimer);
+		this.inventory.write(view.child("inventory"));
+		view.putInt("ItemRotationID", this.itemRotationId);
+		view.putInt("ItemTimer", this.itemTimer);
+		view.putFloat("ChargeTimer", this.chargeTimer);
+		view.putString("State", this.currentState.name());
+		view.putInt("BarrelTimer", this.barrelTimer);
 
 		if (clientPacket) {
-			compound.putBoolean("NeedsUpdate", this.needsClientUpdate);
+			view.putBoolean("NeedsUpdate", this.needsClientUpdate);
 			this.needsClientUpdate = false;
 		}
 	}
 
 	@Override
-	protected void read(final CompoundTag compound, final HolderLookup.Provider registries, final boolean clientPacket) {
-		super.read(compound, registries, clientPacket);
+	protected void read(final ValueInput view, final boolean clientPacket) {
+		super.read(view, clientPacket);
 
-		this.inventory.read(registries, compound.getCompound("inventory"));
-		this.inventory.updateCachedType(registries, this.inventory.slot.getStack());
-		if (clientPacket && compound.getBoolean("NeedsUpdate")) {
+		this.inventory.read(view.childOrEmpty("inventory"));
+		this.inventory.updateCachedType(view.lookup(), this.inventory.slot.getStack());
+		if (clientPacket && view.getBooleanOr("NeedsUpdate", false)) {
 			this.resetAndUpdate();
 		}
 
-		this.chargeTimer = compound.getFloat("ChargeTimer");
-		this.barrelTimer = compound.getInt("BarrelTimer");
-		this.itemRotationId = compound.getInt("ItemRotationID");
-		this.itemTimer = compound.getInt("ItemTimer");
-		this.currentState = NBTHelper.readEnum(compound, "State", State.class);
+		this.chargeTimer = view.getFloatOr("ChargeTimer", 0);
+		this.barrelTimer = view.getIntOr("BarrelTimer", 0);
+		this.itemRotationId = view.getIntOr("ItemRotationID", 0);
+		this.itemTimer = view.getIntOr("ItemTimer", 0);
+		this.currentState = readState(view.getStringOr("State", ""));
 	}
 
-	private float getChargeUpSpeed() {
+	/**
+	 * Same fallback as catnip {@code NBTHelper.readEnum}: unknown or missing names give the first constant.
+	 */
+	private static State readState(final String name) {
+		for (final State state : State.values()) {
+			if (state.name().equals(name)) {
+				return state;
+			}
+		}
+		return State.values()[0];
+	}
+
+	public float getChargeUpSpeed() {
 		if (this.initialAmmoReloadTicks == -1 || this.getSpeed() == 0) {
 			return 0;
 		}
@@ -373,7 +381,7 @@ public class MountedPotatoCannonBlockEntity extends KineticBlockEntity implement
 	}
 
 	public Vec3 getAimingVector() {
-		return Vec3.atLowerCornerOf(this.getBlockState().getValue(DirectionalKineticBlock.FACING).getNormal());
+		return Vec3.atLowerCornerOf(this.getBlockState().getValue(DirectionalKineticBlock.FACING).getUnitVec3i());
 	}
 
 	public MountedPotatoCannonInventory getInventory() {
@@ -391,43 +399,6 @@ public class MountedPotatoCannonBlockEntity extends KineticBlockEntity implement
 	@Override
 	public AABB createRenderBoundingBox() {
 		return super.createRenderBoundingBox().inflate(1);
-	}
-
-	@Override
-	public boolean addToGoggleTooltip(final List<Component> tooltip, final boolean isPlayerSneaking) {
-		super.addToGoggleTooltip(tooltip, isPlayerSneaking);
-
-		AeroLang.emptyLine(tooltip);
-		AeroLang.blockName(getBlockState()).text(":").forGoggles(tooltip);
-
-		final PotatoCannonItem.Ammo ammo = this.inventory.getAmmo();
-		if (ammo != null) {
-			final PotatoCannonProjectileType type = ammo.type();
-
-			final ItemStack currentStack = this.inventory.slot.getStack();
-			AeroLang.translate("potato_cannon.ammo", currentStack.getDisplayName(), currentStack.getCount())
-					.style(ChatFormatting.GRAY)
-					.forGoggles(tooltip, 1);
-
-			final float damage = type.damage() * 2.0f;
-			AeroLang.translate("potato_cannon.attack_damage", damage)
-					.style(ChatFormatting.DARK_GREEN)
-					.forGoggles(tooltip, 1);
-
-			if(Math.abs(getSpeed()) > 0)
-				AeroLang.translate("potato_cannon.reload_ticks", Math.round(1 / this.getChargeUpSpeed()))
-						.style(ChatFormatting.DARK_GREEN)
-						.forGoggles(tooltip, 1);
-
-			AeroLang.translate("potato_cannon.knockback", type.knockback())
-					.style(ChatFormatting.DARK_GREEN)
-					.forGoggles(tooltip, 1);
-
-		} else {
-			return false;
-		}
-
-		return true;
 	}
 
 	@Override

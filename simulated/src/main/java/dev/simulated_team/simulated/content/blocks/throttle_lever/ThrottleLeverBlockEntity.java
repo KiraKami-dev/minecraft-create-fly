@@ -1,16 +1,11 @@
 package dev.simulated_team.simulated.content.blocks.throttle_lever;
 
-import com.zurrtum.create.client.api.goggles.IHaveGoggleInformation;
-import com.zurrtum.create.foundation.blockEntity.SmartBlockEntity;
 import com.zurrtum.create.api.behaviour.BlockEntityBehaviour;
-import com.zurrtum.create.client.foundation.utility.CreateLang;
+import com.zurrtum.create.catnip.animation.LerpedFloat;
+import com.zurrtum.create.foundation.blockEntity.SmartBlockEntity;
 import dev.simulated_team.simulated.content.blocks.behaviour.HoldTipBehaviour;
-import dev.simulated_team.simulated.data.SimLang;
 import dev.simulated_team.simulated.index.SimClickInteractions;
-import net.createmod.catnip.animation.LerpedFloat;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.HolderLookup;
-import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.sounds.SoundEvents;
@@ -18,16 +13,22 @@ import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.Mth;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
 import net.minecraft.world.phys.AABB;
 
 import java.util.List;
 
-public class ThrottleLeverBlockEntity extends SmartBlockEntity implements IHaveGoggleInformation {
+/**
+ * Goggle information is added client side by {@link ThrottleLeverTooltipBehaviour}.
+ */
+public class ThrottleLeverBlockEntity extends SmartBlockEntity {
     protected int state = 0;
     protected int lastChange;
     protected LerpedFloat clientAngle;
     public final LerpedFloat clientPressedLerp = LerpedFloat.linear().chase(0, 0.45, LerpedFloat.Chaser.EXP);
-    private static final MutableComponent HOLD_TIP = SimLang.translate("gui.hold_tip.hold_to_adjust").component();
+    // SimLang (catnip LangBuilder) is client-only on Create Fly
+    private static final MutableComponent HOLD_TIP = Component.translatable("simulated.gui.hold_tip.hold_to_adjust");
 
     public ThrottleLeverBlockEntity(final BlockEntityType<?> type, final BlockPos pos, final BlockState state) {
         super(type, pos, state);
@@ -35,18 +36,18 @@ public class ThrottleLeverBlockEntity extends SmartBlockEntity implements IHaveG
     }
 
     @Override
-    public void write(final CompoundTag compound, final HolderLookup.Provider registries, final boolean clientPacket) {
-        compound.putInt("State", this.state);
-        compound.putInt("ChangeTimer", this.lastChange);
-        super.write(compound, registries, clientPacket);
+    public void write(final ValueOutput view, final boolean clientPacket) {
+        view.putInt("State", this.state);
+        view.putInt("ChangeTimer", this.lastChange);
+        super.write(view, clientPacket);
     }
 
     @Override
-    protected void read(final CompoundTag compound, final HolderLookup.Provider registries, final boolean clientPacket) {
-        this.state = compound.getInt("State");
-        this.lastChange = compound.getInt("ChangeTimer");
+    protected void read(final ValueInput view, final boolean clientPacket) {
+        this.state = view.getIntOr("State", 0);
+        this.lastChange = view.getIntOr("ChangeTimer", 0);
         this.clientAngle.chase(this.getBlockState().getValue(ThrottleLeverBlock.INVERTED) ? 15 - this.state : this.state, 0.5f, LerpedFloat.Chaser.EXP);
-        super.read(compound, registries, clientPacket);
+        super.read(view, clientPacket);
     }
 
     @Override
@@ -58,7 +59,7 @@ public class ThrottleLeverBlockEntity extends SmartBlockEntity implements IHaveG
                 this.updateOutput();
         }
 
-        if (this.level.isClientSide) {
+        if (this.level.isClientSide()) {
             this.clientAngle.tickChaser();
             final boolean pressed = SimClickInteractions.THROTTLE_LEVER_MANAGER.isBlockActive(this.getBlockPos());
             this.clientPressedLerp.updateChaseTarget(pressed ? 1 : 0);
@@ -78,8 +79,19 @@ public class ThrottleLeverBlockEntity extends SmartBlockEntity implements IHaveG
         ThrottleLeverBlock.updateNeighbors(this.getBlockState(), this.level, this.worldPosition);
     }
 
+    /**
+     * Upstream ThrottleLeverBlock#onRemove: let the neighbours know the signal is gone. On 1.21.11 the block entity is
+     * removed before Block#affectNeighborsAfterRemoval runs, so this happens here.
+     */
     @Override
-    public void addBehaviours(final List<BlockEntityBehaviour> behaviours) {
+    public void preRemoveSideEffects(final BlockPos pos, final BlockState oldState) {
+        super.preRemoveSideEffects(pos, oldState);
+        if (this.state != 0 && this.level != null)
+            ThrottleLeverBlock.updateNeighbors(oldState, this.level, pos);
+    }
+
+    @Override
+    public void addBehaviours(final List<BlockEntityBehaviour<?>> behaviours) {
         behaviours.add(new HoldTipBehaviour(this, HOLD_TIP));
     }
 
@@ -93,13 +105,7 @@ public class ThrottleLeverBlockEntity extends SmartBlockEntity implements IHaveG
     }
 
     @Override
-    public boolean addToGoggleTooltip(final List<Component> tooltip, final boolean isPlayerSneaking) {
-        CreateLang.builder().add(CreateLang.translateDirect("tooltip.analogStrength", this.state)).forGoggles(tooltip);
-        return true;
-    }
-
-    @Override
-    public AABB getRenderBoundingBox() {
+    protected AABB createRenderBoundingBox() {
         return AABB.ofSize(this.getBlockPos().getCenter(), 1.5, 1.5, 1.5);
     }
 

@@ -20,7 +20,7 @@ import dev.simulated_team.simulated.content.blocks.spring.SpringBlock;
 import dev.simulated_team.simulated.content.blocks.symmetric_sail.SymmetricSailBlock;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import it.unimi.dsi.fastutil.objects.ObjectList;
-import net.createmod.catnip.data.Iterate;
+import com.zurrtum.create.catnip.data.Iterate;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.level.Level;
@@ -228,7 +228,7 @@ public class SimBlockMovementChecks {
                 for (final Direction d : Iterate.directionsInAxis(rotationAxis)) {
                     offset = pos.relative(d);
                     final BlockState offsetState = level.getBlockState(offset);
-                    if (AllBlocks.GANTRY_SHAFT.has(offsetState) && offsetState.getValue(GantryShaftBlock.FACING).getAxis() == d.getAxis()) {
+                    if (offsetState.is(AllBlocks.GANTRY_SHAFT) && offsetState.getValue(GantryShaftBlock.FACING).getAxis() == d.getAxis()) {
                         if (!visited.contains(offset)) {
                             TEMP_DEFAULT_POSITIONS.add(offset);
                         }
@@ -242,9 +242,9 @@ public class SimBlockMovementChecks {
                     if (!visited.contains(offset)) {
                         final BlockState offsetState = level.getBlockState(offset);
                         final Direction facing = state.getValue(GantryShaftBlock.FACING);
-                        if (d.getAxis() == facing.getAxis() && AllBlocks.GANTRY_SHAFT.has(offsetState) && offsetState.getValue(GantryShaftBlock.FACING) == facing) {
+                        if (d.getAxis() == facing.getAxis() && offsetState.is(AllBlocks.GANTRY_SHAFT) && offsetState.getValue(GantryShaftBlock.FACING) == facing) {
                             TEMP_DEFAULT_POSITIONS.add(offset);
-                        } else if (AllBlocks.GANTRY_CARRIAGE.has(offsetState) && offsetState.getValue(GantryCarriageBlock.FACING) == d) {
+                        } else if (offsetState.is(AllBlocks.GANTRY_CARRIAGE) && offsetState.getValue(GantryCarriageBlock.FACING) == d) {
                             TEMP_DEFAULT_POSITIONS.add(offset);
                         }
                     }

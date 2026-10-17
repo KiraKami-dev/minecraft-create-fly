@@ -8,7 +8,7 @@ import org.spongepowered.asm.mixin.injection.Redirect;
 
 @Mixin(MechanicalBearingBlockEntity.class)
 public abstract class MechanicalBearingBlockEntityMixin {
-    @Redirect(method = "onSpeedChanged", at = @At(value = "INVOKE", target = "Lcom/simibubi/create/content/contraptions/ControlledContraptionEntity;isStalled()Z"))
+    @Redirect(method = "onSpeedChanged", at = @At(value = "INVOKE", target = "Lcom/zurrtum/create/content/contraptions/ControlledContraptionEntity;isStalled()Z"), remap = false)
     private boolean dontRoundTheAngle(final ControlledContraptionEntity instance) {
         return true;
     }

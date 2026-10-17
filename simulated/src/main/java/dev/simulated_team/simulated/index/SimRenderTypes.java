@@ -1,113 +1,186 @@
 package dev.simulated_team.simulated.index;
 
+import com.mojang.blaze3d.pipeline.BlendFunction;
+import com.mojang.blaze3d.pipeline.RenderPipeline;
+import com.mojang.blaze3d.platform.DepthTestFunction;
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.VertexFormat;
-import com.mojang.blaze3d.vertex.VertexFormatElement;
-import com.zurrtum.create.foundation.render.RenderTypes;
+import com.zurrtum.create.client.foundation.render.AllRenderPipelines;
 import dev.simulated_team.simulated.Simulated;
-import dev.ryanhcode.sable.veillite.api.client.render.VeilRenderBridge;
-import net.minecraft.util.Util;
-import net.minecraft.client.renderer.RenderStateShard;
-import net.minecraft.client.renderer.rendertype.RenderType;
+import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.client.renderer.Sheets;
+import net.minecraft.client.renderer.rendertype.RenderSetup;
+import net.minecraft.client.renderer.rendertype.RenderType;
+import net.minecraft.client.renderer.texture.TextureAtlas;
 import net.minecraft.resources.Identifier;
+import net.minecraft.util.Util;
+
 import java.util.function.Function;
 
-public final class SimRenderTypes extends RenderType {
+/**
+ * Client: Simulated's render types, on the 1.21.11 {@link RenderPipeline} / {@link RenderSetup} model.
+ * <p>
+ * Upstream these were Veil "pinwheel" shader programs; they are ported to core shaders under
+ * {@code assets/simulated/shaders/core} (same math; Veil's fog/light includes replaced by vanilla's uniform blocks).
+ * Upstream also registered laser/lens/staff overlay as Veil fixed buffers per render stage; the 1.21.11 feature renderer
+ * draws submitted geometry by render type, so that is gone.
+ */
+public final class SimRenderTypes {
 
-    private static final RenderType STAFF_OVERLAY = create(
+    // Pipelines
+
+    /**
+     * Upstream pointed at a {@code staff_overlay} Veil program that does not exist in the upstream resources either;
+     * this is the closest vanilla equivalent (untextured, translucent, no depth test). Unused upstream.
+     */
+    private static final RenderPipeline STAFF_OVERLAY_PIPELINE = register("staff_overlay", RenderPipeline.builder(RenderPipelines.MATRICES_PROJECTION_SNIPPET)
+            .withVertexShader("core/position_color")
+            .withFragmentShader("core/position_color")
+            .withBlend(BlendFunction.TRANSLUCENT)
+            .withDepthWrite(false)
+            .withDepthTestFunction(DepthTestFunction.NO_DEPTH_TEST)
+            .withVertexFormat(DefaultVertexFormat.POSITION_COLOR, VertexFormat.Mode.TRIANGLE_STRIP));
+
+    private static final RenderPipeline LASER_PIPELINE = register("laser", RenderPipeline.builder(RenderPipelines.MATRICES_FOG_SNIPPET)
+            .withVertexShader(Simulated.path("core/laser"))
+            .withFragmentShader(Simulated.path("core/laser"))
+            .withBlend(BlendFunction.TRANSLUCENT)
+            .withCull(false)
+            .withVertexFormat(DefaultVertexFormat.POSITION_TEX_COLOR, VertexFormat.Mode.QUADS));
+
+    private static final RenderPipeline LENS_PIPELINE = register("laser_pointer_lens", RenderPipeline.builder(RenderPipelines.MATRICES_FOG_SNIPPET)
+            .withVertexShader(Simulated.path("core/laser_pointer_lens"))
+            .withFragmentShader(Simulated.path("core/laser_pointer_lens"))
+            .withSampler("Sampler0")
+            .withSampler("Sampler2")
+            .withVertexFormat(DefaultVertexFormat.BLOCK, VertexFormat.Mode.QUADS));
+
+    /**
+     * Vanilla's {@code position_color_tex_lightmap} shader is gone; {@code rendertype_text} is the same plus fog.
+     */
+    private static final RenderPipeline LOCK_PIPELINE = register("lock", RenderPipeline.builder(RenderPipelines.MATRICES_FOG_SNIPPET)
+            .withVertexShader("core/rendertype_text")
+            .withFragmentShader("core/rendertype_text")
+            .withSampler("Sampler0")
+            .withSampler("Sampler2")
+            .withDepthWrite(false)
+            .withDepthTestFunction(DepthTestFunction.NO_DEPTH_TEST)
+            .withCull(false)
+            .withVertexFormat(DefaultVertexFormat.POSITION_COLOR_TEX_LIGHTMAP, VertexFormat.Mode.QUADS));
+
+    private static final RenderPipeline ROPE_PIPELINE = register("rope", RenderPipeline.builder(RenderPipelines.MATRICES_FOG_SNIPPET)
+            .withVertexShader(Simulated.path("core/rope"))
+            .withFragmentShader(Simulated.path("core/rope"))
+            .withSampler("Sampler0")
+            .withSampler("Sampler2")
+            .withVertexFormat(DefaultVertexFormat.BLOCK, VertexFormat.Mode.QUADS));
+
+    /**
+     * Vertex layout as upstream ({@code Position, Color ("Stress"), UV0, UV2, Normal}), i.e. {@link DefaultVertexFormat#BLOCK}.
+     */
+    private static final RenderPipeline SPRING_PIPELINE = register("spring", RenderPipeline.builder(RenderPipelines.MATRICES_FOG_LIGHT_DIR_SNIPPET)
+            .withVertexShader(Simulated.path("core/spring"))
+            .withFragmentShader(Simulated.path("core/spring"))
+            .withSampler("Sampler0")
+            .withSampler("Sampler2")
+            .withVertexFormat(DefaultVertexFormat.BLOCK, VertexFormat.Mode.QUADS));
+
+    // Render types
+
+    private static final RenderType STAFF_OVERLAY = RenderType.create(
             Simulated.MOD_ID + ":staff_overlay/staff_overlay",
-            DefaultVertexFormat.POSITION_COLOR,
-            VertexFormat.Mode.TRIANGLE_STRIP,
-            TRANSIENT_BUFFER_SIZE,
-            false,
-            true,
-            RenderType.CompositeState.builder()
-                    .setShaderState(VeilRenderBridge.shaderState(Simulated.path("staff_overlay/staff_overlay")))
-                    .setTransparencyState(TRANSLUCENT_TRANSPARENCY)
-                    .setWriteMaskState(RenderStateShard.COLOR_WRITE)
-                    .setDepthTestState(RenderStateShard.NO_DEPTH_TEST)
-                    .setCullState(CULL)
-                    .createCompositeState(false)
+            RenderSetup.builder(STAFF_OVERLAY_PIPELINE)
+                    .bufferSize(RenderType.TRANSIENT_BUFFER_SIZE)
+                    .sortOnUpload()
+                    .createRenderSetup()
     );
-    private static final RenderType LASER = create(
+    private static final RenderType LASER = RenderType.create(
             Simulated.MOD_ID + ":laser",
-            DefaultVertexFormat.POSITION_TEX_COLOR,
-            VertexFormat.Mode.QUADS,
-            TRANSIENT_BUFFER_SIZE,
-            false,
-            true,
-            RenderType.CompositeState.builder()
-                    .setShaderState(VeilRenderBridge.shaderState(Simulated.path("laser/laser")))
-                    .setTransparencyState(TRANSLUCENT_TRANSPARENCY)
-                    .setCullState(NO_CULL)
-                    .createCompositeState(false)
+            RenderSetup.builder(LASER_PIPELINE)
+                    .bufferSize(RenderType.TRANSIENT_BUFFER_SIZE)
+                    .sortOnUpload()
+                    .createRenderSetup()
     );
-    private static final RenderType LENS = create(
+    private static final RenderType LENS = RenderType.create(
             Simulated.MOD_ID + ":laser_pointer_lens",
-            DefaultVertexFormat.BLOCK,
-            VertexFormat.Mode.QUADS,
-            TRANSIENT_BUFFER_SIZE,
-            true,
-            true,
-            RenderType.CompositeState.builder()
-                    .setLightmapState(LIGHTMAP)
-                    .setShaderState(RENDERTYPE_CUTOUT_SHADER)
-                    .setTextureState(BLOCK_SHEET_MIPPED)
-                    .setShaderState(VeilRenderBridge.shaderState(Simulated.path("laser_pointer/lens")))
-                    .createCompositeState(true));
-
-    private static final VertexFormat SPRING_FORMAT = VertexFormat.builder()
-            .add("Position", VertexFormatElement.POSITION)
-            .add("Stress", VertexFormatElement.COLOR)
-            .add("UV0", VertexFormatElement.UV0)
-            .add("UV2", VertexFormatElement.UV2)
-            .add("Normal", VertexFormatElement.NORMAL)
-            .padding(1)
-            .build();
-
-    private static final RenderType LOCK = create(
+            RenderSetup.builder(LENS_PIPELINE)
+                    .withTexture("Sampler0", TextureAtlas.LOCATION_BLOCKS)
+                    .useLightmap()
+                    .bufferSize(RenderType.TRANSIENT_BUFFER_SIZE)
+                    .affectsCrumbling()
+                    .sortOnUpload()
+                    .setOutline(RenderSetup.OutlineProperty.AFFECTS_OUTLINE)
+                    .createRenderSetup()
+    );
+    private static final RenderType LOCK = RenderType.create(
             Simulated.MOD_ID + ":lock",
-            DefaultVertexFormat.POSITION_COLOR_TEX_LIGHTMAP,
-            VertexFormat.Mode.QUADS,
-            TRANSIENT_BUFFER_SIZE,
-            true,
-            false,
-            RenderType.CompositeState.builder()
-                    .setShaderState(RenderStateShard.POSITION_COLOR_TEX_LIGHTMAP_SHADER)
-                    .setDepthTestState(RenderStateShard.NO_DEPTH_TEST)
-                    .setCullState(RenderStateShard.NO_CULL)
-                    .setTextureState(new RenderStateShard.TextureStateShard(Simulated.path("textures/gui/lock.png"), false, false))
-                    .createCompositeState(true));
-
-    private static final RenderType ROPE = create(
+            RenderSetup.builder(LOCK_PIPELINE)
+                    .withTexture("Sampler0", Simulated.path("textures/gui/lock.png"))
+                    .useLightmap()
+                    .bufferSize(RenderType.TRANSIENT_BUFFER_SIZE)
+                    .affectsCrumbling()
+                    .setOutline(RenderSetup.OutlineProperty.AFFECTS_OUTLINE)
+                    .createRenderSetup()
+    );
+    private static final RenderType ROPE = RenderType.create(
             Simulated.MOD_ID + ":rope",
-            DefaultVertexFormat.BLOCK,
-            VertexFormat.Mode.QUADS,
-            TRANSIENT_BUFFER_SIZE,
-            true,
-            false,
-            RenderType.CompositeState.builder()
-                    .setShaderState(VeilRenderBridge.shaderState(Simulated.path("rope/rope")))
-                    .setTextureState(new RenderStateShard.TextureStateShard(Simulated.path("textures/block/rope_particle.png"), false, false))
-                    .setLightmapState(LIGHTMAP)
-                    .setCullState(CULL)
-                    .createCompositeState(false));
+            RenderSetup.builder(ROPE_PIPELINE)
+                    .withTexture("Sampler0", Simulated.path("textures/block/rope_particle.png"))
+                    .useLightmap()
+                    .bufferSize(RenderType.TRANSIENT_BUFFER_SIZE)
+                    .affectsCrumbling()
+                    .createRenderSetup()
+    );
+    private static final Function<Identifier, RenderType> SPRING = Util.memoize((Identifier texture) -> RenderType.create(
+            Simulated.MOD_ID + ":spring",
+            RenderSetup.builder(SPRING_PIPELINE)
+                    .withTexture("Sampler0", texture)
+                    .useLightmap()
+                    .bufferSize(RenderType.TRANSIENT_BUFFER_SIZE)
+                    .affectsCrumbling()
+                    .setOutline(RenderSetup.OutlineProperty.AFFECTS_OUTLINE)
+                    .createRenderSetup()
+    ));
 
-    private static final Function<Identifier, RenderType> SPRING = Util.memoize((Identifier texture) -> {
-        CompositeState state = RenderType.CompositeState.builder()
-                .setShaderState(VeilRenderBridge.shaderState(Simulated.path("spring/spring")))
-                .setTextureState(new RenderStateShard.TextureStateShard(texture, false, false))
-                .setTransparencyState(NO_TRANSPARENCY)
-                .setLightmapState(LIGHTMAP)
-                .setOverlayState(OVERLAY)
-                .createCompositeState(true);
-        return create("spring", SPRING_FORMAT, VertexFormat.Mode.QUADS, TRANSIENT_BUFFER_SIZE, true, false, state);
-    });
+    /**
+     * Create's glowing item render types bound to the <b>items</b> atlas: since 1.21.11, item textures (the Physics
+     * Staff's partials use {@code item/...} textures) are stitched into {@link TextureAtlas#LOCATION_ITEMS}.
+     */
+    private static final RenderType ITEM_GLOWING_SOLID = RenderType.create(
+            Simulated.MOD_ID + ":item_glowing_solid",
+            RenderSetup.builder(AllRenderPipelines.GLOWING)
+                    .bufferSize(256)
+                    .affectsCrumbling()
+                    .withTexture("Sampler0", TextureAtlas.LOCATION_ITEMS)
+                    .useLightmap()
+                    .useOverlay()
+                    .setOutline(RenderSetup.OutlineProperty.AFFECTS_OUTLINE)
+                    .createRenderSetup()
+    );
+    private static final RenderType ITEM_GLOWING_TRANSLUCENT = RenderType.create(
+            Simulated.MOD_ID + ":item_glowing_translucent",
+            RenderSetup.builder(AllRenderPipelines.GLOWING_TRANSLUCENT)
+                    .bufferSize(256)
+                    .affectsCrumbling()
+                    .sortOnUpload()
+                    .withTexture("Sampler0", TextureAtlas.LOCATION_ITEMS)
+                    .useLightmap()
+                    .useOverlay()
+                    .setOutline(RenderSetup.OutlineProperty.AFFECTS_OUTLINE)
+                    .createRenderSetup()
+    );
 
-    private SimRenderTypes(final String name, final VertexFormat format, final VertexFormat.Mode mode, final int bufferSize, final boolean affectsCrumbling, final boolean sortOnUpload,
-                           final Runnable setupState, final Runnable clearState) {
-        super(name, format, mode, bufferSize, affectsCrumbling, sortOnUpload, setupState, clearState);
+    private SimRenderTypes() {
+    }
+
+    private static RenderPipeline register(final String name, final RenderPipeline.Builder builder) {
+        return RenderPipelines.register(builder.withLocation(Simulated.path("pipeline/" + name)).build());
+    }
+
+    /**
+     * Registers the pipelines before the first resource reload, so they are precompiled with the vanilla ones.
+     */
+    public static void init() {
     }
 
     public static RenderType staffOverlay() {
@@ -130,12 +203,15 @@ public final class SimRenderTypes extends RenderType {
         return ROPE;
     }
 
-    public static RenderType itemGlowingSolid(boolean shadersActive) {
-        return shadersActive ? Sheets.solidBlockSheet() : RenderTypes.itemGlowingSolid();
+    /**
+     * @param shadersActive whether a shader pack is active; Create's glowing shader is then replaced by the item sheet
+     */
+    public static RenderType itemGlowingSolid(final boolean shadersActive) {
+        return shadersActive ? Sheets.translucentItemSheet() : ITEM_GLOWING_SOLID;
     }
 
-    public static RenderType itemGlowingTranslucent(boolean shadersActive) {
-        return shadersActive ? Sheets.translucentCullBlockSheet() : RenderTypes.itemGlowingTranslucent();
+    public static RenderType itemGlowingTranslucent(final boolean shadersActive) {
+        return shadersActive ? Sheets.translucentItemSheet() : ITEM_GLOWING_TRANSLUCENT;
     }
 
     public static RenderType spring(final Identifier texture) {

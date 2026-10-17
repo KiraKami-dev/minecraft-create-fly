@@ -14,7 +14,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(GirderBlock.class)
 public class GirderBlockMixin {
-    @Inject(method = "isConnected", at = @At("TAIL"), cancellable = true)
+    @Inject(method = "isConnected", at = @At("TAIL"), cancellable = true, remap = false)
     private static void connectToAugers(final BlockAndTintGetter world, final BlockPos pos, final BlockState state, final Direction side,
                                         final CallbackInfoReturnable<Boolean> cir, @Local(ordinal = 1) final BlockState otherState) {
         if (otherState.getBlock() instanceof AugerShaftBlock) {

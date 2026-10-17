@@ -7,15 +7,16 @@ Port of Create Aeronautics to Minecraft 1.21.11 Fabric, on top of Create Fly 1.2
 ```mermaid
 flowchart LR
   B["✅ Base: Create Fly<br/>1.21.11 Fabric"] --> P1["🔄 Phase 1<br/>port Sable physics<br/>(veillite shim for Veil)"]
-  P1 --> P2["⏳ Phase 2<br/>Simulated + Aeronautics"]
+  P1 --> P2["✅ Phase 2<br/>Simulated + Aeronautics"]
   P2 --> R["⏳ Playtest +<br/>private release"]
 ```
 
 ## Now
-- Phase 1 finishing with 4 parallel agents (clones in `../mcf-agents/sable-*`, shared e2e lock): S11 Sodium, S17 compat mixins running. Open after: S10 manual checks (walk/jump on moving sub-levels, multiplayer).
+- Phase 1 agents (clones in `../mcf-agents/sable-*`, shared e2e lock): S11 Sodium, S6 water check + S3 + S15 near-plane (`sable-water`), S13 sky-light shadows (`sable-shadows`), S16 inspector windows (`sable-imgui`). Open after: hands-on checks (walk/jump on moving sub-levels, camera, multiplayer).
+- Phase 2 is merged into integration (p2-port fast-forwarded with integration). Per-area notes in `docs/p2-notes/`.
 
 ## Next
-- Phase 2: C1 (add `simulated`/`aeronautics` to the build) → C2 Registrate replacement.
+- Hands-on playtest of Simulated + Aeronautics (`tools/e2e.sh play`, `tools/e2e.sh flight`), then a private release build.
 
 ## Done
 - 2026-10-14: `:sable` compiles, server + client e2e pass, sub-levels render on 1.21.11.
@@ -24,6 +25,8 @@ flowchart LR
 - 2026-10-17: S14 fixed: Indigo path now re-shades rotated sub-levels (`getShade` neutral + up normal on shade-less quads); verified with a flipped platform, shading on vs off.
 - 2026-10-17: S12 merged: Create Fly Flywheel visuals on sub-levels follow the sub-level pose (`tools/e2e.sh client flywheel`); lighting is S12a.
 - 2026-10-17: S10 merged: `tools/e2e.sh playtest` checks assemble, fall/rest, stacking, standing on, carried by push/rotate/translate: 14/14 pass on integration.
+- 2026-10-17: S17 merged: compat mixin review; fixed Shoulder Surfing descriptor (crashed on launch), `-Pe2eCompat` loads Shoulder Surfing + Jade; mods without a 1.21.11 Fabric build left out.
+- 2026-10-17: Phase 2 ported and merged into integration: Simulated + Aeronautics compile; server/client e2e pass with Create Fly, 22/22 GameTests, playtest 14/14, client `flight` scene flies an assembled airship. Sable fix on the way: players are carried across sub-level teleports (the S10 "carried by translate" check was racing the client's position reminder).
 
 ## Blockers
 - None. Note: this shell's `JAVA_HOME` is JDK 17 and the build needs 21; `e2e.sh` picks 21 itself; for Gradle use `JAVA_HOME=$(/usr/libexec/java_home -v 21)`.

@@ -6,20 +6,19 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.SectionPos;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.chunk.ChunkSource;
-import net.neoforged.neoforge.common.extensions.ILevelReaderExtension;
 
 public class SimLevelUtil {
     public static boolean isAreaActuallyLoaded(final Level level, final BlockPos center, final int range) {
         if (Sable.HELPER.getContaining(level, center) != null) return true;
 
-        // TODO: This should be common
-        if (!((ILevelReaderExtension) level).isAreaLoaded(center, range)) {
+        // was NeoForge's ILevelReaderExtension#isAreaLoaded
+        if (!level.hasChunksAt(center.offset(-range, -range, -range), center.offset(range, range, range))) {
             return false;
         } else {
-            if (level.isClientSide) {
+            if (level.isClientSide()) {
                 final int minY = center.getY() - range;
                 final int maxY = center.getY() + range;
-                if (maxY < level.getMinBuildHeight() || minY >= level.getMaxBuildHeight()) {
+                if (maxY < level.getMinY() || minY > level.getMaxY()) {
                     return false;
                 }
 

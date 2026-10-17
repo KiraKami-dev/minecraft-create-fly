@@ -1,6 +1,6 @@
 package dev.simulated_team.simulated.content.navigation_targets.lodestone_compass_compatability;
 
-import dev.engine_room.flywheel.lib.util.LevelAttached;
+import com.zurrtum.create.catnip.data.WorldAttached;
 import dev.ryanhcode.sable.Sable;
 import dev.ryanhcode.sable.api.SubLevelHelper;
 import dev.ryanhcode.sable.api.sublevel.ServerSubLevelContainer;
@@ -27,6 +27,7 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.saveddata.SavedData;
+import net.minecraft.world.level.saveddata.SavedDataType;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Vector3d;
@@ -40,14 +41,19 @@ public class LodestoneTrackingMap extends SavedData {
 	//Static members begin//
 	public static final String FILE_ID = "simulated_lodestone_tracker";
 
-	private static final LevelAttached<LodestoneTrackingMap> LODESTONE_MAP = new LevelAttached<>(level -> {
+	private static final WorldAttached<LodestoneTrackingMap> LODESTONE_MAP = new WorldAttached<>(level -> {
 		if (level instanceof ServerLevel sl) {
+			// null DataFixTypes as upstream; Fabric API skips datafixing for it
 			return sl.getDataStorage().computeIfAbsent(
-					new Factory<>(
+					new SavedDataType<>(
+							FILE_ID,
 							() -> new LodestoneTrackingMap(sl),
-							(tag, prov) -> LodestoneTrackingMap.load(sl, tag),
+							CompoundTag.CODEC.xmap(
+									tag -> LodestoneTrackingMap.load(sl, tag),
+									map -> map.save(new CompoundTag(), sl.registryAccess())
+							),
 							null
-					), FILE_ID);
+					));
 		}
 
 		return null;
@@ -58,7 +64,7 @@ public class LodestoneTrackingMap extends SavedData {
 	private static final BlockPos.MutableBlockPos DUMMY_POS = new BlockPos.MutableBlockPos();
 
 	public static LodestoneTrackingMap getOrLoad(final Level level) {
-		if (level.isClientSide) {
+		if (level.isClientSide()) {
 			return null;
 		}
 
@@ -67,10 +73,15 @@ public class LodestoneTrackingMap extends SavedData {
 
 	private static LodestoneTrackingMap load(final ServerLevel level, final CompoundTag tag) {
 		final LodestoneTrackingMap lodestoneMap = new LodestoneTrackingMap(level);
-		final ListTag serializedInfo = tag.getList("TrackerInformation", Tag.TAG_COMPOUND);
+		final ListTag serializedInfo = tag.getListOrEmpty("TrackerInformation");
 
 		for (final Tag infoInner : serializedInfo) {
-			lodestoneMap.lodestoneInformationSet.add(LodestoneInformation.loadFromCompound((CompoundTag) infoInner));
+			if (infoInner instanceof final CompoundTag infoTag) {
+				final LodestoneInformation info = LodestoneInformation.loadFromCompound(infoTag);
+				if (info != null) {
+					lodestoneMap.lodestoneInformationSet.add(info);
+				}
+			}
 		}
 
 		return lodestoneMap;
@@ -84,7 +95,6 @@ public class LodestoneTrackingMap extends SavedData {
 		this.associatedLevel = new WeakReference<>(level);
 	}
 
-	@Override
 	@NotNull
 	public CompoundTag save(final @NotNull CompoundTag compoundTag, final HolderLookup.@NotNull Provider provider) {
 		final ListTag lodestoneInformationList = new ListTag();

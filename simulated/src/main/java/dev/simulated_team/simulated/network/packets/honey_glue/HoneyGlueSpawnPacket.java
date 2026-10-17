@@ -8,7 +8,7 @@ import dev.simulated_team.simulated.index.SimEntityTypes;
 import dev.simulated_team.simulated.index.SimItems;
 import dev.simulated_team.simulated.index.SimSoundEvents;
 import dev.ryanhcode.sable.veillite.api.network.handler.PacketContext;
-import net.createmod.catnip.data.Pair;
+import com.zurrtum.create.catnip.data.Pair;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
@@ -19,6 +19,7 @@ import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.stats.Stats;
 import net.minecraft.world.InteractionHand;
+import net.minecraft.world.entity.EntitySpawnReason;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.phys.AABB;
@@ -69,7 +70,7 @@ public record HoneyGlueSpawnPacket(BlockPos from, BlockPos to) implements Custom
             final ItemStack honeyGlueItem = player.getItemInHand(hand);
             honeyGlueItem.hurtAndBreak(1, level, player, (item) -> {});
 
-            final HoneyGlueEntity entity = SimEntityTypes.HONEY_GLUE.create(level);
+            final HoneyGlueEntity entity = SimEntityTypes.HONEY_GLUE.create(level, EntitySpawnReason.SPAWN_ITEM_USE);
             assert entity != null;
 
             entity.setBounds(newBounds);

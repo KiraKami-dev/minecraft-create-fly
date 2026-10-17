@@ -20,8 +20,10 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.BooleanProperty;
+import net.minecraft.world.level.redstone.Orientation;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.VoxelShape;
+import org.jetbrains.annotations.Nullable;
 
 public class TorsionSpringBlock extends DirectionalKineticBlock implements IBE<TorsionSpringBlockEntity>, ExtraKinetics.ExtraKineticsBlock, IDirectionalAnalogOutput {
     public static final BooleanProperty POWERED = BlockStateProperties.POWERED;
@@ -52,8 +54,8 @@ public class TorsionSpringBlock extends DirectionalKineticBlock implements IBE<T
     }
 
     @Override
-    protected void neighborChanged(final BlockState blockState, final Level level, final BlockPos blockPos, final Block block, final BlockPos blockPos2, final boolean bl) {
-        super.neighborChanged(blockState, level, blockPos, block, blockPos2, bl);
+    protected void neighborChanged(final BlockState blockState, final Level level, final BlockPos blockPos, final Block block, @Nullable final Orientation orientation, final boolean bl) {
+        super.neighborChanged(blockState, level, blockPos, block, orientation, bl);
         final boolean signal = level.hasNeighborSignal(blockPos);
         if (signal != blockState.getValue(POWERED)) {
             level.setBlock(blockPos, blockState.setValue(POWERED, signal), 2); // idk what this magic number does... copied from DiodeBlock
@@ -64,6 +66,15 @@ public class TorsionSpringBlock extends DirectionalKineticBlock implements IBE<T
     @Override
     protected boolean hasAnalogOutputSignal(final BlockState blockState) {
         return blockState.getValue(FACING).getAxis().isHorizontal();
+    }
+
+    /**
+     * 1.21.11 passes the direction from this block towards the comparator; upstream's directional output takes the
+     * comparator's facing (towards this block).
+     */
+    @Override
+    protected int getAnalogOutputSignal(final BlockState blockState, final Level level, final BlockPos blockPos, final Direction direction) {
+        return this.getAnalogOutputSignalFrom(blockState, level, blockPos, direction.getOpposite());
     }
 
     @Override
@@ -98,7 +109,7 @@ public class TorsionSpringBlock extends DirectionalKineticBlock implements IBE<T
 
     @Override
     public BlockEntityType<? extends TorsionSpringBlockEntity> getBlockEntityType() {
-        return SimBlockEntityTypes.TORSION_SPRING.get();
+        return SimBlockEntityTypes.TORSION_SPRING;
     }
 
     @Override

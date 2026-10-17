@@ -1,17 +1,18 @@
 package dev.simulated_team.simulated.index;
 
 
-import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.zurrtum.create.client.foundation.gui.AllIcons;
 import dev.simulated_team.simulated.Simulated;
-import net.createmod.catnip.gui.element.DelegatedStencilElement;
-import net.createmod.catnip.theme.Color;
+import com.zurrtum.create.client.catnip.gui.element.DelegatedStencilElement;
+import com.zurrtum.create.catnip.theme.Color;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.renderer.LightTexture;
 import net.minecraft.client.renderer.MultiBufferSource;
+import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.client.renderer.rendertype.RenderType;
+import net.minecraft.client.renderer.rendertype.RenderTypes;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.phys.Vec3;
 import org.joml.Matrix4f;
@@ -55,17 +56,24 @@ public class SimIcons extends AllIcons {
         return new SimIcons(x = 0, ++y);
     }
 
-    public void bind() {
-        RenderSystem.setShaderTexture(0, ICON_ATLAS);
+    @Override
+    public RenderType bind() {
+        return RenderTypes.text(ICON_ATLAS);
     }
 
     @Override
     public void render(final GuiGraphics graphics, final int x, final int y) {
-        graphics.blit(ICON_ATLAS, x, y, 0, this.iconX, this.iconY, 16, 16, 64, 64);
+        graphics.blit(RenderPipelines.GUI_TEXTURED, ICON_ATLAS, x, y, this.iconX, this.iconY, 16, 16, ICON_ATLAS_SIZE, ICON_ATLAS_SIZE);
     }
 
+    @Override
+    public void render(final GuiGraphics graphics, final int x, final int y, final int color) {
+        graphics.blit(RenderPipelines.GUI_TEXTURED, ICON_ATLAS, x, y, this.iconX, this.iconY, 16, 16, 16, 16, ICON_ATLAS_SIZE, ICON_ATLAS_SIZE, color);
+    }
+
+    @Override
     public void render(final PoseStack ms, final MultiBufferSource buffer, final int color) {
-        final VertexConsumer builder = buffer.getBuffer(RenderType.text(ICON_ATLAS));
+        final VertexConsumer builder = buffer.getBuffer(RenderTypes.text(ICON_ATLAS));
         final Matrix4f matrix = ms.last().pose();
         final Color rgb = new Color(color);
         final int light = LightTexture.FULL_BRIGHT;
@@ -93,6 +101,7 @@ public class SimIcons extends AllIcons {
                 .setLight(light);
     }
 
+    @Override
     public DelegatedStencilElement asStencil() {
         return new DelegatedStencilElement().withStencilRenderer((ms, w, h, alpha) -> this.render(ms, 0, 0)).withBounds(16, 16);
     }

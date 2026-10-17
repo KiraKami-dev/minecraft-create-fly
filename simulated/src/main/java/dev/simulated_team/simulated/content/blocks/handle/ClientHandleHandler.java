@@ -93,10 +93,10 @@ public class ClientHandleHandler extends BlockHoldInteraction {
 
         final boolean crouchingOrFlying = this.movingSubLevel || player.getAbilities().flying;
         if (!crouchingOrFlying) {
-            if (player.input.up) {
+            if (player.input.keyPresses.forward()) {
                 this.deltaRange(player, -0.5f);
             }
-            if (player.input.down) {
+            if (player.input.keyPresses.backward()) {
                 this.deltaRange(player, 0.5f);
             }
 
@@ -140,7 +140,7 @@ public class ClientHandleHandler extends BlockHoldInteraction {
         if (player.isUsingItem()) {
             return;
         }
-        if (AllItems.WRENCH.isIn(player.getMainHandItem()) || AllItems.WRENCH.isIn(player.getOffhandItem())) {
+        if (player.getMainHandItem().is(AllItems.WRENCH) || player.getOffhandItem().is(AllItems.WRENCH)) {
             return;
         }
         if (!HandleBlock.canInteractWithHandle(player))
@@ -202,7 +202,7 @@ public class ClientHandleHandler extends BlockHoldInteraction {
     }
 
     public boolean isEmptyOrExtendoGrip(final ItemStack stack) {
-        return stack.isEmpty() || AllItems.EXTENDO_GRIP.is(stack.getItem());
+        return stack.isEmpty() || stack.is(AllItems.EXTENDO_GRIP);
     }
 
     private void sendUpdate(final boolean remove) {

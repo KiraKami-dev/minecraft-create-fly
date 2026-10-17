@@ -12,6 +12,10 @@ import net.minecraft.client.Screenshot;
 public final class E2EClient implements ClientModInitializer {
     private static final int[] SHOT_TICKS = {80, 140, 220, 320, 440};
     private static final int STOP_TICK = 480;
+    // flight scene (E2EFlight): the server builds the ship about 40 ticks in, assembles at +20, starts the motor at +40
+    private static final int[] FLIGHT_SHOT_TICKS = {75, 100, 125, 145, 165, 190, 220, 260};
+    private static final int FLIGHT_STOP_TICK = 290;
+    private final boolean flight = "flight".equals(System.getProperty("e2e.scene"));
 
     private int inWorldTicks;
     private int doneTicks;
@@ -51,14 +55,14 @@ public final class E2EClient implements ClientModInitializer {
             return;
         }
 
-        for (final int shot : SHOT_TICKS) {
+        for (final int shot : this.flight ? FLIGHT_SHOT_TICKS : SHOT_TICKS) {
             if (this.inWorldTicks == shot) {
-                final String name = "e2e-" + shot + ".png";
+                final String name = (this.flight ? "flight-" : "e2e-") + shot + ".png";
                 Screenshot.grab(minecraft.gameDirectory, name, minecraft.getMainRenderTarget(), 1,
                         message -> E2E.LOG.info("E2E: screenshot {}", name));
             }
         }
-        if (this.inWorldTicks == STOP_TICK) {
+        if (this.inWorldTicks == (this.flight ? FLIGHT_STOP_TICK : STOP_TICK)) {
             E2E.LOG.info("E2E: done, closing client");
             minecraft.stop();
         }

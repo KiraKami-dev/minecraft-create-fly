@@ -1,0 +1,33 @@
+version = '1.3.2+mc1.21.11-port'
+group = 'dev.simulated_team.simulated'
+
+base { archivesName = 'simulated-fabric-1.21.11' }
+
+loom {
+    accessWidenerPath = file('src/main/resources/simulated.accesswidener')
+}
+
+dependencies {
+    implementation project(path: ':sable', configuration: 'namedElements')
+    modImplementation "maven.modrinth:create-fly:${create_fly_version}"
+    modImplementation "fuzs.forgeconfigapiport:forgeconfigapiport-fabric:${forgeconfigapiport_version}"
+    compileOnly 'com.google.code.findbugs:jsr305:3.0.2'
+
+    // Optional compat targets (compileOnly; only touched when the mod is loaded)
+    modCompileOnly "maven.modrinth:cc-tweaked:${cct_version_id}"
+    modCompileOnly "maven.modrinth:jei:${jei_version_id}"
+    modCompileOnly "maven.modrinth:natures-compass:${natures_compass_version_id}"
+    modCompileOnly "maven.modrinth:explorers-compass:${explorers_compass_version_id}"
+}
+
+processResources {
+    def props = [
+            mod_id: 'simulated', version: project.version, mod_name: 'Create Simulated', mod_author: 'Simulated Team',
+            description: 'Expands Create with physics-based interactive contraptions.',
+            fabric_loader_version: loader_version, minecraft_version: minecraft_version, java_version: java_version
+    ]
+    inputs.properties props
+    filesMatching(['fabric.mod.json', '*.mixins.json']) { expand props }
+    // datagen inputs are not shipped
+    exclude 'datagen/**'
+}

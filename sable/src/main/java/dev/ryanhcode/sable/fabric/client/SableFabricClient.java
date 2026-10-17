@@ -10,6 +10,7 @@ import fuzs.forgeconfigapiport.fabric.api.v5.ModConfigEvents;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import net.fabricmc.fabric.api.resource.v1.ResourceLoader;
+import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.server.packs.PackType;
 import net.neoforged.fml.config.ModConfig;
 
@@ -36,5 +37,10 @@ public final class SableFabricClient implements ClientModInitializer {
         });
 
         ConfigRegistry.INSTANCE.register(Sable.MOD_ID, ModConfig.Type.CLIENT, SableClientConfig.SPEC);
+
+        // Create Fly bundles Flywheel
+        if (FabricLoader.getInstance().isModLoaded("create")) {
+            Sable.LOGGER.warn("NOTE: Sable is loaded with Flywheel (bundled in Create Fly). Sable contains extensive shader overrides and a full light-storage replacement. Expect this to cause compatibility issues. If issues arise, please report them to the Sable issue tracker ({}) instead of the Flywheel issue tracker.", Sable.ISSUE_TRACKER_URL);
+        }
     }
 }

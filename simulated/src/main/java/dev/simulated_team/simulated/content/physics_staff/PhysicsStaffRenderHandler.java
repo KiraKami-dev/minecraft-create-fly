@@ -4,7 +4,6 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.zurrtum.create.client.AllSpecialTextures;
 import dev.ryanhcode.sable.Sable;
-import dev.ryanhcode.sable.api.SubLevelHelper;
 import dev.ryanhcode.sable.api.sublevel.SubLevelContainer;
 import dev.ryanhcode.sable.mixinterface.clip_overwrite.LevelPoseProviderExtension;
 import dev.ryanhcode.sable.sublevel.ClientSubLevel;
@@ -12,10 +11,9 @@ import dev.ryanhcode.sable.sublevel.SubLevel;
 import dev.simulated_team.simulated.SimulatedClient;
 import dev.simulated_team.simulated.index.SimItems;
 import dev.simulated_team.simulated.index.SimRenderTypes;
-import dev.ryanhcode.sable.veillite.api.client.color.Color;
 import dev.ryanhcode.sable.veillite.api.client.render.MatrixStack;
 import dev.ryanhcode.sable.veillite.api.event.VeilRenderLevelStageEvent;
-import net.createmod.catnip.outliner.Outliner;
+import com.zurrtum.create.client.catnip.outliner.Outliner;
 import net.minecraft.client.Camera;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
@@ -44,39 +42,55 @@ public class PhysicsStaffRenderHandler {
     private static BlockPos hoverBlockPos = null;
 
     /**
-     * Renders the selection / hovering box for the staff
+     * Upstream entry point (Veil's AFTER_TRANSLUCENT_BLOCKS stage). The veillite shim never fires render stages, so the
+     * staff is rendered from {@link #renderSelectionBox(PoseStack, MultiBufferSource, Camera)} instead,
+     * which {@link PhysicsStaffClient#registerClient()} hooks into the end of the main level pass.
      */
+    @Deprecated
     public static void renderSelectionBox(final VeilRenderLevelStageEvent.Stage stage, final LevelRenderer renderer, final MultiBufferSource.BufferSource bufferSource, final MatrixStack ps, final Matrix4fc frustrumMat, final Matrix4fc projectionMat, final int renderTick, final DeltaTracker tracker, final Camera camera, final Frustum frustrum) {
-        if (stage != VeilRenderLevelStageEvent.Stage.AFTER_TRANSLUCENT_BLOCKS) return;
+    }
 
+    /**
+     * Renders the selection / hovering box for the staff
+     *
+     * @param ps           an empty pose stack (camera relative)
+     * @param bufferSource the buffer source of the level renderer
+     * @param camera       the camera the level is rendered from
+     */
+    public static void renderSelectionBox(final PoseStack ps, final MultiBufferSource bufferSource, final Camera camera) {
         if (Minecraft.getInstance().options.hideGui) {
             return;
         }
 
-        ps.matrixPush();
-        SimulatedClient.PHYSICS_STAFF_CLIENT_HANDLER.onRender(ps.toPoseStack());
-        ps.matrixPop();
+        ps.pushPose();
+        SimulatedClient.PHYSICS_STAFF_CLIENT_HANDLER.onRender(ps);
+        ps.popPose();
 
         final Minecraft minecraft = Minecraft.getInstance();
         final LocalPlayer player = minecraft.player;
+
+        if (player == null) {
+            return;
+        }
 
         if (!player.getItemInHand(InteractionHand.MAIN_HAND).is(SimItems.PHYSICS_STAFF) &&
                 !player.getItemInHand(InteractionHand.OFF_HAND).is(SimItems.PHYSICS_STAFF)) {
             return;
         }
 
-        final Vec3 cameraPos = camera.getPosition();
+        final Vec3 cameraPos = camera.position();
 
         final Level level = player.level();
-        renderAllLocks(bufferSource, ps, level, cameraPos);
+        renderAllLocks(bufferSource, ps, level, cameraPos, camera);
 
         updateHoverPos(minecraft, player);
 
         if (hoverBlockPos != null) {
-            final Color color = new Color(191.0f / 255.0f, 191.0f / 255.0f, 191.0f / 255.0f, 1.0f);
+            // (191, 191, 191)
+            final int color = 0xBFBFBF;
 
             Outliner.getInstance().showCluster("physicsStaffSelection", List.of(hoverBlockPos))
-                    .colored(color.rgb())
+                    .colored(color)
                     .disableLineNormals()
                     .lineWidth(1 / 32f)
                     .withFaceTexture(AllSpecialTextures.CHECKERED);
@@ -88,7 +102,7 @@ public class PhysicsStaffRenderHandler {
      */
     private static void updateHoverPos(final Minecraft minecraft, final LocalPlayer player) {
         final ClientLevel level = minecraft.level;
-        final float partialTicks = minecraft.getTimer().getGameTimeDeltaPartialTick(false);
+        final float partialTicks = minecraft.getDeltaTracker().getGameTimeDeltaPartialTick(false);
 
         hoverBlockPos = null;
 
@@ -122,31 +136,35 @@ public class PhysicsStaffRenderHandler {
     /**
      * Renders all the locks our client is aware about
      */
-    private static void renderAllLocks(final MultiBufferSource.BufferSource bufferSource, final MatrixStack ps, final Level level, final Vec3 cameraPos) {
-        final Minecraft client = Minecraft.getInstance();
+    private static void renderAllLocks(final MultiBufferSource bufferSource, final PoseStack ps, final Level level, final Vec3 cameraPos, final Camera camera) {
         final List<UUID> locks = SimulatedClient.PHYSICS_STAFF_CLIENT_HANDLER.getLocks(level);
         final SubLevelContainer container = SubLevelContainer.getContainer(level);
+
+        if (locks == null || container == null) {
+            return;
+        }
 
         for (final UUID lock : locks) {
             final SubLevel subLevel = container.getSubLevel(lock);
 
             if (!(subLevel instanceof final ClientSubLevel clientSubLevel)) continue;
 
-            ps.matrixPush();
+            ps.pushPose();
             final Vector3dc renderPos = clientSubLevel.renderPose().position();
             ps.translate(renderPos.x() - cameraPos.x(), renderPos.y() - cameraPos.y(), renderPos.z() - cameraPos.z());
-            ps.rotate(client.getEntityRenderDispatcher().cameraOrientation());
+            // the entity render dispatcher's camera orientation
+            ps.mulPose(camera.rotation());
 
             final VertexConsumer buffer = bufferSource.getBuffer(SimRenderTypes.lock());
 
-            final PoseStack.Pose pose = ps.pose();
+            final PoseStack.Pose pose = ps.last();
             final int color = 0xffffffff;
             buffer.addVertex(pose, 0.0f - 0.5f, 0.0f - 0.5f, 0.0f).setColor(color).setUv(0.0f, 1.0f).setLight(LightTexture.FULL_BRIGHT);
             buffer.addVertex(pose, 0.0f - 0.5f, 1.0f - 0.5f, 0.0f).setColor(color).setUv(0.0f, 0.0f).setLight(LightTexture.FULL_BRIGHT);
             buffer.addVertex(pose, 1.0f - 0.5f, 1.0f - 0.5f, 0.0f).setColor(color).setUv(1.0f, 0.0f).setLight(LightTexture.FULL_BRIGHT);
             buffer.addVertex(pose, 1.0f - 0.5f, 0.0f - 0.5f, 0.0f).setColor(color).setUv(1.0f, 1.0f).setLight(LightTexture.FULL_BRIGHT);
 
-            ps.matrixPop();
+            ps.popPose();
         }
     }
 

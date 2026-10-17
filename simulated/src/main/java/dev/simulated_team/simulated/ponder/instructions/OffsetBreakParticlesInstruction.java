@@ -1,8 +1,8 @@
 package dev.simulated_team.simulated.ponder.instructions;
 
-import net.createmod.ponder.api.level.PonderLevel;
-import net.createmod.ponder.foundation.PonderScene;
-import net.createmod.ponder.foundation.instruction.PonderInstruction;
+import com.zurrtum.create.client.ponder.api.level.PonderLevel;
+import com.zurrtum.create.client.ponder.foundation.PonderScene;
+import com.zurrtum.create.client.ponder.foundation.instruction.PonderInstruction;
 import net.minecraft.core.particles.BlockParticleOption;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.util.Mth;
@@ -52,7 +52,7 @@ public class OffsetBreakParticlesInstruction extends PonderInstruction {
 
     @Override
     public void tick(final PonderScene scene) {
-        final PonderLevel level = scene.getWorld();
+        final PonderLevel level = scene.getLevel();
         this.addBlockDestroyEffects(level, this.bb, this.state);
     }
 }

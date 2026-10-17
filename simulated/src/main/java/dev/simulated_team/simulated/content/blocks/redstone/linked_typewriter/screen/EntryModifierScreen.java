@@ -1,6 +1,5 @@
 package dev.simulated_team.simulated.content.blocks.redstone.linked_typewriter.screen;
 
-import com.mojang.blaze3d.vertex.PoseStack;
 import com.zurrtum.create.content.redstone.link.RedstoneLinkNetworkHandler;
 import com.zurrtum.create.client.foundation.gui.AllIcons;
 import com.zurrtum.create.client.foundation.gui.widget.IconButton;
@@ -93,35 +92,30 @@ public class EntryModifierScreen {
         menu.slotsActive = true;
         final ItemStack first = psuedoEntry.first.getStack();
         final ItemStack second = psuedoEntry.second.getStack();
-        menu.ghostInventory.setStackInSlot(0, first);
-        menu.ghostInventory.setStackInSlot(1, second);
+        menu.ghostInventory.setItem(0, first);
+        menu.ghostInventory.setItem(1, second);
         VeilPacketManager.server().sendPacket(new TypewriterMenuModifySlots(first, second));
 
         return psuedoEntry;
     }
 
-    public void render(final GuiGraphics guiGraphics, final int mouseX, final int mouseY, final float pt, final PoseStack ps) {
+    public void render(final GuiGraphics guiGraphics, final int mouseX, final int mouseY, final float pt) {
         if (this.modifying) {
-            ps.pushPose();
-
             this.confirmationWidget.render(guiGraphics, mouseX, mouseY, pt);
             this.promptWidget.render(guiGraphics, mouseX, mouseY, pt);
             this.cancelEntryWidget.render(guiGraphics, mouseX, mouseY, pt);
-
-            ps.popPose();
         }
     }
 
     public void renderBG(final GuiGraphics guiGraphics) {
-        final PoseStack ps = guiGraphics.pose();
+        // everything below (the typewriter screen) gets darkened, the menu is drawn on top of it
+        // (1.21.11 GUIs have no depth: strata replace the old z offsets)
+        guiGraphics.nextStratum();
+        guiGraphics.fillGradient(0, 0, this.parentScreen.width, this.parentScreen.height, -1072689136, -804253680);
+        guiGraphics.nextStratum();
 
-        ps.pushPose();
-        guiGraphics.fillGradient(0, 0, this.parentScreen.width, this.parentScreen.height, 1, -1072689136, -804253680);
-
-        ps.translate(0, 0, 2);
         MODIFICATION_MENU.render(guiGraphics, this.getCenterWidth(), this.getCenterHeight());
         this.parentScreen.renderPlayerInventory(guiGraphics, this.getCenterWidth() + 19, this.getCenterHeight() + (18 * 4));
-        ps.popPose();
     }
 
     public int getCenterWidth() {
@@ -149,8 +143,8 @@ public class EntryModifierScreen {
 
         this.finishedEntryCallback = null;
         menu.slotsActive = false;
-        menu.ghostInventory.setStackInSlot(0, ItemStack.EMPTY);
-        menu.ghostInventory.setStackInSlot(1, ItemStack.EMPTY);
+        menu.ghostInventory.setItem(0, ItemStack.EMPTY);
+        menu.ghostInventory.setItem(1, ItemStack.EMPTY);
         VeilPacketManager.server().sendPacket(new TypewriterMenuModifySlots(ItemStack.EMPTY, ItemStack.EMPTY));
     }
 
@@ -176,8 +170,8 @@ public class EntryModifierScreen {
 
         public void finishModifications() {
             if (this.glfwKeyCode != -1) {
-                this.first(RedstoneLinkNetworkHandler.Frequency.of(EntryModifierScreen.this.parentScreen.getMenu().ghostInventory.getStackInSlot(0)));
-                this.second(RedstoneLinkNetworkHandler.Frequency.of(EntryModifierScreen.this.parentScreen.getMenu().ghostInventory.getStackInSlot(1)));
+                this.first(RedstoneLinkNetworkHandler.Frequency.of(EntryModifierScreen.this.parentScreen.getMenu().ghostInventory.getItem(0)));
+                this.second(RedstoneLinkNetworkHandler.Frequency.of(EntryModifierScreen.this.parentScreen.getMenu().ghostInventory.getItem(1)));
 
                 final LinkedTypewriterEntries.KeyboardEntry entry = new LinkedTypewriterEntries.KeyboardEntry(EntryModifierScreen.this.psuedoEntry.first,
                         EntryModifierScreen.this.psuedoEntry.second,

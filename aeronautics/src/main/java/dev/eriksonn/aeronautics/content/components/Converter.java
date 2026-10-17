@@ -28,7 +28,7 @@ public record Converter(ItemStack item, int ticks, Optional<Identifier> sound, O
 	).apply(instance, Converter::new));
 
 	public static Converter cloudSkipper() {
-		return new Converter(AeroItems.MUSIC_DISC_CLOUD_SKIPPER.asStack(), 60,
+		return new Converter(new ItemStack(AeroItems.MUSIC_DISC_CLOUD_SKIPPER), 60,
 				Optional.of(AeroSoundEvents.CLOUD_SKIPPER_TRANSFORM.id()),
 				Optional.of(Identifier.withDefaultNamespace("white_smoke")));
 	}
@@ -51,14 +51,14 @@ public record Converter(ItemStack item, int ticks, Optional<Identifier> sound, O
 
 			if(converter.sound().isPresent()) {
 				Identifier soundLocation = converter.sound().get();
-				SoundEvent sound = BuiltInRegistries.SOUND_EVENT.get(soundLocation);
+				SoundEvent sound = BuiltInRegistries.SOUND_EVENT.getValue(soundLocation);
 				if(sound != null) {
 					level.playSound(entity, entity.blockPosition(), sound, SoundSource.AMBIENT, 5.0f, 1.0f);
 				}
 			}
 
 			if(converter.particle().isPresent() && level instanceof ServerLevel serverLevel) {
-				ParticleType<?> particle = BuiltInRegistries.PARTICLE_TYPE.get(converter.particle().get());
+				ParticleType<?> particle = BuiltInRegistries.PARTICLE_TYPE.getValue(converter.particle().get());
 
 				if(particle instanceof ParticleOptions particleOptions) {
 					Vec3 pos = entity.position();

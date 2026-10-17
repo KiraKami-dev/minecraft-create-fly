@@ -18,7 +18,8 @@ import org.spongepowered.asm.mixin.injection.At;
 @Mixin(value = {HorizontalAxisKineticBlock.class, RotatedPillarKineticBlock.class})
 public class FixAutoOrientationStaticMixin {
 
-    @WrapOperation(method = "*", at = @At(value = "INVOKE", target = "Lcom/simibubi/create/content/kinetics/base/IRotate;hasShaftTowards(Lnet/minecraft/world/level/LevelReader;Lnet/minecraft/core/BlockPos;Lnet/minecraft/world/level/block/state/BlockState;Lnet/minecraft/core/Direction;)Z", remap = false))
+    // the @At keeps remap = true: its descriptor holds Minecraft classes (getPreferredHorizontalAxis / getPreferredAxis)
+    @WrapOperation(method = "*", at = @At(value = "INVOKE", target = "Lcom/zurrtum/create/content/kinetics/base/IRotate;hasShaftTowards(Lnet/minecraft/world/level/LevelReader;Lnet/minecraft/core/BlockPos;Lnet/minecraft/world/level/block/state/BlockState;Lnet/minecraft/core/Direction;)Z", remap = true), remap = false)
     private static boolean simulated$handleAutoOrientationWithExtraKinetics(final IRotate instance, final LevelReader world, final BlockPos pos, final BlockState state, final Direction incomingDir, final Operation<Boolean> originalWrap) {
         Boolean original = originalWrap.call(instance, world, pos, state, incomingDir);
 

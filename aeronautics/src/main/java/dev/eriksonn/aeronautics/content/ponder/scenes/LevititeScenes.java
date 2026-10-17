@@ -1,7 +1,6 @@
 package dev.eriksonn.aeronautics.content.ponder.scenes;
 
 import com.zurrtum.create.AllItems;
-import com.zurrtum.create.Create;
 import com.zurrtum.create.client.foundation.ponder.CreateSceneBuilder;
 import dev.eriksonn.aeronautics.content.ponder.instructions.ChangePropellerRotateInstruction;
 import dev.eriksonn.aeronautics.content.ponder.instructions.PropellerRotateInstruction;
@@ -12,14 +11,14 @@ import dev.eriksonn.aeronautics.config.AeroConfig;
 import dev.eriksonn.aeronautics.content.ponder.instructions.PropellerParticleSpawningInstruction;
 import dev.eriksonn.aeronautics.index.AeroBlocks;
 import dev.eriksonn.aeronautics.service.AeroLevititeService;
-import net.createmod.catnip.math.Pointing;
-import net.createmod.ponder.api.ParticleEmitter;
-import net.createmod.ponder.api.PonderPalette;
-import net.createmod.ponder.api.element.ElementLink;
-import net.createmod.ponder.api.element.WorldSectionElement;
-import net.createmod.ponder.api.scene.*;
-import net.createmod.ponder.foundation.SelectionImpl;
-import net.createmod.ponder.foundation.element.InputWindowElement;
+import com.zurrtum.create.catnip.math.Pointing;
+import com.zurrtum.create.client.ponder.api.ParticleEmitter;
+import com.zurrtum.create.client.ponder.api.PonderPalette;
+import com.zurrtum.create.client.ponder.api.element.ElementLink;
+import com.zurrtum.create.client.ponder.api.element.WorldSectionElement;
+import com.zurrtum.create.client.ponder.api.scene.*;
+import com.zurrtum.create.client.ponder.foundation.SelectionImpl;
+import com.zurrtum.create.client.ponder.foundation.element.InputWindowElement;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.Vec3i;
@@ -36,9 +35,13 @@ import net.minecraft.world.phys.Vec3;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 import java.util.function.Consumer;
 
 public class LevititeScenes {
+    // was Create.RANDOM (not in Create Fly)
+    private static final Random RANDOM = new Random();
+
     public static void levititeBlend(final SceneBuilder scene, final SceneBuildingUtil util) {
         scene.title("levitite_blend", "Crystallizing Levitite Blend into Levitite");
         scene.configureBasePlate(1, 1, 5);
@@ -63,7 +66,7 @@ public class LevititeScenes {
         scene.idle(5);
         scene.effects().emitParticles(new Vec3(3.5, 1.5, 3.5), withinBlockSpace(ParticleTypes.SMOKE, 1.5f), 15, 2);
         scene.idle(50);
-        scene.world().replaceBlocks(util.select().position(3, 3, 3), AeroBlocks.LEVITITE.getDefaultState(), false);
+        scene.world().replaceBlocks(util.select().position(3, 3, 3), AeroBlocks.LEVITITE.defaultBlockState(), false);
         scene.effects().emitParticles(new Vec3(3.5, 1.5, 3.5), withinBlockSpace(ParticleTypes.FLAME, 1.5f), 15, 2);
         scene.idle(25);
 
@@ -83,7 +86,7 @@ public class LevititeScenes {
         }
 
         scene.world().setBlock(new BlockPos(3,3,3), Blocks.AIR.defaultBlockState(), false);
-        scene.addInstruction(new OffsetBreakParticlesInstruction(AABB.unitCubeFromLowerCorner(new Vec3(3, 1, 3)), AeroBlocks.LEVITITE.getDefaultState()));
+        scene.addInstruction(new OffsetBreakParticlesInstruction(AABB.unitCubeFromLowerCorner(new Vec3(3, 1, 3)), AeroBlocks.LEVITITE.defaultBlockState()));
 
         scene.idle(50);
 
@@ -116,7 +119,7 @@ public class LevititeScenes {
         scene.idle(60);
         for (int i = 0; i < 3; i++) {
             scene.effects().emitParticles(new Vec3(5.5 - i * 2.0, 1.5, 3.5), withinBlockSpace(ParticleTypes.FLAME, 1.5f), 15, 2);
-            scene.world().replaceBlocks(util.select().position(5 - i * 2, 2, 3), AeroBlocks.LEVITITE.getDefaultState(), false);
+            scene.world().replaceBlocks(util.select().position(5 - i * 2, 2, 3), AeroBlocks.LEVITITE.defaultBlockState(), false);
             scene.idle(5);
         }
         scene.idle(20);
@@ -257,7 +260,7 @@ public class LevititeScenes {
                         source[i]--;
                         if(source[i] == 0) {
                             source[i] = -1;
-                            scene.world().replaceBlocks(util.select().position(x + 1, 1, y + 1), AeroBlocks.LEVITITE.getDefaultState(), false);
+                            scene.world().replaceBlocks(util.select().position(x + 1, 1, y + 1), AeroBlocks.LEVITITE.defaultBlockState(), false);
                             scene.effects().emitParticles(new Vec3(1.5 + x, 1.5, 1.5 + y), withinBlockSpace(ParticleTypes.FLAME, 1.5f), 10, 2);
                         }
                     }
@@ -275,7 +278,7 @@ public class LevititeScenes {
                                 || x < 4 && source[x + 1 + 5 * y] == -1
                                 || y > 0 && source[x + 5 * y - 5] == -1
                                 || y < 4 && source[x + 5 * y + 5] == -1) {
-                            target[i] = Create.RANDOM.nextInt(minDelay, maxDelay);
+                            target[i] = RANDOM.nextInt(minDelay, maxDelay);
                             scene.effects().emitParticles(new Vec3(1.5 + x, 1.5, 1.5 + y), withinBlockSpace(ParticleTypes.SMOKE, 1.5f), 10, 1);
                         }
                     }
@@ -288,7 +291,7 @@ public class LevititeScenes {
                     if((bit & clayIndex) > 0) {
                         boolean remove = true;
                         for (int i = 0; i < 4; i++) {
-                            Vec3i dir = Direction.from2DDataValue(i).getNormal();
+                            Vec3i dir = Direction.from2DDataValue(i).getUnitVec3i();
                             int x2 = x + dir.getX() - 1;
                             int y2 = y + dir.getZ() - 1;
                             if (x2 >= 0 && y2 >= 0 && x2 < 5 && y2 < 5 && source[x2 + y2 * 5] >= 0) {
@@ -321,9 +324,9 @@ public class LevititeScenes {
 
     public static <T extends ParticleOptions> ParticleEmitter withinBlockSpace(final T data, final float range) {
         return (w, x, y, z) -> w.addParticle(data,
-                Math.floor(x) + 0.5 + (Create.RANDOM.nextFloat() - 0.5) * range,
-                Math.floor(y) + 0.5 + (Create.RANDOM.nextFloat() - 0.5) * range,
-                Math.floor(z) + 0.5 + (Create.RANDOM.nextFloat() - 0.5) * range,
+                Math.floor(x) + 0.5 + (RANDOM.nextFloat() - 0.5) * range,
+                Math.floor(y) + 0.5 + (RANDOM.nextFloat() - 0.5) * range,
+                Math.floor(z) + 0.5 + (RANDOM.nextFloat() - 0.5) * range,
                 0, 0, 0);
     }
 
@@ -375,7 +378,7 @@ public class LevititeScenes {
                         .add(util.select().fromTo(propellerPos.offset(1,0,-2),propellerPos.offset(3,0,-2)))
                 ,Direction.DOWN,airship);
         scene.idle(10);
-        BlockState state = watermelon ? AeroBlocks.PEARLESCENT_LEVITITE.getDefaultState():AeroBlocks.LEVITITE.getDefaultState();
+        BlockState state = watermelon ? AeroBlocks.PEARLESCENT_LEVITITE.defaultBlockState():AeroBlocks.LEVITITE.defaultBlockState();
         SimpleParticleType particle = watermelon ? ParticleTypes.SOUL_FIRE_FLAME:ParticleTypes.FLAME;
         for (int i = 0; i < 3; i++) {
             BlockPos p = propellerPos.offset(3-i,0,2);
@@ -459,7 +462,7 @@ public class LevititeScenes {
                 .add(util.select().position(propellerPos.offset(4,0,-2)));
 
         if(watermelon)
-            world.replaceBlocks(levititeCorners,AeroBlocks.PEARLESCENT_LEVITITE.getDefaultState(),false);
+            world.replaceBlocks(levititeCorners,AeroBlocks.PEARLESCENT_LEVITITE.defaultBlockState(),false);
 
         world.showSectionAndMerge(levititeCorners,Direction.DOWN,airship);
 

@@ -11,12 +11,12 @@ import dev.ryanhcode.sable.sublevel.SubLevel;
 import dev.simulated_team.simulated.content.blocks.swivel_bearing.SwivelBearingBlockEntity;
 import dev.simulated_team.simulated.index.SimBlocks;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.HolderLookup;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.NbtUtils;
+import net.minecraft.core.UUIDUtil;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -43,7 +43,7 @@ public class SwivelBearingPlateBlockEntity extends KineticBlockEntity implements
     @Override
     public void remove() {
         // if the block was broken / destroyed, destroy our parent
-        if (!this.level.isClientSide && !this.assembling) {
+        if (!this.level.isClientSide() && !this.assembling) {
             this.destroyBearing();
         }
 
@@ -88,34 +88,27 @@ public class SwivelBearingPlateBlockEntity extends KineticBlockEntity implements
     }
 
     @Override
-    protected void write(final CompoundTag compound, final HolderLookup.Provider registries, final boolean clientPacket) {
-        super.write(compound, registries, clientPacket);
+    protected void write(final ValueOutput view, final boolean clientPacket) {
+        super.write(view, clientPacket);
 
         if (this.parent != null) {
-            compound.put("ParentPos", NbtUtils.writeBlockPos(this.parent));
+            view.store("ParentPos", BlockPos.CODEC, this.parent);
         }
 
         if (this.parentSubLevelId != null) {
-            compound.putUUID("ParentSubLevelId", this.parentSubLevelId);
+            view.store("ParentSubLevelId", UUIDUtil.CODEC, this.parentSubLevelId);
         }
     }
 
     @Override
-    protected void read(final CompoundTag compound, final HolderLookup.Provider registries, final boolean clientPacket) {
-        super.read(compound, registries, clientPacket);
+    protected void read(final ValueInput view, final boolean clientPacket) {
+        super.read(view, clientPacket);
 
-        if (compound.contains("parent")) {
-            this.parent = NbtUtils.readBlockPos(compound, "parent").get();
-        }
+        view.read("parent", BlockPos.CODEC).ifPresent(pos -> this.parent = pos);
 
+        view.read("ParentPos", BlockPos.CODEC).ifPresent(pos -> this.parent = pos);
 
-        if (compound.contains("ParentPos")) {
-            this.parent = NbtUtils.readBlockPos(compound, "ParentPos").get();
-        }
-
-        if (compound.contains("ParentSubLevelId")) {
-            this.parentSubLevelId = compound.getUUID("ParentSubLevelId");
-        }
+        view.read("ParentSubLevelId", UUIDUtil.CODEC).ifPresent(id -> this.parentSubLevelId = id);
     }
 
     @Override

@@ -1,21 +1,21 @@
 package dev.eriksonn.aeronautics.index;
 
-import dev.simulated_team.simulated.data.advancements.SimAdvancements;
 import dev.simulated_team.simulated.data.advancements.SimulatedAdvancement;
 import dev.eriksonn.aeronautics.Aeronautics;
 import dev.eriksonn.aeronautics.data.AeroAdvancementTriggers;
-import net.minecraft.core.HolderLookup;
-import net.minecraft.data.PackOutput;
 import net.minecraft.world.item.Items;
-import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
 import java.util.function.BiConsumer;
 import java.util.function.UnaryOperator;
 
-public class AeroAdvancements extends SimAdvancements {
+/**
+ * Aeronautics' advancements. The advancement JSON is shipped (upstream generated it from here as a
+ * {@code DataProvider}); at runtime this only creates the builtin triggers ({@link AeroAdvancementTriggers}) and
+ * provides {@link SimulatedAdvancement#awardTo}.
+ */
+public class AeroAdvancements {
 	public static final List<SimulatedAdvancement> AERO_ADVANCEMENTS = new ArrayList<>();
 	public static final SimulatedAdvancement
 
@@ -89,19 +89,6 @@ public class AeroAdvancements extends SimAdvancements {
             .special(SimulatedAdvancement.TaskType.SECRET)
             .after(UNIDENTIFIED_FLOATING_OBJECT));
 
-	public AeroAdvancements(final PackOutput output, final CompletableFuture<HolderLookup.Provider> registries) {
-		super(output, registries);
-	}
-
-	public List<SimulatedAdvancement> getAdvancementsArray() {
-		return AERO_ADVANCEMENTS;
-	}
-
-	@Override
-	public @NotNull String getName() {
-		return "Create Aeronautics Advancements";
-	}
-
 	public static void provideLang(final BiConsumer<String, String> consumer) {
 		for (final SimulatedAdvancement advancement : AERO_ADVANCEMENTS) {
 			advancement.provideLang(consumer);
@@ -114,5 +101,5 @@ public class AeroAdvancements extends SimAdvancements {
 		return advancement;
 	}
 
-	public static void init() {}
+	public static void register() {}
 }

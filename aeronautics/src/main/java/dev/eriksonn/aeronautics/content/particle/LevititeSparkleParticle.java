@@ -5,6 +5,7 @@ import net.minecraft.client.particle.Particle;
 import net.minecraft.client.particle.ParticleProvider;
 import net.minecraft.client.particle.SimpleAnimatedParticle;
 import net.minecraft.client.particle.SpriteSet;
+import net.minecraft.util.RandomSource;
 import org.jetbrains.annotations.Nullable;
 
 public class LevititeSparkleParticle extends SimpleAnimatedParticle {
@@ -53,7 +54,8 @@ public class LevititeSparkleParticle extends SimpleAnimatedParticle {
 
         @Override
         public @Nullable Particle createParticle(final LevititeSparkleParticleData levititeSparkleParticleData, final ClientLevel level,
-                                                 final double x, final double y, final double z, final double dx, final double dy, final double dz) {
+                                                 final double x, final double y, final double z, final double dx, final double dy, final double dz,
+                                                 final RandomSource random) {
             return new LevititeSparkleParticle(
                     level,
                     x, y, z, dx, dy, dz,

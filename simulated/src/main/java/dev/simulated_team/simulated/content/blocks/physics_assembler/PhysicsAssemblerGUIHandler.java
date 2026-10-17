@@ -1,6 +1,5 @@
 package dev.simulated_team.simulated.content.blocks.physics_assembler;
 
-import com.mojang.blaze3d.vertex.PoseStack;
 import dev.ryanhcode.sable.Sable;
 import dev.ryanhcode.sable.api.SubLevelHelper;
 import dev.ryanhcode.sable.sublevel.ClientSubLevel;
@@ -11,15 +10,17 @@ import dev.simulated_team.simulated.index.SimSoundEvents;
 import dev.simulated_team.simulated.network.packets.AssemblePacket;
 import dev.simulated_team.simulated.util.hold_interaction.BlockHoldInteraction;
 import dev.ryanhcode.sable.veillite.api.network.VeilPacketManager;
-import net.createmod.catnip.animation.AnimationTickHolder;
+import com.zurrtum.create.client.catnip.animation.AnimationTickHolder;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.core.BlockPos;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
+import org.joml.Matrix3x2fStack;
 
 public class PhysicsAssemblerGUIHandler extends BlockHoldInteraction {
     private static final double PULLED_THRESHOLD = 0.015;
@@ -125,31 +126,32 @@ public class PhysicsAssemblerGUIHandler extends BlockHoldInteraction {
     public void renderOverlay(final GuiGraphics graphics, final int width1, final int height1, final boolean hideGui) {
         if (hideGui)
             return;
-        final PoseStack ps = graphics.pose();
+        // 1.21.11 GUI poses are 2D (Matrix3x2fStack) and blits take the pipeline explicitly
+        final Matrix3x2fStack ps = graphics.pose();
 
-        ps.pushPose();
+        ps.pushMatrix();
 
-        ps.translate(graphics.guiWidth() / 2, graphics.guiHeight() / 2, 0);
+        ps.translate(graphics.guiWidth() / 2, graphics.guiHeight() / 2);
 
         final int height = 6 + 10 * 6 + 6;
 
-        ps.translate(10, -height / 2, 0);
+        ps.translate(10, -height / 2);
 
-        graphics.blit(SimGUITextures.ASSEMBLER_TRACK_START.location, 0, 0, 0, 0, 14, 6, 32, 32);
-        ps.translate(0, 6, 0);
+        graphics.blit(RenderPipelines.GUI_TEXTURED, SimGUITextures.ASSEMBLER_TRACK_START.location, 0, 0, 0, 0, 14, 6, 32, 32);
+        ps.translate(0, 6);
 
         for (int c = 0; c < 6; c++) {
-            graphics.blit(SimGUITextures.ASSEMBLER_TRACK_MIDDLE.location, 0, 0, 0, 7, 14, 10, 32, 32);
-            ps.translate(0, 10, 0);
+            graphics.blit(RenderPipelines.GUI_TEXTURED, SimGUITextures.ASSEMBLER_TRACK_MIDDLE.location, 0, 0, 0, 7, 14, 10, 32, 32);
+            ps.translate(0, 10);
         }
 
-        graphics.blit(SimGUITextures.ASSEMBLER_TRACK_END.location, 0, 0, 0, 18, 14, 6, 32, 32);
+        graphics.blit(RenderPipelines.GUI_TEXTURED, SimGUITextures.ASSEMBLER_TRACK_END.location, 0, 0, 0, 18, 14, 6, 32, 32);
 
         final float value = Mth.lerp(AnimationTickHolder.getPartialTicks(), lastAnimatedValue, animatedValue);
-        ps.translate(-2, -12 - (51 * value), 0);
-        graphics.blit(SimGUITextures.ASSEMBLER_TRACK_MIDDLE.location, 0, 0, 14, 0, 18, 14, 32, 32);
+        ps.translate(-2, -12 - (51 * value));
+        graphics.blit(RenderPipelines.GUI_TEXTURED, SimGUITextures.ASSEMBLER_TRACK_MIDDLE.location, 0, 0, 14, 0, 18, 14, 32, 32);
 
-        ps.popPose();
+        ps.popMatrix();
     }
 
     public ClientSubLevel getSubLevelHolding() {

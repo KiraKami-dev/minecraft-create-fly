@@ -10,11 +10,11 @@ import dev.simulated_team.simulated.content.blocks.auger_shaft.AugerCogBlock;
 import dev.simulated_team.simulated.content.blocks.auger_shaft.AugerShaftBlock;
 import dev.simulated_team.simulated.index.SimBlocks;
 import dev.simulated_team.simulated.ponder.instructions.AirflowAABBInstruction;
-import net.createmod.catnip.math.Pointing;
-import net.createmod.ponder.api.PonderPalette;
-import net.createmod.ponder.api.element.ElementLink;
-import net.createmod.ponder.api.element.EntityElement;
-import net.createmod.ponder.api.scene.*;
+import com.zurrtum.create.catnip.math.Pointing;
+import com.zurrtum.create.client.ponder.api.PonderPalette;
+import com.zurrtum.create.client.ponder.api.element.ElementLink;
+import com.zurrtum.create.client.ponder.api.element.EntityElement;
+import com.zurrtum.create.client.ponder.api.scene.*;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.entity.Entity;
@@ -60,7 +60,7 @@ public class AugerShaftScenes {
         world.showSection(augerShafts, Direction.DOWN);
         scene.idle(10);
         world.showSection(select.position(inputFunnel), Direction.DOWN);
-        world.setBlock(inputFunnel, AllBlocks.ANDESITE_FUNNEL.getDefaultState().setValue(AndesiteFunnelBlock.FACING, Direction.UP), false);
+        world.setBlock(inputFunnel, AllBlocks.ANDESITE_FUNNEL.defaultBlockState().setValue(AndesiteFunnelBlock.FACING, Direction.UP), false);
         scene.idle(12);
         world.modifyBlock(new BlockPos(2, 2, 1), s -> s.setValue(AugerShaftBlock.UP, true), false);
         scene.idle(8);
@@ -82,17 +82,17 @@ public class AugerShaftScenes {
         world.modifyBlock(new BlockPos(2, 2, 1), s -> s.setValue(AugerShaftBlock.UP, false), false);
         scene.idle(20);
         scene.addKeyframe();
-        scene.overlay().showControls(vector.topOf(augerCog), Pointing.DOWN, 80).rightClick().withItem(AllItems.WRENCH.asStack());
+        scene.overlay().showControls(vector.topOf(augerCog), Pointing.DOWN, 80).rightClick().withItem(new ItemStack(AllItems.WRENCH));
         scene.idle(7);
         world.modifyBlock(augerCog.north(), s -> s.setValue(AugerShaftBlock.SECTION, AugerShaftBlock.BarrelSection.FRONT), false);
         world.modifyBlock(augerCog.south(), s -> s.setValue(AugerShaftBlock.SECTION, AugerShaftBlock.BarrelSection.SINGLE), false);
-        world.setBlock(augerCog, SimBlocks.AUGER_COG.getDefaultState().setValue(AugerCogBlock.AXIS, Direction.Axis.Z), true);
+        world.setBlock(augerCog, SimBlocks.AUGER_COG.defaultBlockState().setValue(AugerCogBlock.AXIS, Direction.Axis.Z), true);
         overlay.showText(80)
                 .text("Using a Wrench, you can cycle between the Auger Shaft and Auger Cog")
                 .placeNearTarget()
                 .pointAt(vector.blockSurface(augerCog, Direction.UP));
         scene.idle(100);
-        scene.overlay().showControls(vector.topOf(augerCog.north()), Pointing.DOWN, 80).rightClick().withItem(AllBlocks.INDUSTRIAL_IRON_BLOCK.asStack());
+        scene.overlay().showControls(vector.topOf(augerCog.north()), Pointing.DOWN, 80).rightClick().withItem(new ItemStack(AllBlocks.INDUSTRIAL_IRON_BLOCK));
         scene.idle(7);
         world.modifyBlock(augerCog.north(), s -> s.setValue(AugerShaftBlock.SECTION, AugerShaftBlock.BarrelSection.FRONT).setValue(AugerShaftBlock.ENCASED, true), true);
         overlay.showText(80)
@@ -109,15 +109,15 @@ public class AugerShaftScenes {
                 .placeNearTarget()
                 .pointAt(vector.blockSurface(augerCog, Direction.WEST));
         scene.idle(80);
-        scene.overlay().showControls(new Vec3(3, 2.5, 2.5), Pointing.RIGHT, 60).withItem(AllItems.GOGGLES.asStack());
+        scene.overlay().showControls(new Vec3(3, 2.5, 2.5), Pointing.RIGHT, 60).withItem(new ItemStack(AllItems.GOGGLES));
         overlay.showText(60)
                 .text("...Or by inspecting the Auger while wearing Goggles")
                 .placeNearTarget()
                 .pointAt(new Vec3(2, 2.5, 2.5));
         scene.idle(85);
-        world.setBlock(invalidFunnel, AllBlocks.ANDESITE_FUNNEL.getDefaultState().setValue(AndesiteFunnelBlock.FACING, Direction.NORTH), false);
-        world.setBlock(invalidSideFunnel, AllBlocks.ANDESITE_FUNNEL.getDefaultState().setValue(AndesiteFunnelBlock.FACING, Direction.WEST).setValue(AndesiteFunnelBlock.EXTRACTING, true), false);
-        world.setBlock(new BlockPos(1,2,4), AllBlocks.ANDESITE_BELT_FUNNEL.getDefaultState().setValue(BeltFunnelBlock.HORIZONTAL_FACING, Direction.WEST).setValue(BeltFunnelBlock.SHAPE, BeltFunnelBlock.Shape.PUSHING), false);
+        world.setBlock(invalidFunnel, AllBlocks.ANDESITE_FUNNEL.defaultBlockState().setValue(AndesiteFunnelBlock.FACING, Direction.NORTH), false);
+        world.setBlock(invalidSideFunnel, AllBlocks.ANDESITE_FUNNEL.defaultBlockState().setValue(AndesiteFunnelBlock.FACING, Direction.WEST).setValue(AndesiteFunnelBlock.EXTRACTING, true), false);
+        world.setBlock(new BlockPos(1,2,4), AllBlocks.ANDESITE_BELT_FUNNEL.defaultBlockState().setValue(BeltFunnelBlock.HORIZONTAL_FACING, Direction.WEST).setValue(BeltFunnelBlock.SHAPE, BeltFunnelBlock.Shape.PUSHING), false);
         world.showSection(select.position(invalidFunnel), Direction.DOWN);
         world.showSection(select.position(invalidSideFunnel), Direction.DOWN);
         scene.idle(10);
@@ -177,7 +177,7 @@ public class AugerShaftScenes {
                 .pointAt(vector.blockSurface(new BlockPos(2, 1, 2), Direction.WEST));
 
         scene.idle(20);
-        final BlockState[] states = {AllBlocks.MECHANICAL_HARVESTER.getDefaultState(), AllBlocks.MECHANICAL_SAW.getDefaultState(), AllBlocks.MECHANICAL_DRILL.getDefaultState()};
+        final BlockState[] states = {AllBlocks.MECHANICAL_HARVESTER.defaultBlockState(), AllBlocks.MECHANICAL_SAW.defaultBlockState(), AllBlocks.MECHANICAL_DRILL.defaultBlockState()};
         for (final BlockState state : states) {
             scene.idle(20);
             world.hideSection(bottomActors, Direction.EAST);
@@ -191,8 +191,8 @@ public class AugerShaftScenes {
 
         scene.idle(20);
 
-        world.setBlock(new BlockPos(3, 1, 3), AllBlocks.ANDESITE_ENCASED_COGWHEEL.getDefaultState().setValue(EncasedCogwheelBlock.AXIS, Direction.Axis.Z), false);
-        world.setBlocks(andesiteCasing, AllBlocks.ANDESITE_CASING.getDefaultState(), false);
+        world.setBlock(new BlockPos(3, 1, 3), AllBlocks.ANDESITE_ENCASED_COGWHEEL.defaultBlockState().setValue(EncasedCogwheelBlock.AXIS, Direction.Axis.Z), false);
+        world.setBlocks(andesiteCasing, AllBlocks.ANDESITE_CASING.defaultBlockState(), false);
 
         world.setKineticSpeed(select.position(3, 1, 3), -32);
         world.setKineticSpeed(select.position(3, 1, 4), -32);
@@ -260,7 +260,7 @@ public class AugerShaftScenes {
                 .placeNearTarget()
                 .pointAt(vector.blockSurface(new BlockPos(3, 2, 4), Direction.EAST));
         scene.idle(70);
-        world.setBlock(new BlockPos(2,2,5), AllBlocks.ANDESITE_BELT_FUNNEL.getDefaultState().setValue(BeltFunnelBlock.HORIZONTAL_FACING, Direction.WEST).setValue(BeltFunnelBlock.SHAPE, BeltFunnelBlock.Shape.PUSHING), false);
+        world.setBlock(new BlockPos(2,2,5), AllBlocks.ANDESITE_BELT_FUNNEL.defaultBlockState().setValue(BeltFunnelBlock.HORIZONTAL_FACING, Direction.WEST).setValue(BeltFunnelBlock.SHAPE, BeltFunnelBlock.Shape.PUSHING), false);
         world.showSection(funnel, Direction.DOWN);
         scene.idle(12);
         world.modifyBlock(new BlockPos(3, 2, 5), s -> s.setValue(AugerShaftBlock.WEST, true), false);

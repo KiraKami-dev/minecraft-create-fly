@@ -1,7 +1,7 @@
 package dev.eriksonn.aeronautics.content.blocks.mounted_potato_cannon;
 
 import com.zurrtum.create.api.equipment.potatoCannon.PotatoCannonProjectileType;
-import com.zurrtum.create.api.registry.CreateRegistries;
+import com.zurrtum.create.api.registry.CreateRegistryKeys;
 import com.zurrtum.create.content.equipment.potatoCannon.PotatoCannonItem;
 import dev.simulated_team.simulated.multiloader.inventory.ContainerSlot;
 import dev.simulated_team.simulated.multiloader.inventory.ItemInfoWrapper;
@@ -41,7 +41,7 @@ public class MountedPotatoCannonInventory extends SingleSlotContainer {
 
 	public void updateCachedType(final HolderLookup.Provider registries, final ItemStack itemStack) {
 		// why does PotatoCannonProjectileType.getTypeForItem() requires RegistryAccess specifically
-		this.cachedProjectileType = registries.lookupOrThrow(CreateRegistries.POTATO_PROJECTILE_TYPE)
+		this.cachedProjectileType = registries.lookupOrThrow(CreateRegistryKeys.POTATO_PROJECTILE_TYPE)
 				.listElements()
 				.filter(ref -> ref.value().items().contains(itemStack.getItem().builtInRegistryHolder()))
 				.findFirst().map(Holder.Reference::value).orElse(null);

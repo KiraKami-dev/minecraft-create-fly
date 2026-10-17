@@ -1,28 +1,20 @@
 package dev.simulated_team.simulated.content.blocks.portable_engine;
 
 
-import com.mojang.blaze3d.vertex.PoseStack;
-import com.zurrtum.create.Create;
+import com.zurrtum.create.api.behaviour.BlockEntityBehaviour;
+import com.zurrtum.create.catnip.animation.LerpedFloat;
+import com.zurrtum.create.catnip.math.VecHelper;
 import com.zurrtum.create.content.contraptions.IControlContraption;
 import com.zurrtum.create.content.contraptions.bearing.WindmillBearingBlockEntity;
 import com.zurrtum.create.content.kinetics.base.GeneratingKineticBlockEntity;
-import com.zurrtum.create.api.behaviour.BlockEntityBehaviour;
-import com.zurrtum.create.client.foundation.blockEntity.behaviour.ValueBoxTransform;
-import com.zurrtum.create.client.foundation.blockEntity.behaviour.scrollValue.ScrollOptionBehaviour;
-import dev.engine_room.flywheel.lib.transform.TransformStack;
+import com.zurrtum.create.foundation.blockEntity.behaviour.scrollValue.ServerScrollOptionBehaviour;
 import dev.ryanhcode.sable.Sable;
 import dev.ryanhcode.sable.companion.math.JOMLConversion;
-import dev.simulated_team.simulated.data.SimLang;
 import dev.simulated_team.simulated.index.SimSoundEvents;
 import dev.simulated_team.simulated.index.SimStats;
 import dev.simulated_team.simulated.multiloader.inventory.ContainerSlot;
 import dev.simulated_team.simulated.multiloader.inventory.ItemInfoWrapper;
 import dev.simulated_team.simulated.service.SimItemService;
-import net.createmod.catnip.animation.LerpedFloat;
-import net.createmod.catnip.lang.LangBuilder;
-import net.createmod.catnip.math.AngleHelper;
-import net.createmod.catnip.math.VecHelper;
-import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -31,22 +23,23 @@ import net.minecraft.core.Vec3i;
 import net.minecraft.core.particles.ParticleOptions;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.network.chat.Component;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.Clearable;
+import net.minecraft.world.Containers;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.CakeBlock;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 
@@ -55,6 +48,10 @@ import java.util.List;
 import static net.minecraft.world.level.block.state.properties.BlockStateProperties.HORIZONTAL_FACING;
 import static net.minecraft.world.level.block.state.properties.BlockStateProperties.LIT;
 
+/**
+ * The rotation direction value box and goggle information are client behaviours
+ * (RotationDirectionScrollBehaviour with {@link PortableEngineValueBoxTransform}, {@link PortableEngineTooltipBehaviour}).
+ */
 public class PortableEngineBlockEntity extends GeneratingKineticBlockEntity implements Clearable {
 
     /**
@@ -78,7 +75,7 @@ public class PortableEngineBlockEntity extends GeneratingKineticBlockEntity impl
      */
     protected float generatedSpeed;
 
-    protected ScrollOptionBehaviour<IControlContraption.MovementMode> movementDirection;
+    protected ServerScrollOptionBehaviour<WindmillBearingBlockEntity.RotationDirection> movementDirection;
 
     protected float clientAngle;
     public float lastHatchOpenTime = 0;
@@ -96,9 +93,8 @@ public class PortableEngineBlockEntity extends GeneratingKineticBlockEntity impl
     }
 
     @Override
-    public void addBehaviours(final List<BlockEntityBehaviour> behaviours) {
-        this.movementDirection = new ScrollOptionBehaviour(WindmillBearingBlockEntity.RotationDirection.class,
-                Component.translatable("create.contraptions.windmill.rotation_direction"), this, new PortableEngineValueBoxTransform());
+    public void addBehaviours(final List<BlockEntityBehaviour<?>> behaviours) {
+        this.movementDirection = new ServerScrollOptionBehaviour<>(WindmillBearingBlockEntity.RotationDirection.class, this);
         this.movementDirection.withCallback(t -> this.onDirectionChanged());
 
         behaviours.add(this.movementDirection);
@@ -110,34 +106,25 @@ public class PortableEngineBlockEntity extends GeneratingKineticBlockEntity impl
         this.inventory.clearContent();
     }
 
-    private static class PortableEngineValueBoxTransform extends ValueBoxTransform {
-
-        @Override
-        public Vec3 getLocalOffset(final LevelAccessor levelAccessor, final BlockPos blockPos, final BlockState blockState) {
-            final Direction facing = blockState.getValue(PortableEngineBlock.HORIZONTAL_FACING);
-            final float yRot = AngleHelper.horizontalAngle(facing);
-            return VecHelper.rotateCentered(VecHelper.voxelSpace(8, 13.5f, 7.4f), yRot, Direction.Axis.Y);
-        }
-
-        @Override
-        public void rotate(final LevelAccessor levelAccessor, final BlockPos blockPos, final BlockState blockState, final PoseStack poseStack) {
-            final float yRot = AngleHelper.horizontalAngle(blockState.getValue(BlockStateProperties.HORIZONTAL_FACING));
-            TransformStack.of(poseStack)
-                    .rotateYDegrees(yRot)
-                    .rotateXDegrees(90)
-                    .translate(0, 0.1, 0);
-        }
-
+    /**
+     * Drops the fuel when the engine is removed (upstream PortableEngineBlock#onRemove). Not called when it is dyed,
+     * the block entity is kept then (PortableEngineBlock#shouldChangedStateKeepBlockEntity).
+     */
+    @Override
+    public void preRemoveSideEffects(final BlockPos pos, final BlockState oldState) {
+        super.preRemoveSideEffects(pos, oldState);
+        if (this.level != null && !this.inventory.isEmpty())
+            Containers.dropItemStack(this.level, pos.getX(), pos.getY(), pos.getZ(), this.inventory.getItem(0));
     }
 
     private void onDirectionChanged() {
-        if (!this.level.isClientSide) {
+        if (!this.level.isClientSide()) {
             this.updateGeneratedRotation();
         }
     }
 
     protected static BlockPos getCameraPos() {
-        final Entity renderViewEntity = Minecraft.getInstance().cameraEntity;
+        final Entity renderViewEntity = Minecraft.getInstance().getCameraEntity();
         if (renderViewEntity == null) {
             return BlockPos.ZERO;
         }
@@ -156,7 +143,7 @@ public class PortableEngineBlockEntity extends GeneratingKineticBlockEntity impl
         final boolean isLit = this.burnTime > 0;
 
         //Update visualSpeed and play sounds
-        if (this.level.isClientSide) {
+        if (this.level.isClientSide()) {
             final float targetSpeed = this.isVirtual() ? this.speed : this.getGeneratedSpeed();
             this.visualSpeed.updateChaseTarget(targetSpeed);
             this.visualSpeed.tickChaser();
@@ -222,8 +209,8 @@ public class PortableEngineBlockEntity extends GeneratingKineticBlockEntity impl
             this.burnTime = SimItemService.INSTANCE.getBurnTime(stack);
             this.superHeated = this.getNextSuperHeated();
             if (this.burnTime > 0) {
-                if (stack.getCount() == 1 && stack.getItem().hasCraftingRemainingItem()) {
-                    slot.setStack(slot.getType().getCraftingRemainingItem().getDefaultInstance());
+                if (stack.getCount() == 1 && !stack.getItem().getCraftingRemainder().isEmpty()) {
+                    slot.setStack(slot.getType().getCraftingRemainder());
                 } else {
                     slot.shrink(1);
                 }
@@ -267,7 +254,7 @@ public class PortableEngineBlockEntity extends GeneratingKineticBlockEntity impl
 
             final Direction direction = this.getBlockState()
                     .getValue(BlockStateProperties.HORIZONTAL_FACING);
-            final Vec3i N = direction.getNormal();
+            final Vec3i N = direction.getUnitVec3i();
             final Vec3 N2 = new Vec3(N.getX(), N.getY(), N.getZ());
             pos = pos.add(-N.getX() * 0.53, -0.1, -N.getZ() * 0.53);
             final Vec3 speed = VecHelper.offsetRandomly(Vec3.ZERO, RandomSource.create(), 0.01f).add(N2.scale(-0.03));
@@ -311,7 +298,7 @@ public class PortableEngineBlockEntity extends GeneratingKineticBlockEntity impl
                     }
                 }
                 this.burnTime += 20 * 5;
-                this.level.playSound(null, this.getBlockPos(), SoundEvents.GENERIC_EAT, SoundSource.BLOCKS, 1.0f, 1.0f);
+                this.level.playSound(null, this.getBlockPos(), SoundEvents.GENERIC_EAT.value(), SoundSource.BLOCKS, 1.0f, 1.0f);
             }
         }
     }
@@ -355,20 +342,22 @@ public class PortableEngineBlockEntity extends GeneratingKineticBlockEntity impl
         Vec3 hatchPos = VecHelper.getCenterOf(this.worldPosition);
 
         final Direction direction = this.getBlockState().getValue(BlockStateProperties.HORIZONTAL_FACING);
-        final Vec3i facingDirI = direction.getNormal();
+        final Vec3i facingDirI = direction.getUnitVec3i();
         final Vec3 facingDir = new Vec3(facingDirI.getX(), facingDirI.getY(), facingDirI.getZ());
         final Vec3 rightDir = facingDir.yRot((float) (Math.PI / 2.0));
 
         hatchPos = hatchPos.add(-facingDirI.getX() * 0.53, -0.1, -facingDirI.getZ() * 0.53);
 
+        // was Create.RANDOM (not in Create Fly); particles are client side
+        final RandomSource random = this.level.getRandom();
 
-        if (Create.RANDOM.nextFloat() < 0.12) {
-            Vec3 random = VecHelper.offsetRandomly(Vec3.ZERO, RandomSource.create(), 0.15f);
-            random = random.subtract(facingDir.scale(random.dot(facingDir)));
-            hatchPos = hatchPos.add(random);
+        if (random.nextFloat() < 0.12) {
+            Vec3 offset = VecHelper.offsetRandomly(Vec3.ZERO, RandomSource.create(), 0.15f);
+            offset = offset.subtract(facingDir.scale(offset.dot(facingDir)));
+            hatchPos = hatchPos.add(offset);
 
             final ParticleOptions particle;
-            if (this.isSuperHeated() && Create.RANDOM.nextFloat() < 0.3) {
+            if (this.isSuperHeated() && random.nextFloat() < 0.3) {
                 particle = ParticleTypes.FLAME;
             } else {
                 particle = ParticleTypes.SMOKE;
@@ -379,12 +368,12 @@ public class PortableEngineBlockEntity extends GeneratingKineticBlockEntity impl
         }
 
         for (int i = -1; i < 2; i+=2) {
-            if (Create.RANDOM.nextFloat() < 0.25) {
-                final Vec3 random = VecHelper.offsetRandomly(Vec3.ZERO, RandomSource.create(), 1.0f / 16.0f);
+            if (random.nextFloat() < 0.25) {
+                final Vec3 offset = VecHelper.offsetRandomly(Vec3.ZERO, RandomSource.create(), 1.0f / 16.0f);
                 final Vec3 pos = Vec3.upFromBottomCenterOf(this.worldPosition, 11.0 / 16.0)
                         .add(facingDir.scale(0.5))
                         .add(rightDir.scale(0.5 * i))
-                        .add(random);
+                        .add(offset);
 
                 final Vec3 speed = VecHelper.offsetRandomly(Vec3.ZERO, RandomSource.create(), 0.01f);
                 this.level.addParticle(ParticleTypes.SMOKE, pos.x, pos.y, pos.z, speed.x, speed.y, speed.z);
@@ -393,91 +382,46 @@ public class PortableEngineBlockEntity extends GeneratingKineticBlockEntity impl
 
 
 
-        if (this.hatchOpenTime > 0 && Create.RANDOM.nextFloat() < 0.08) {
-            Vec3 random = VecHelper.offsetRandomly(Vec3.ZERO, RandomSource.create(), 0.1f);
-            random = random.subtract(facingDir.scale(random.dot(facingDir)));
-            hatchPos = hatchPos.add(random);
+        if (this.hatchOpenTime > 0 && random.nextFloat() < 0.08) {
+            Vec3 offset = VecHelper.offsetRandomly(Vec3.ZERO, RandomSource.create(), 0.1f);
+            offset = offset.subtract(facingDir.scale(offset.dot(facingDir)));
+            hatchPos = hatchPos.add(offset);
             this.level.addParticle(this.isSuperHeated() ? ParticleTypes.SOUL_FIRE_FLAME : ParticleTypes.FLAME, hatchPos.x, hatchPos.y, hatchPos.z, 0, 0, 0);
         }
     }
 
-    public void write(final CompoundTag compound, final HolderLookup.Provider registries, final boolean clientPacket) {
-        super.write(compound, registries, clientPacket);
-        compound.putBoolean("SuperHeated", this.superHeated);
-        compound.putFloat("GeneratedSpeed", this.generatedSpeed);
-        compound.putBoolean("EatingCake", this.eatingCake);
+    @Override
+    public void write(final ValueOutput view, final boolean clientPacket) {
+        super.write(view, clientPacket);
+        view.putBoolean("SuperHeated", this.superHeated);
+        view.putFloat("GeneratedSpeed", this.generatedSpeed);
+        view.putBoolean("EatingCake", this.eatingCake);
 
-        compound.put("Inventory", this.inventory.write(registries));
+        // the multiloader inventory serializes to NBT with a registry lookup
+        final HolderLookup.Provider registries = this.level.registryAccess();
+        view.store("Inventory", CompoundTag.CODEC, this.inventory.write(registries));
 
-        compound.putInt("BurnTime", this.burnTime);
+        view.putInt("BurnTime", this.burnTime);
     }
 
-    protected void read(final CompoundTag compound, final HolderLookup.Provider registries, final boolean clientPacket) {
-        super.read(compound, registries, clientPacket);
-        this.superHeated = compound.getBoolean("SuperHeated");
+    @Override
+    @SuppressWarnings("deprecation") // ValueInput#lookup: the multiloader inventory reads NBT with a registry lookup
+    protected void read(final ValueInput view, final boolean clientPacket) {
+        super.read(view, clientPacket);
+        this.superHeated = view.getBooleanOr("SuperHeated", false);
 
-        this.inventory.read(registries, compound.getCompound("Inventory"));
+        this.inventory.read(view.lookup(), view.read("Inventory", CompoundTag.CODEC).orElseGet(CompoundTag::new));
 
-        this.burnTime = compound.getInt("BurnTime");
-        this.generatedSpeed = compound.getFloat("GeneratedSpeed");
-        this.eatingCake = compound.getBoolean("EatingCake");
+        this.burnTime = view.getIntOr("BurnTime", 0);
+        this.generatedSpeed = view.getFloatOr("GeneratedSpeed", 0);
+        this.eatingCake = view.getBooleanOr("EatingCake", false);
 
         if (clientPacket || this.isVirtual()) {
             this.visualSpeed.chase(this.getGeneratedSpeed(), 1 / 8f, LerpedFloat.Chaser.EXP);
         }
     }
 
-
-    @Override
-    public boolean addToGoggleTooltip(final List<Component> tooltip, final boolean isPlayerSneaking) {
-        super.addToGoggleTooltip(tooltip, isPlayerSneaking);
-
-        SimLang.translate("portable_engine.tooltip_name").text(":").forGoggles(tooltip);
-
-        final ItemStack currentStack = this.inventory.slot.getStack();
-        final boolean hasByProduct = !currentStack.isEmpty() && SimItemService.INSTANCE.getBurnTime(currentStack) == 0;
-
-        final LangBuilder noFuel = SimLang.translate("portable_engine.none").style(ChatFormatting.RED);
-        final LangBuilder stackName = SimLang.builder().add(currentStack.getHoverName())
-                .text(" x" + currentStack.getCount())
-                .style(ChatFormatting.GREEN);
-
-        if (!this.isCurrentFuelInfinite()) {
-            final String langKey = hasByProduct ? "byproduct" : "fuel";
-            SimLang.translate("portable_engine." + langKey, currentStack.isEmpty() ? noFuel : stackName)
-                    .style(ChatFormatting.GRAY)
-                    .forGoggles(tooltip);
-        }
-
-        if(this.burnTime > 0) {
-           final int seconds = this.getCurrentBurnTime() / 20;
-           final int secondsTotal = this.getTotalBurnTime() / 20;
-
-            final LangBuilder infiniteLang = SimLang.translate("portable_engine.infinite")
-                    .style(ChatFormatting.LIGHT_PURPLE);
-            final LangBuilder timeLang = SimLang.text(this.getTime(secondsTotal))
-                    .style(this.isSuperHeated() ? ChatFormatting.GOLD : ChatFormatting.AQUA);
-
-            SimLang.translate("portable_engine.time", this.isTotalFuelInfinite() ? infiniteLang : timeLang)
-                    .style(ChatFormatting.GRAY)
-                    .forGoggles(tooltip);
-
-            if (this.superHeated) {
-                if (this.isCurrentFuelInfinite()) {
-                    SimLang.translate("portable_engine.superheated")
-                            .style(ChatFormatting.GOLD)
-                            .forGoggles(tooltip);
-                } else {
-                    SimLang.translate("portable_engine.superheated_time", this.getTime(this.getNextSuperHeated() ? secondsTotal : seconds))
-                            .style(ChatFormatting.GOLD)
-                            .forGoggles(tooltip);
-                }
-            }
-        }
-        return true;
-    }
-
-    private String getTime(int sec) {
+    static String getTime(int sec) {
         String s = "";
         int min = sec / 60;
         final int hour = min / 60;
@@ -551,7 +495,7 @@ public class PortableEngineBlockEntity extends GeneratingKineticBlockEntity impl
         this.superHeated = value;
     }
 
-    private boolean getNextSuperHeated() {
+    boolean getNextSuperHeated() {
         return SimItemService.INSTANCE.getSuperheatedBurnTime(this.inventory.slot.getStack()) > 0;
     }
 }

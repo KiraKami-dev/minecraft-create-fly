@@ -3,7 +3,6 @@ package dev.eriksonn.aeronautics.api.levitite_blend_crystallization;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
-import net.minecraft.nbt.Tag;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelAccessor;
@@ -68,10 +67,10 @@ public class LevititeCrystallizerManager {
 	public static void loadData(final CompoundTag tag, final Level level) {
 		tickers.putIfAbsent(level, new ArrayList<>());
 
-		final ListTag data = tag.getList("Levitite Manager Data", Tag.TAG_COMPOUND);
+		final ListTag data = tag.getListOrEmpty("Levitite Manager Data");
 		final List<LevititeBlendTicker> newTickers = new ArrayList<>();
 		for (int i = 0; i < data.size(); i++) {
-			newTickers.add(new LevititeBlendTicker(data.getCompound(i), level));
+			newTickers.add(new LevititeBlendTicker(data.getCompoundOrEmpty(i), level));
 		}
 
 		tickers.put(level, newTickers);

@@ -1,52 +1,46 @@
 package dev.simulated_team.simulated.content.blocks.redstone.redstone_inductor;
 
-import com.zurrtum.create.client.foundation.blockEntity.behaviour.scrollValue.BrassDiodeScrollValueBehaviour;
-import com.zurrtum.create.foundation.blockEntity.SmartBlockEntity;
-import com.zurrtum.create.client.foundation.blockEntity.behaviour.ValueBoxTransform;
+import com.mojang.blaze3d.vertex.PoseStack;
+import com.zurrtum.create.catnip.math.AngleHelper;
+import com.zurrtum.create.client.flywheel.lib.transform.TransformStack;
 import com.zurrtum.create.client.foundation.blockEntity.ValueSettingsBoard;
-import net.minecraft.core.Direction;
+import com.zurrtum.create.client.foundation.blockEntity.ValueSettingsFormatter;
+import com.zurrtum.create.client.foundation.blockEntity.behaviour.ValueBoxTransform;
+import com.zurrtum.create.client.foundation.blockEntity.behaviour.scrollValue.ScrollValueBehaviour;
+import com.zurrtum.create.client.foundation.utility.CreateLang;
+import com.zurrtum.create.foundation.blockEntity.SmartBlockEntity;
+import com.zurrtum.create.foundation.blockEntity.behaviour.ValueSettings;
+import com.zurrtum.create.foundation.blockEntity.behaviour.scrollValue.ServerScrollValueBehaviour;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
-import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.Vec3;
 
-public class RedstoneInductorValueBehaviour extends BrassDiodeScrollValueBehaviour {
+/**
+ * Client half of the inductor's interval value box (label, slot and formatting); the server half is
+ * {@link ServerRedstoneInductorValueBehaviour}.
+ */
+public class RedstoneInductorValueBehaviour extends ScrollValueBehaviour<SmartBlockEntity, ServerScrollValueBehaviour> {
 
-    public RedstoneInductorValueBehaviour(final Component label, final SmartBlockEntity be, final ValueBoxTransform slot) {
-        super(label, be, slot);
+    public RedstoneInductorValueBehaviour(final SmartBlockEntity be) {
+        super(CreateLang.translateDirect("logistics.redstone_interval"), be, new RedstoneInductorValueBoxTransform());
+        this.withFormatter(this::format);
     }
 
     @Override
     public ValueSettingsBoard createBoard(final Player player, final BlockHitResult hitResult) {
-        return super.createBoard(player, hitResult);
+        return new ValueSettingsBoard(
+                this.label,
+                60,
+                10,
+                CreateLang.translatedOptions("generic.unit", "ticks", "seconds", "minutes"),
+                new ValueSettingsFormatter(this::formatSettings)
+        );
     }
 
-    @Override
-    public void onShortInteract(final Player player, final InteractionHand hand, final Direction side, final BlockHitResult hitResult) {
-        final BlockState blockState = this.blockEntity.getBlockState();
-        if (blockState.getBlock() instanceof final RedstoneInductorBlock bdb)
-            bdb.toggle(this.getWorld(), this.getPos(), blockState, player, hand);
-    }
-
-    @Override
-    public void setValueSettings(final Player player, final ValueSettings valueSetting, final boolean ctrlHeld) {
-        final int value = valueSetting.value();
-        final int multiplier = switch (valueSetting.row()) {
-            case 0 -> 1;
-            case 1 -> 20;
-            default -> 60 * 20;
-        };
-
-        if (!valueSetting.equals(this.getValueSettings()))
-            this.playFeedbackSound(this);
-
-        final int clampingValue = valueSetting.row() == 0 ? 0 : 1;
-        this.setValue(Math.max(clampingValue, Math.max(clampingValue, value) * multiplier));
-    }
-
-    @Override
     public MutableComponent formatSettings(final ValueSettings settings) {
         final BlockState blockState = this.blockEntity.getBlockState();
         final Boolean inverted = blockState.getValue(RedstoneInductorBlock.INVERTED);
@@ -62,5 +56,40 @@ public class RedstoneInductorValueBehaviour extends BrassDiodeScrollValueBehavio
             case 2 -> column + ":00";
             default -> column + "t";
         });
+    }
+
+    private String format(final int value) {
+        if (value == 0) {
+            return Component.translatable("block.simulated.redstone_inductor." +
+                    (this.blockEntity.getBlockState().getValue(RedstoneInductorBlock.INVERTED) ? "invert" : "copy")).getString();
+        }
+        if (value <= 60) {
+            return value + "t";
+        }
+        if (value < 20 * 60) {
+            return (value / 20) + "s";
+        }
+        return (value / 20 / 60) + "m";
+    }
+
+    private static class RedstoneInductorValueBoxTransform extends ValueBoxTransform {
+
+        @Override
+        public Vec3 getLocalOffset(final BlockState blockState) {
+            return new Vec3(0.5, 5.5f / 16.0f, 0.5);
+        }
+
+        @Override
+        public void rotate(final BlockState blockState, final PoseStack poseStack) {
+            final float yRot = AngleHelper.horizontalAngle(blockState.getValue(BlockStateProperties.HORIZONTAL_FACING)) + 180;
+            TransformStack.of(poseStack)
+                    .rotateYDegrees(yRot)
+                    .rotateXDegrees(90);
+        }
+
+        @Override
+        public float getScale() {
+            return 0.5f;
+        }
     }
 }

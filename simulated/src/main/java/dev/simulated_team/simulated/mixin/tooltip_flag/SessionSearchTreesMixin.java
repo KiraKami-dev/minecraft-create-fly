@@ -9,9 +9,11 @@ import org.spongepowered.asm.mixin.injection.ModifyVariable;
 
 @Mixin(SessionSearchTrees.class)
 public class SessionSearchTreesMixin {
-    @ModifyVariable(method = "lambda$updateCreativeTooltips$15", at = @At(value = "STORE"))
-    private static TooltipFlag markAsCreativeSearch(final TooltipFlag value) {
-        ((TooltipFlagExtension)value).simulated$setCreativeSearch(true);
+    // method_60369 is the reload lambda of updateCreativeTooltips (lambdas keep their intermediary names under Mojang
+    // mappings, in dev and in production); its only TooltipFlag local is NORMAL.asCreative().
+    @ModifyVariable(method = "method_60369", at = @At(value = "STORE"))
+    private TooltipFlag markAsCreativeSearch(final TooltipFlag value) {
+        ((TooltipFlagExtension) value).simulated$setCreativeSearch(true);
         return value;
     }
 }

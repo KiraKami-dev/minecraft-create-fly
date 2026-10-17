@@ -10,7 +10,6 @@ import net.minecraft.util.Util;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.world.Containers;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.BlockGetter;
@@ -22,10 +21,12 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.BooleanProperty;
+import net.minecraft.world.level.redstone.Orientation;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Map;
 
@@ -71,26 +72,39 @@ public class DockingConnectorBlock extends WrenchableDirectionalBlock implements
         return super.getStateForPlacement(context).setValue(POWERED, context.getLevel().hasNeighborSignal(context.getClickedPos())).setValue(FACING, nearestLookingDirection.getOpposite());
     }
 
+    // Upstream did all of this in onRemove(state, level, pos, newState, isMoving), which 1.21.11 no longer has:
+    // - the block changed: affectNeighborsAfterRemoval (paired connector) and the block entity's
+    //   preRemoveSideEffects (inventory drop, see DockingConnectorBlockEntity)
+    // - same block, new facing: onPlace, which gets the old state
+
     @Override
-    public void onRemove(final @NotNull BlockState state, final @NotNull Level level, final @NotNull BlockPos pos, final @NotNull BlockState newState, final boolean isMoving) {
-        final boolean blockChanged = !state.is(newState.getBlock());
+    protected void onPlace(final @NotNull BlockState state, final @NotNull Level level, final @NotNull BlockPos pos, final @NotNull BlockState oldState, final boolean isMoving) {
+        super.onPlace(state, level, pos, oldState, isMoving);
 
         // Remove the paired connector even if the block doesn't change
-        if (state.getValue(POWERED) && (blockChanged || state.getValue(FACING) != newState.getValue(FACING))) {
-            final BlockPos pairedConnectorPos = pos.relative(state.getValue(FACING));
-            if (level.getBlockState(pairedConnectorPos).is(SimBlocks.PAIRED_DOCKING_CONNECTOR)) {
-                level.removeBlock(pairedConnectorPos, isMoving);
-            }
-        }
-
-        if (blockChanged) {
-            level.getBlockEntity(pos, SimBlockEntityTypes.DOCKING_CONNECTOR.get()).ifPresent(connector -> Containers.dropContents(level, pos, connector.inventory));
-            super.onRemove(state, level, pos, newState, isMoving);
+        if (oldState.is(this) && oldState.getValue(POWERED) && oldState.getValue(FACING) != state.getValue(FACING)) {
+            removePairedConnector(level, pos, oldState, isMoving);
         }
     }
 
     @Override
-    public void neighborChanged(final @NotNull BlockState state, final Level level, final @NotNull BlockPos pos, final @NotNull Block block, final @NotNull BlockPos fromPos, final boolean isMoving) {
+    protected void affectNeighborsAfterRemoval(final @NotNull BlockState state, final @NotNull ServerLevel level, final @NotNull BlockPos pos, final boolean isMoving) {
+        if (state.getValue(POWERED)) {
+            removePairedConnector(level, pos, state, isMoving);
+        }
+
+        super.affectNeighborsAfterRemoval(state, level, pos, isMoving);
+    }
+
+    private static void removePairedConnector(final Level level, final BlockPos pos, final BlockState oldState, final boolean isMoving) {
+        final BlockPos pairedConnectorPos = pos.relative(oldState.getValue(FACING));
+        if (level.getBlockState(pairedConnectorPos).is(SimBlocks.PAIRED_DOCKING_CONNECTOR)) {
+            level.removeBlock(pairedConnectorPos, isMoving);
+        }
+    }
+
+    @Override
+    public void neighborChanged(final @NotNull BlockState state, final Level level, final @NotNull BlockPos pos, final @NotNull Block block, final @Nullable Orientation orientation, final boolean isMoving) {
         if (level.isClientSide()) {
             return;
         }
@@ -119,7 +133,7 @@ public class DockingConnectorBlock extends WrenchableDirectionalBlock implements
 
     @Override
     public BlockEntityType<? extends DockingConnectorBlockEntity> getBlockEntityType() {
-        return SimBlockEntityTypes.DOCKING_CONNECTOR.get();
+        return SimBlockEntityTypes.DOCKING_CONNECTOR;
     }
 
     @Override
@@ -135,7 +149,7 @@ public class DockingConnectorBlock extends WrenchableDirectionalBlock implements
     }
 
     @Override
-    public int getAnalogOutputSignal(final BlockState pState, final Level pLevel, final BlockPos pPos) {
+    public int getAnalogOutputSignal(final BlockState pState, final Level pLevel, final BlockPos pPos, final Direction pDirection) {
         final DockingConnectorBlockEntity be = this.getBlockEntity(pLevel, pPos);
 
         if (!be.isExtended())
