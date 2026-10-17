@@ -356,13 +356,15 @@ public final class SableAssemblyTest {
         helper.setBlock(chestPos, Blocks.CHEST);
         helper.getBlockEntity(chestPos, ChestBlockEntity.class).setItem(0, cargo.copy());
         final int placed = countWorldBlocks(helper, deckMin, regionMax);
-        helper.assertValueEqual(placed, 10, "blocks placed");
+        helper.assertValueEqual(10, placed, "blocks placed");
 
         final ServerSubLevel subLevel = assembleRegion(helper, deckMin, regionMax);
-        helper.assertValueEqual(countWorldBlocks(helper, deckMin, regionMax), 0, "world blocks left behind by the assembly");
-        helper.assertValueEqual(countBlocks(subLevel), placed, "blocks in the assembled sub-level");
+        helper.assertValueEqual(0, countWorldBlocks(helper, deckMin, regionMax), "world blocks left behind by the assembly");
+        if (countBlocks(subLevel) != placed) {
+            helper.fail("The assembled sub-level holds %d of the %d blocks: %s".formatted(countBlocks(subLevel), placed, describePlot(subLevel)));
+        }
         final BoundingBox3ic plotBounds = subLevel.getPlot().getBoundingBox();
-        helper.assertValueEqual(new Vector3i(plotBounds.width(), plotBounds.height(), plotBounds.length()), new Vector3i(3, 2, 3), "assembled plot size");
+        helper.assertValueEqual(new Vector3i(3, 2, 3), new Vector3i(plotBounds.width(), plotBounds.height(), plotBounds.length()), "assembled plot size");
         assertCargo(helper, subLevel, cargo);
 
         final SubLevelProbe probe = new SubLevelProbe(helper, subLevel).sampleEveryTick();
@@ -382,7 +384,7 @@ public final class SableAssemblyTest {
                     if (Math.abs(probe.bottom() - 1.0) > 0.1) {
                         helper.fail("Came to rest with its bottom at y %.3f instead of on the floor (y 1): %s".formatted(probe.bottom(), probe));
                     }
-                    helper.assertValueEqual(countBlocks(subLevel), placed, "blocks in the sub-level after landing");
+                    helper.assertValueEqual(placed, countBlocks(subLevel), "blocks in the sub-level after landing");
                     assertCargo(helper, subLevel, cargo);
                 })
                 .thenSucceed();
@@ -400,7 +402,7 @@ public final class SableAssemblyTest {
             }
         }
 
-        helper.assertValueEqual(chests.size(), 1, "chests in the sub-level");
+        helper.assertValueEqual(1, chests.size(), "chests in the sub-level");
         final ItemStack found = chests.getFirst().getItem(0);
         if (!ItemStack.matches(found, cargo)) {
             helper.fail("Chest in the sub-level holds %s instead of %s".formatted(found, cargo));

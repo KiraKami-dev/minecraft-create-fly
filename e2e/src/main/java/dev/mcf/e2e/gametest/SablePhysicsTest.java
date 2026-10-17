@@ -100,6 +100,51 @@ public final class SablePhysicsTest {
     }
 
     /**
+     * Upstream's gravity check with Sable's universal drag (0.09 by default) accounted for, which is why upstream's
+     * version fails: Rapier damps every substep, {@code v = (v + g dt) / (1 + drag dt)}, then moves by the new velocity.
+     */
+    @GameTest(structure = "sable:physicstest.gravity", maxTicks = 100)
+    public void freeFallWithDrag(final GameTestHelper helper) {
+        final Vector3dc spawnPos = absolutePosition(helper, new Vector3d(2.5, 11, 2.5));
+        final ServerSubLevel subLevel = spawnSingleBlockSubLevel(container(helper), spawnPos, Blocks.DIAMOND_BLOCK.defaultBlockState());
+        final SubLevelProbe probe = new SubLevelProbe(helper, subLevel).sampleEveryTick();
+        final int ticks = 20;
+
+        helper.runAfterDelay(ticks, () -> {
+            probe.sample();
+            final Vector3dc gravity = DimensionPhysicsData.getGravity(helper.getLevel(), spawnPos);
+            final double drag = DimensionPhysicsData.getUniversalDrag(helper.getLevel());
+            final int substeps = physics(helper).getConfig().substepsPerTick;
+            final double dt = 1.0 / 20.0 / substeps;
+
+            final Vector3d expectedVelocity = new Vector3d();
+            final Vector3d coarseDelta = new Vector3d();
+            for (int i = 0; i < ticks * substeps; i++) {
+                expectedVelocity.fma(dt, gravity);
+                // one position step per substep: the coarsest integration (Rapier steps positions more finely)
+                coarseDelta.fma(dt, expectedVelocity);
+                expectedVelocity.div(1.0 + drag * dt);
+            }
+            // the exact drop with linear drag k: g / k * (t - (1 - e^-kt) / k)
+            final double t = ticks / 20.0;
+            final double exactDrop = gravity.length() * (drag > 0.0 ? (t - (1.0 - Math.exp(-drag * t)) / drag) / drag : t * t / 2.0);
+            final double coarseDrop = coarseDelta.length();
+
+            final Vector3d down = gravity.normalize(new Vector3d());
+            final Vector3d velocity = handle(helper, subLevel).getLinearVelocity(new Vector3d());
+            final Vector3d delta = subLevel.logicalPose().position().sub(spawnPos, new Vector3d());
+            final double drop = delta.dot(down);
+            final double sideways = delta.fma(-drop, down, new Vector3d()).length();
+            if (!expectedVelocity.equals(velocity, 0.01) || drop < exactDrop - 0.01 || drop > coarseDrop + 0.01 || sideways > 0.01) {
+                helper.fail("After %d ticks expected velocity %s and a drop of %.3f..%.3f m straight down (g %s, drag %s, %d substeps), got %s and %s".formatted(
+                        ticks, SubLevelProbe.format(expectedVelocity), exactDrop, coarseDrop, SubLevelProbe.format(gravity), drag, substeps,
+                        SubLevelProbe.format(velocity), SubLevelProbe.format(delta)));
+            }
+            helper.succeed();
+        });
+    }
+
+    /**
      * Upstream (optional, must pass 10 of 10 attempts): a diamond block pushed along a one-block channel must slide
      * through it instead of snagging on the seams between the channel's blocks.
      */
@@ -143,7 +188,7 @@ public final class SablePhysicsTest {
         final SubLevelProbe probe = new SubLevelProbe(helper, subLevel).sampleEveryTick();
         final Vector3dc gravity = localDirection(helper, DimensionPhysicsData.getGravity(helper.getLevel(), subLevel.logicalPose().position()));
 
-        helper.assertValueEqual(countBlocks(subLevel), blocks, "blocks in the spawned sub-level");
+        helper.assertValueEqual(blocks, countBlocks(subLevel), "blocks in the spawned sub-level");
         helper.assertTrue(Math.abs(probe.bottom() - 7.0) < 0.05, "box spawned with its bottom at y 7: " + probe);
 
         final int fallTicks = 5;
@@ -172,7 +217,7 @@ public final class SablePhysicsTest {
                     if (Math.abs(moved.x) > 0.25 || Math.abs(moved.z) > 0.25) {
                         helper.fail("Drifted sideways while falling: " + probe);
                     }
-                    helper.assertValueEqual(countBlocks(subLevel), blocks, "blocks in the sub-level after landing");
+                    helper.assertValueEqual(blocks, countBlocks(subLevel), "blocks in the sub-level after landing");
                 })
                 .thenSucceed();
     }

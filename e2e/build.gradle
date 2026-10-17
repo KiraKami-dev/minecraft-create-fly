@@ -40,6 +40,8 @@ loom {
             vmArgs '-Dfabric-api.gametest', '-De2e.gametest=true', '-De2e.gametest.report=gametest-report.xml',
                     '-Dmixin.debug.verify=true'
             if (project.hasProperty('e2eFilter')) vmArg "-Dfabric-api.gametest.filter=${project.property('e2eFilter')}"
+            // -Pe2eVerify (with a filter): run every selected test 100 times in each of the 4 rotations
+            if (project.hasProperty('e2eVerify')) vmArg '-Dfabric-api.gametest.verify=true'
         }
     }
 }

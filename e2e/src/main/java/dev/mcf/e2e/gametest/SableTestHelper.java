@@ -22,6 +22,7 @@ import net.minecraft.world.level.CommonLevelAccessor;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.Rotation;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.phys.AABB;
 import org.joml.Quaterniond;
 import org.joml.Quaterniondc;
@@ -226,6 +227,26 @@ public final class SableTestHelper {
             }
         }
         return count;
+    }
+
+    /**
+     * @return the plot's bounds and its block count read through the level and through the plot's own chunks (they
+     * should agree), for failure messages
+     */
+    public static String describePlot(final SubLevel subLevel) {
+        final LevelPlot plot = subLevel.getPlot();
+        final BoundingBox3ic bounds = plot.getBoundingBox();
+        int viaPlotChunks = 0;
+        if (bounds != BoundingBox3i.EMPTY && bounds.volume() > 0) {
+            for (final BlockPos pos : BlockPos.betweenClosed(bounds.minX(), bounds.minY(), bounds.minZ(), bounds.maxX(), bounds.maxY(), bounds.maxZ())) {
+                final LevelChunk chunk = plot.getChunk(plot.toLocal(new ChunkPos(pos)));
+                if (chunk != null && !chunk.getBlockState(pos).isAir()) {
+                    viaPlotChunks++;
+                }
+            }
+        }
+        return "plot bounds %s, centre %s, %d blocks via the level, %d via the plot's chunks, removed=%s"
+                .formatted(bounds, plot.getCenterBlock().toShortString(), countBlocks(subLevel), viaPlotChunks, subLevel.isRemoved());
     }
 
     /**

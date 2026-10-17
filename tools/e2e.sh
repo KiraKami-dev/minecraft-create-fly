@@ -1,9 +1,10 @@
 #!/bin/bash
-# End-to-end tests of the port (see e2e/). Usage: tools/e2e.sh [server|gametest [filter]|client|all|play]
+# End-to-end tests of the port (see e2e/). Usage: tools/e2e.sh [server|gametest [filter [verify]]|client|all|play]
 #   server:   headless dedicated server — mixin audit + spawn sub-levels + stay alive 600 ticks
 #   gametest: headless GameTest server — runs the @GameTest suite (e2e/src/main/java/dev/mcf/e2e/gametest),
 #             prints one line per test and exits non-zero if a required test failed. The optional filter is a
-#             test selector, e.g. 'mcf_e2e:sable_physics_test_*'
+#             test selector, e.g. 'mcf_e2e:sable_physics_test_*'; "verify" after it runs every selected test
+#             100 times in each of the 4 rotations (flakiness check) and prints counts instead
 #   client:   real game window in a flat world — spawns sub-levels in view, screenshots, quits
 #   play:     same scene as client, but the game stays open for manual testing
 #   all:      server, gametest, then client
@@ -40,13 +41,19 @@ if [ "$MODE" = gametest ] || [ "$MODE" = all ]; then
   # runGametest itself deletes the old world; the server exits with the number of failed required tests
   mkdir -p "$GT"; rm -f "$GT/logs/latest.log" "$GT/gametest-report.xml"
   FILTER=(); [ "$MODE" = gametest ] && [ -n "${2:-}" ] && FILTER=("-Pe2eFilter=$2")
-  $GRADLEW :e2e:runGametest ${FILTER[@]+"${FILTER[@]}"} > "$GT/gradle.log" 2>&1; rc=$?
+  VERIFY=; [ "$MODE" = gametest ] && [ "${3:-}" = verify ] && VERIFY=-Pe2eVerify
+  $GRADLEW :e2e:runGametest ${FILTER[@]+"${FILTER[@]}"} $VERIFY > "$GT/gradle.log" 2>&1; rc=$?
   log=$GT/logs/latest.log
   echo "== gametest =="
   if [ ! -f "$log" ]; then
     echo "  gametest server did not start (exit $rc), see $GT/gradle.log"; exit 1
   fi
-  grep -E "E2E: (mixin audit|GAMETEST)" "$log" | sed 's/^.*E2E: GAMETEST /  /; s/^.*E2E: /  /' | cut -c1-400
+  if [ -n "$VERIFY" ]; then
+    grep -E "E2E: GAMETEST (PASS|FAIL)" "$log" | sed 's/^.*E2E: GAMETEST \([A-Z(a-z)]*\) \([^ ]*\).*$/\1 \2/; s/:$//' | sort | uniq -c
+    grep -m10 -E "E2E: GAMETEST FAIL" "$log" | sed 's/^.*E2E: GAMETEST /  /' | cut -c1-400
+  else
+    grep -E "E2E: (mixin audit|GAMETEST)" "$log" | sed 's/^.*E2E: GAMETEST /  /; s/^.*E2E: /  /' | cut -c1-400
+  fi
   grep -m1 -E "GAME TESTS COMPLETE" "$log" | sed 's/^.*=\{9\} /  /; s/ =*$//'
   failed=$(grep -cE "E2E: GAMETEST FAIL " "$log")
   if ! grep -qE "E2E: GAMETEST SUMMARY" "$log"; then
