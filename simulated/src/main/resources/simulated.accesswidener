@@ -45,3 +45,5 @@ accessible field net/minecraft/server/network/ServerGamePacketListenerImpl above
 
 # Physics Staff
 accessible method net/minecraft/client/renderer/GameRenderer getFov (Lnet/minecraft/client/Camera;FZ)D
+# platform
+accessible field net/minecraft/world/entity/Entity levelCallback Lnet/minecraft/world/level/entity/EntityInLevelCallback;
