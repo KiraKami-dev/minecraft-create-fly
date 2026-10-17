@@ -10,12 +10,12 @@ import dev.simulated_team.simulated.Simulated;
 import dev.simulated_team.simulated.index.SimRegistries;
 import dev.simulated_team.simulated.index.SimTags;
 import dev.simulated_team.simulated.mixin.accessor.BlockBehaviourAccessor;
-import dev.simulated_team.simulated.registrate.SimulatedRegistrate;
 import dev.simulated_team.simulated.util.SimColors;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import com.zurrtum.create.client.ponder.foundation.ui.PonderUI;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
+import net.minecraft.core.Registry;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.resources.Identifier;
@@ -65,20 +65,21 @@ public class BlockPropertiesTooltip {
         return condition.test(AllKeys.isKeyDown(GLFW.GLFW_KEY_LEFT_SHIFT), GogglesItem.isWearingGoggles(player));
     }
 
-    public static void register(final SimulatedRegistrate registrate, final String name, final TooltipFunction tooltipFunction, final float priority) {
-        registrate.propertyTooltip(name, () -> new Entry(tooltipFunction, priority));
+    // Registrate's propertyTooltip(name, supplier) is gone: entries go straight into the (unsynced, client-filled)
+    // property tooltip registry while the client initializes
+    public static void register(final String name, final TooltipFunction tooltipFunction, final float priority) {
+        Registry.register(SimRegistries.PROPERTY_TOOLTIP, Simulated.path(name), new Entry(tooltipFunction, priority));
     }
 
     public static void init() {
-        final SimulatedRegistrate registrate = Simulated.getRegistrate();
         int priority = 0;
 
-        register(registrate, "mass", BlockPropertiesTooltip::getMassComponent, priority++);
-        register(registrate, "friction", BlockPropertiesTooltip::getFrictionComponent, priority++);
-        register(registrate, "restitution", BlockPropertiesTooltip::getRestitutionComponent, priority++);
-        register(registrate, "fragile", BlockPropertiesTooltip::getFragileComponent, priority++);
-        register(registrate, "airtight", BlockPropertiesTooltip::getAirtightComponent, priority++);
-        register(registrate, "floating", BlockPropertiesTooltip::getFloatingComponent, priority++);
+        register("mass", BlockPropertiesTooltip::getMassComponent, priority++);
+        register("friction", BlockPropertiesTooltip::getFrictionComponent, priority++);
+        register("restitution", BlockPropertiesTooltip::getRestitutionComponent, priority++);
+        register("fragile", BlockPropertiesTooltip::getFragileComponent, priority++);
+        register("airtight", BlockPropertiesTooltip::getAirtightComponent, priority++);
+        register("floating", BlockPropertiesTooltip::getFloatingComponent, priority++);
     }
 
     public static void appendTooltip(final ItemStack stack, final TooltipFlag iTooltipFlag, final Player player, final List<Component> itemTooltip) {

@@ -1,10 +1,8 @@
 package dev.simulated_team.simulated.ponder.elements;
 
-import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.vertex.PoseStack;
+import com.zurrtum.create.catnip.math.Pointing;
 import com.zurrtum.create.client.catnip.gui.element.GuiGameElement;
 import com.zurrtum.create.client.catnip.gui.element.ScreenElement;
-import com.zurrtum.create.catnip.math.Pointing;
 import com.zurrtum.create.client.ponder.api.PonderPalette;
 import com.zurrtum.create.client.ponder.api.element.InputElementBuilder;
 import com.zurrtum.create.client.ponder.enums.PonderGuiTextures;
@@ -18,6 +16,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.phys.Vec2;
 import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.NotNull;
+import org.joml.Matrix3x2fStack;
 
 import javax.annotation.Nullable;
 
@@ -34,7 +33,10 @@ public class KeybindWindowElement extends InputWindowElement {
     Component keybind;
     @Nullable
     ScreenElement icon;
-    ItemStack item = ItemStack.EMPTY;
+    // 1.21.11 (Create Fly): scaled GUI items are drawn as picture-in-picture elements that must be cleared again,
+    // like InputWindowElement's own item
+    @Nullable
+    GuiGameElement.GuiItemRenderBuilder item;
 
     public KeybindWindowElement(final Vec3 sceneSpace, final Pointing direction) {
         super(sceneSpace, direction);
@@ -50,7 +52,7 @@ public class KeybindWindowElement extends InputWindowElement {
 
         @Override
         public Builder withItem(final ItemStack stack) {
-            KeybindWindowElement.this.item = stack;
+            KeybindWindowElement.this.item = stack.isEmpty() ? null : GuiGameElement.of(stack).scale(1.5f);
             return this;
         }
 
@@ -105,7 +107,7 @@ public class KeybindWindowElement extends InputWindowElement {
         xFade *= 10 * (1 - fade);
         yFade *= 10 * (1 - fade);
 
-        final boolean hasItem = !this.item.isEmpty();
+        final boolean hasItem = this.item != null;
         final boolean hasText = this.keybind != null;
         final boolean hasIcon = this.icon != null;
         int keyWidth = 0;
@@ -132,13 +134,12 @@ public class KeybindWindowElement extends InputWindowElement {
             height = 24;
         }
 
-        final PoseStack poseStack = graphics.pose();
-        poseStack.pushPose();
-        poseStack.translate(sceneToScreen.x + xFade, sceneToScreen.y + yFade, 400);
+        // the GUI pose is 2D now; draw order replaces the old z offsets (400 / +100)
+        final Matrix3x2fStack poseStack = graphics.pose();
+        poseStack.pushMatrix();
+        poseStack.translate(sceneToScreen.x + xFade, sceneToScreen.y + yFade);
 
         PonderUI.renderSpeechBox(graphics, 0, 0, width, height, false, this.direction, true);
-
-        poseStack.translate(0, 0, 100);
 
         if (hasText) {
             graphics.drawString(font, text, 2, (int) ((height - font.lineHeight) / 2f + 2),
@@ -146,22 +147,32 @@ public class KeybindWindowElement extends InputWindowElement {
         }
 
         if (hasIcon) {
-            poseStack.pushPose();
-            poseStack.translate(keyWidth, 0, 0);
-            poseStack.scale(1.5f, 1.5f, 1.5f);
+            poseStack.pushMatrix();
+            poseStack.translate(keyWidth, 0);
+            poseStack.scale(1.5f, 1.5f);
             this.icon.render(graphics, 0, 0);
-            poseStack.popPose();
+            poseStack.popMatrix();
         }
 
         if (hasItem) {
-            GuiGameElement.of(this.item)
-                    .<GuiGameElement.GuiRenderBuilder>at(keyWidth + (hasIcon ? 24 : 0), 0)
-                    .scale(1.5)
-                    .render(graphics);
-            RenderSystem.disableDepthTest();
+            this.item.at(keyWidth + (hasIcon ? 24 : 0), 0).render(graphics);
         }
-
-        poseStack.popPose();
+        poseStack.popMatrix();
     }
 
+    @Override
+    public void setVisible(final boolean visible) {
+        super.setVisible(visible);
+        if (this.item != null && !visible) {
+            this.item.clear();
+        }
+    }
+
+    @Override
+    public void setFade(final float fade) {
+        super.setFade(fade);
+        if (this.item != null && fade == 0) {
+            this.item.clear();
+        }
+    }
 }

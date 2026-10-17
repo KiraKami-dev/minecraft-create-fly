@@ -7,6 +7,7 @@ import dev.simulated_team.simulated.ponder.records.PonderLineRecord;
 import com.zurrtum.create.client.catnip.outliner.LineOutline;
 import com.zurrtum.create.client.catnip.render.PonderRenderTypes;
 import com.zurrtum.create.client.catnip.render.SuperRenderTypeBuffer;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.LightTexture;
 import net.minecraft.util.Mth;
 import net.minecraft.world.phys.Vec3;
@@ -36,7 +37,7 @@ public class LerpedLineOutline extends LineOutline {
     }
 
     @Override
-    public void render(final PoseStack ms, final SuperRenderTypeBuffer buffer, final Vec3 camera, final float pt) {
+    public void render(final Minecraft mc, final PoseStack ms, final SuperRenderTypeBuffer buffer, final Vec3 camera, final float pt) {
         final float width = this.params.getLineWidth();
         if (width == 0)
             return;

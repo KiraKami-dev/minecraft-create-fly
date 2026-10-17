@@ -11,7 +11,8 @@ import org.spongepowered.asm.mixin.injection.At;
 @Mixin(RedstoneLinkBlock.class)
 public class RedstoneLinkBlockMixin {
 
-    @WrapOperation(method = "getPower", at = @At(value = "FIELD", ordinal = 1, target = "Lnet/createmod/catnip/data/Iterate;directions:[Lnet/minecraft/core/Direction;"))
+    // still present in Create Fly 6.0.9: the second Iterate.directions loop reads the downward signal of every neighbour
+    @WrapOperation(method = "getPower", at = @At(value = "FIELD", ordinal = 1, target = "Lcom/zurrtum/create/catnip/data/Iterate;directions:[Lnet/minecraft/core/Direction;", remap = true), remap = false)
     private static Direction[] fixReadPower(final Operation<Direction[]> original) {
         return new Direction[0]; // do not read the signal sent downwards for all adjacent blocks!!!
     }

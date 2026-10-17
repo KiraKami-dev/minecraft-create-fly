@@ -13,8 +13,12 @@ import java.util.List;
 
 @Mixin(PonderSceneRegistry.class)
 public class PonderSceneRegistryMixin {
+	// compile(Collection) is an overload, hence the descriptor; it holds Identifier, so remapping stays on
 	@Inject(method = "compile(Lnet/minecraft/resources/Identifier;)Ljava/util/List;", at = @At("RETURN"))
 	private void simulated$compile(final Identifier id, final CallbackInfoReturnable<List<PonderScene>> cir) {
-		NewPonderTooltipManager.setSceneWatched(cir.getReturnValue().getFirst().getId());
+		final List<PonderScene> scenes = cir.getReturnValue();
+		if (!scenes.isEmpty()) {
+			NewPonderTooltipManager.setSceneWatched(scenes.getFirst().getId());
+		}
 	}
 }

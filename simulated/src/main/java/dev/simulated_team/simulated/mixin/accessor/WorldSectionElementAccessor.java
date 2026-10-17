@@ -8,6 +8,6 @@ import org.spongepowered.asm.mixin.gen.Accessor;
 @Mixin(WorldSectionElementImpl.class)
 public interface WorldSectionElementAccessor {
 
-    @Accessor
+    @Accessor(remap = false)
     Vec3 getCenterOfRotation();
 }

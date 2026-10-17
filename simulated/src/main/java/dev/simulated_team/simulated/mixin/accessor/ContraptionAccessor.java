@@ -10,7 +10,7 @@ import java.util.List;
 @Mixin(Contraption.class)
 public interface ContraptionAccessor {
 
-    @Accessor("superglue")
+    @Accessor(value = "superglue", remap = false)
     List<AABB> getSuperGlue();
 
 }
