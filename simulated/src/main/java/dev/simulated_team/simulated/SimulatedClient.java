@@ -5,6 +5,7 @@ import com.zurrtum.create.client.ponder.foundation.PonderIndex;
 import dev.simulated_team.simulated.client.BlockPropertiesTooltip;
 import dev.simulated_team.simulated.content.blocks.SimKineticBlocksClient;
 import dev.simulated_team.simulated.content.blocks.physics_assembler.PhysicsAssemblerTooltipBehaviour;
+import dev.simulated_team.simulated.content.blocks.redstone.SimRedstoneBlocksClient;
 import dev.simulated_team.simulated.content.blocks.swivel_bearing.SwivelBearingClient;
 import dev.simulated_team.simulated.content.display_sources.SimDisplaySourceRenders;
 import dev.simulated_team.simulated.content.items.merging_glue.MergingGlueItemHandler;
@@ -63,6 +64,9 @@ public class SimulatedClient {
         PhysicsAssemblerTooltipBehaviour.registerClient();
         // physics staff item model + world render hook (beams, lock icons, hover box)
         PhysicsStaffClient.registerClient();
+        // value boxes, frequency/filter slots and goggle tooltips of the redstone/sensor blocks, the altitude sensor's
+        // contraption render and the modulating receiver's GUI element
+        SimRedstoneBlocksClient.registerClient();
 
         PonderIndex.addPlugin(new SimPonderPlugin());
 
