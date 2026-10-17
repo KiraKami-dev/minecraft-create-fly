@@ -94,3 +94,11 @@ the gyroscopic bearing's tilt, and whose renderer lerps `entity.angle` instead o
 
 ## PORT-TODOs
 - none in these packages.
+
+## aero-propeller-fix (GameTest `aeronautics_propeller_test_propeller_bearing_lifts_ship`)
+- "blocks after lift-off 20 vs 11" was a wrong expectation, not lost blocks: when the propeller bearing assembles
+  (`PropellerBearingBlockEntity.assemble`), Create removes the rotor (hub + 8 sails = 9) from the sub-level plot into
+  the `PropellerBearingContraptionEntity`, same as upstream/any Create bearing. `countBlocks` only counts plot blocks.
+- Test now asserts 11 plot blocks + 9 blocks in `getMovedContraption().getContraption().getBlocks()`, adds a
+  20-tick no-power control (|dy| <= 0.2 at 0 RPM) before starting the motor, and still requires > 1 block lift.
+- Test made required; passed 5/5 runs.
