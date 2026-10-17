@@ -5,7 +5,6 @@ import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.zurrtum.create.AllBlocks;
 import com.zurrtum.create.foundation.blockEntity.SmartBlockEntity;
 import dev.ryanhcode.sable.Sable;
-import dev.ryanhcode.sable.api.SubLevelHelper;
 import dev.ryanhcode.sable.api.math.OrientedBoundingBox3d;
 import dev.ryanhcode.sable.companion.math.Pose3dc;
 import dev.ryanhcode.sable.sublevel.ClientSubLevel;
@@ -16,13 +15,15 @@ import dev.simulated_team.simulated.util.SimMathUtils;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import com.zurrtum.create.client.catnip.render.CachedBuffers;
 import com.zurrtum.create.client.catnip.render.SuperByteBuffer;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.LevelRenderer;
-import net.minecraft.client.renderer.MultiBufferSource;
-import net.minecraft.client.renderer.rendertype.RenderType;
+import net.minecraft.client.renderer.SubmitNodeCollector;
+import net.minecraft.client.renderer.rendertype.RenderTypes;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.level.Level;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.joml.Matrix4f;
 import org.joml.Quaternionf;
 import org.joml.Vector3d;
@@ -31,11 +32,83 @@ import org.joml.Vector3dc;
 import java.util.List;
 import java.util.Objects;
 
+/**
+ * Renders the rope strand owned by a rope holder.
+ * <p>
+ * 1.21.11 render-state split of the upstream {@code render(be, holder, partialTick, poseStack, bufferSource)}: everything
+ * that reads the block entity, the client strand or the level happens in {@link #extract}, on the render thread before
+ * submission; {@link #submit} only queues the recorded segments.
+ */
 public class RopeStrandRenderer {
     public record RopeRenderPoint(Quaternionf orientation, Vector3d position) { }
 
-    public static void render(final SmartBlockEntity be, final RopeStrandHolderBehavior ropeHolder, final float partialTick, final PoseStack ps, final MultiBufferSource buffer) {
+    /**
+     * One rope segment: a knot (except for the first segment) and a middle piece stretched to {@code length}
+     */
+    private record Segment(Vector3d renderPos, Quaternionf orientation, float length, int light, boolean knot) { }
 
+    /**
+     * Everything needed to draw one strand, recorded during extraction
+     */
+    public static class RopeRenderState implements SubmitNodeCollector.CustomGeometryRenderer {
+        private final BlockPos ownerPos;
+        private final SuperByteBuffer middle;
+        private final SuperByteBuffer knot;
+        private final List<Segment> segments;
+        @Nullable
+        private final OutlineRenderer outline;
+
+        private RopeRenderState(final BlockPos ownerPos, final SuperByteBuffer middle, final SuperByteBuffer knot, final List<Segment> segments, @Nullable final OutlineRenderer outline) {
+            this.ownerPos = ownerPos;
+            this.middle = middle;
+            this.knot = knot;
+            this.segments = segments;
+            this.outline = outline;
+        }
+
+        @Override
+        public void render(final PoseStack.Pose pose, final VertexConsumer vb) {
+            final PoseStack ps = new PoseStack();
+            ps.last().set(pose);
+
+            for (final Segment segment : this.segments) {
+                final Vector3d renderPos = segment.renderPos();
+
+                ps.pushPose();
+                ps.translate(renderPos.x - (this.ownerPos.getX()), renderPos.y - (this.ownerPos.getY()), renderPos.z - (this.ownerPos.getZ()));
+                ps.mulPose(segment.orientation());
+                ps.translate(-0.5, -0.5, -0.5);
+
+                if (segment.knot()) {
+                    this.knot.light(segment.light())
+                            .renderInto(ps.last(), vb);
+                }
+                ps.translate(0.0, 0.5, 0.0);
+                ps.scale(1.0f, segment.length(), 1.0f);
+
+                this.middle.light(segment.light())
+                        .renderInto(ps.last(), vb);
+                ps.popPose();
+            }
+        }
+    }
+
+    /**
+     * The hover outline of a strand ({@code RenderType.lines()} upstream)
+     */
+    private record OutlineRenderer(float rad, ObjectArrayList<RopeRenderPoint> ropeRenderPoints, BlockPos ownerPos, float lineWidth) implements SubmitNodeCollector.CustomGeometryRenderer {
+        @Override
+        public void render(final PoseStack.Pose pose, final VertexConsumer linesVB) {
+            renderOutline(pose, linesVB, this.rad, this.ropeRenderPoints, this.ownerPos, this.lineWidth);
+        }
+    }
+
+    /**
+     * Records the strand owned by the given holder, if it has one to render.
+     *
+     * @return the recorded strand, or null if there is nothing to render
+     */
+    public static @Nullable RopeRenderState extract(final SmartBlockEntity be, final RopeStrandHolderBehavior ropeHolder, final float partialTick) {
         final Level level = be.getLevel();
         assert level != null;
 
@@ -43,7 +116,6 @@ public class RopeStrandRenderer {
 
         final SuperByteBuffer middle = CachedBuffers.partialFacing(SimPartialModels.ROPE, AllBlocks.ROPE.defaultBlockState(), Direction.NORTH);
         final SuperByteBuffer knot = CachedBuffers.partialFacing(SimPartialModels.ROPE_KNOT, AllBlocks.ROPE.defaultBlockState(), Direction.NORTH);
-        final VertexConsumer vb = buffer.getBuffer(RenderType.solid());
 
         final SubLevel subLevel = Sable.HELPER.getContaining(be);
         Pose3dc containingPose = null;
@@ -62,14 +134,14 @@ public class RopeStrandRenderer {
             final List<ClientRopePoint> points = clientStrand.getPoints();
 
             if (points.size() <= 1) {
-                return;
+                return null;
             }
 
             final ObjectArrayList<RopeRenderPoint> ropeRenderPoints = buildRenderPoints(partialTick, points);
 
-            if (ropeRenderPoints.isEmpty()) return;
+            if (ropeRenderPoints.isEmpty()) return null;
 
-            ps.pushPose();
+            final List<Segment> segments = new ObjectArrayList<>(ropeRenderPoints.size());
             for (int i = 1; i < ropeRenderPoints.size(); i++) {
                 final RopeRenderPoint renderPoint0 = ropeRenderPoints.get(i - 1);
                 final RopeRenderPoint renderPoint1 = ropeRenderPoints.get(i);
@@ -84,25 +156,12 @@ public class RopeStrandRenderer {
                     orientation.premul(new Quaternionf(containingPose.orientation()).conjugate());
                 }
 
-                ps.pushPose();
-                ps.translate(renderPos.x - (ownerPos.getX()), renderPos.y - (ownerPos.getY()), renderPos.z - (ownerPos.getZ()));
-                ps.mulPose(orientation);
-                ps.translate(-0.5, -0.5, -0.5);
                 final BlockPos pos = BlockPos.containing(globalRenderPos.x, globalRenderPos.y, globalRenderPos.z);
                 final int worldLight = LevelRenderer.getLightColor(level, pos);
 
-                if (i > 1) {
-                    knot.light(worldLight)
-                            .renderInto(ps, vb);
-                }
-                ps.translate(0.0, 0.5, 0.0);
-                ps.scale(1.0f, (float) length, 1.0f);
-
-                middle.light(worldLight)
-                        .renderInto(ps, vb);
-                ps.popPose();
+                // copies, as the render points are transformed again below for the outline
+                segments.add(new Segment(new Vector3d(renderPos), new Quaternionf(orientation), (float) length, worldLight, i > 1));
             }
-            ps.popPose();
 
             final RopeRenderPoint last = ropeRenderPoints.getLast();
             if (containingPose != null) {
@@ -113,13 +172,35 @@ public class RopeStrandRenderer {
                 orientation.premul(new Quaternionf(containingPose.orientation()).conjugate());
             }
 
+            OutlineRenderer outline = null;
             if (Objects.equals(ZiplineClientManager.hoveringRope, clientStrand.getUuid())) {
-                renderOutline(ps, buffer, rad, ropeRenderPoints, ownerPos);
+                outline = new OutlineRenderer(rad, ropeRenderPoints, ownerPos, Minecraft.getInstance().getWindow().getAppropriateLineWidth());
             }
+
+            return new RopeRenderState(ownerPos, middle, knot, segments, outline);
+        }
+
+        return null;
+    }
+
+    /**
+     * Submits a strand recorded by {@link #extract}
+     *
+     * @param ps the block entity pose (the same one upstream rendered with)
+     */
+    public static void submit(@Nullable final RopeRenderState state, final PoseStack ps, final SubmitNodeCollector queue) {
+        if (state == null) {
+            return;
+        }
+
+        queue.submitCustomGeometry(ps, RenderTypes.solidMovingBlock(), state);
+
+        if (state.outline != null) {
+            queue.submitCustomGeometry(ps, RenderTypes.lines(), state.outline);
         }
     }
 
-    private static void renderOutline(final PoseStack ps, final MultiBufferSource buffer, final float rad, final ObjectArrayList<RopeRenderPoint> ropeRenderPoints, final BlockPos ownerPos) {
+    private static void renderOutline(final PoseStack.Pose poseEntry, final VertexConsumer linesVB, final float rad, final ObjectArrayList<RopeRenderPoint> ropeRenderPoints, final BlockPos ownerPos, final float lineWidth) {
         final Vector3d previousCorner = new Vector3d();
         final Vector3d currentCorner = new Vector3d();
         final Vector3d cornerDiff = new Vector3d();
@@ -131,8 +212,7 @@ public class RopeStrandRenderer {
                 new Vector3d(rad, 0, -rad),
         };
 
-        final VertexConsumer linesVB = buffer.getBuffer(RenderType.lines());
-        final Matrix4f pose = ps.last().pose();
+        final Matrix4f pose = poseEntry.pose();
 
         for (int i = 0; i < ropeRenderPoints.size() + 1; i++) {
             final RopeRenderPoint renderPoint0 = ropeRenderPoints.get(Math.max(0, i - 1));
@@ -151,13 +231,16 @@ public class RopeStrandRenderer {
 
                 currentCorner.sub(previousCorner, cornerDiff).normalize();
 
+                // 1.21.11 line vertices carry their width; upstream's RenderType.lines() used the window's default
                 linesVB.addVertex(pose, (float) previousCorner.x, (float) previousCorner.y, (float) previousCorner.z)
                         .setColor(0f, 0f, 0f, .4f)
-                        .setNormal(ps.last(), (float) cornerDiff.x, (float) cornerDiff.y, (float) cornerDiff.z);
+                        .setNormal(poseEntry, (float) cornerDiff.x, (float) cornerDiff.y, (float) cornerDiff.z)
+                        .setLineWidth(lineWidth);
 
                 linesVB.addVertex(pose, (float) currentCorner.x, (float) currentCorner.y, (float) currentCorner.z)
                         .setColor(0f, 0f, 0f, .4f)
-                        .setNormal(ps.last(), (float) cornerDiff.x, (float) cornerDiff.y, (float) cornerDiff.z);
+                        .setNormal(poseEntry, (float) cornerDiff.x, (float) cornerDiff.y, (float) cornerDiff.z)
+                        .setLineWidth(lineWidth);
             }
         }
     }

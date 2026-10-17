@@ -19,14 +19,15 @@ import dev.simulated_team.simulated.util.SimLevelUtil;
 import com.zurrtum.create.catnip.animation.LerpedFloat;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.core.HolderLookup;
+import net.minecraft.core.UUIDUtil;
 import net.minecraft.core.Vec3i;
-import net.minecraft.nbt.CompoundTag;
 import net.minecraft.util.Mth;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.NotNull;
@@ -35,6 +36,7 @@ import org.joml.Vector3d;
 import org.joml.Vector3dc;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 public class SpringBlockEntity extends SmartBlockEntity implements BlockEntitySubLevelActor {
@@ -82,14 +84,14 @@ public class SpringBlockEntity extends SmartBlockEntity implements BlockEntitySu
     }
 
     @Override
-    public void addBehaviours(final List<BlockEntityBehaviour> behaviours) {
+    public void addBehaviours(final List<BlockEntityBehaviour<?>> behaviours) {
     }
 
     public Vector3d getCenter() {
         final BlockState state = this.getBlockState();
 
         final Direction facing = state.getValue(SpringBlock.FACING);
-        final Vec3i facingVec = facing.getNormal();
+        final Vec3i facingVec = facing.getUnitVec3i();
 
         double scale = 0.5 - 4.0 / 16.0;
         return JOMLConversion.atCenterOf(this.worldPosition)
@@ -214,8 +216,8 @@ public class SpringBlockEntity extends SmartBlockEntity implements BlockEntitySu
         }
 
         //#region alignment torque
-        final Vector3d globalNormalA = JOMLConversion.atLowerCornerOf(state.getValue(SpringBlock.FACING).getNormal());
-        final Vector3d globalNormalB = JOMLConversion.atLowerCornerOf(partner.getBlockState().getValue(SpringBlock.FACING).getNormal());
+        final Vector3d globalNormalA = JOMLConversion.atLowerCornerOf(state.getValue(SpringBlock.FACING).getUnitVec3i());
+        final Vector3d globalNormalB = JOMLConversion.atLowerCornerOf(partner.getBlockState().getValue(SpringBlock.FACING).getUnitVec3i());
 
         subLevel.logicalPose().transformNormal(globalNormalA);
         if (partnerSubLevel != null) {
@@ -379,11 +381,11 @@ public class SpringBlockEntity extends SmartBlockEntity implements BlockEntitySu
     }
 
     @Override
-    protected void write(final CompoundTag tag, final HolderLookup.Provider registries, final boolean clientPacket) {
-        super.write(tag, registries, clientPacket);
+    protected void write(final ValueOutput view, final boolean clientPacket) {
+        super.write(view, clientPacket);
 
-        tag.putBoolean("Controller", this.isController);
-        tag.putDouble("DesiredLength", this.desiredLength);
+        view.putBoolean("Controller", this.isController);
+        view.putDouble("DesiredLength", this.desiredLength);
 
         if (this.partnerPos == null) return;
 
@@ -392,7 +394,7 @@ public class SpringBlockEntity extends SmartBlockEntity implements BlockEntitySu
         // we can avoid all that logic if there is no schematic context, or we're placing into a schematic level (just carry over the nbt into it)
         if (schematicContext == null || schematicContext.getType() == SubLevelSchematicSerializationContext.Type.PLACE) {
             if (this.partnerSubLevel != null) {
-                tag.putUUID("GoalSubLevel", this.partnerSubLevel);
+                view.store("GoalSubLevel", UUIDUtil.CODEC, this.partnerSubLevel);
             }
 
             BlockPos partnerPos = this.partnerPos;
@@ -401,7 +403,7 @@ public class SpringBlockEntity extends SmartBlockEntity implements BlockEntitySu
                     partnerPos = schematicContext.getSetupTransform().apply(partnerPos);
                 }
 
-                tag.putLong("Goal", partnerPos.asLong());
+                view.putLong("Goal", partnerPos.asLong());
             }
 
             return;
@@ -433,20 +435,20 @@ public class SpringBlockEntity extends SmartBlockEntity implements BlockEntitySu
         }
 
         if (partnerPos != null) {
-            tag.putLong("Goal", partnerPos.asLong());
+            view.putLong("Goal", partnerPos.asLong());
         }
 
         if (id != null) {
-            tag.putUUID("GoalSubLevel", id);
+            view.store("GoalSubLevel", UUIDUtil.CODEC, id);
         }
     }
 
     @Override
-    protected void read(final CompoundTag tag, final HolderLookup.Provider registries, final boolean clientPacket) {
-        super.read(tag, registries, clientPacket);
+    protected void read(final ValueInput view, final boolean clientPacket) {
+        super.read(view, clientPacket);
 
-        this.isController = tag.getBoolean("Controller");
-        this.desiredLength = tag.getDouble("DesiredLength");
+        this.isController = view.getBooleanOr("Controller", false);
+        this.desiredLength = view.getDoubleOr("DesiredLength", 0.0);
 
         if (this.renderLength.getValue() == 0) {
             this.renderLength.setValue(this.desiredLength);
@@ -456,8 +458,9 @@ public class SpringBlockEntity extends SmartBlockEntity implements BlockEntitySu
         final boolean isPlacingFromSchematic = schematicContext != null && schematicContext.getType() == SubLevelSchematicSerializationContext.Type.PLACE;
         SubLevelSchematicSerializationContext.SchematicMapping mapping = null;
 
-        if (tag.hasUUID("GoalSubLevel")) {
-            UUID subLevelID = tag.getUUID("GoalSubLevel");
+        final Optional<UUID> goalSubLevel = view.read("GoalSubLevel", UUIDUtil.CODEC);
+        if (goalSubLevel.isPresent()) {
+            UUID subLevelID = goalSubLevel.get();
 
             if (isPlacingFromSchematic) {
                 mapping = schematicContext.getMapping(subLevelID);
@@ -475,8 +478,9 @@ public class SpringBlockEntity extends SmartBlockEntity implements BlockEntitySu
             this.partnerSubLevel = subLevelID;
         }
 
-        if (tag.contains("Goal")) {
-            BlockPos blockPos = BlockPos.of(tag.getLong("Goal"));
+        final Optional<Long> goal = view.getLong("Goal");
+        if (goal.isPresent()) {
+            BlockPos blockPos = BlockPos.of(goal.get());
 
             if (isPlacingFromSchematic) {
                 if (mapping != null) {

@@ -6,9 +6,10 @@ import dev.simulated_team.simulated.index.SimBlockEntityTypes;
 import dev.simulated_team.simulated.index.SimBlockShapes;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.BlockGetter;
-import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.LevelReader;
+import net.minecraft.world.level.ScheduledTickAccess;
 import net.minecraft.world.level.block.*;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
@@ -27,8 +28,8 @@ public class MergingGlueBlock extends DirectionalBlock implements IBE<MergingGlu
     }
 
     @Override
-    protected BlockState updateShape(final BlockState state, final Direction facing, final BlockState facingState, final LevelAccessor level, final BlockPos currentPos, final BlockPos facingPos) {
-        return getConnectedDirection(state) == facing && !state.canSurvive(level, currentPos) ? Blocks.AIR.defaultBlockState() : super.updateShape(state, facing, facingState, level, currentPos, facingPos);
+    protected BlockState updateShape(final BlockState state, final LevelReader level, final ScheduledTickAccess tickAccess, final BlockPos currentPos, final Direction facing, final BlockPos facingPos, final BlockState facingState, final RandomSource random) {
+        return getConnectedDirection(state) == facing && !state.canSurvive(level, currentPos) ? Blocks.AIR.defaultBlockState() : super.updateShape(state, level, tickAccess, currentPos, facing, facingPos, facingState, random);
     }
 
     protected static Direction getConnectedDirection(final BlockState state) {
