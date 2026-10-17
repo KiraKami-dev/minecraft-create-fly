@@ -5,6 +5,14 @@
   "minVersion": "0.8",
   "plugin": "dev.ryanhcode.sable.plugin.SableMixinPlugin",
   "client": [
+    "render_fixes.AABBOutlineMixin",
+    "render_fixes.BlockClusterOutlineMixin",
+    "render_fixes.ChasingAABBOutlineMixin",
+    "render_fixes.ChasingAABBOutlinerMixin",
+    "render_fixes.GhostBlockValueBoxMixin",
+    "render_fixes.LineOutlineMixin",
+    "render_fixes.PlacementClientMixin",
+    "render_fixes.ValueBoxMixin"
   ],
   "mixins": [
   ],
