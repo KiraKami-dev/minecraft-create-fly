@@ -1,35 +1,35 @@
 package dev.simulated_team.simulated.content.blocks.redstone.linked_typewriter;
 
 import com.mojang.blaze3d.platform.InputConstants;
-import com.zurrtum.create.content.redstone.link.RedstoneLinkBlockEntity;
-import com.zurrtum.create.content.redstone.link.RedstoneLinkNetworkHandler;
-import com.zurrtum.create.client.foundation.item.TooltipHelper;
-import com.zurrtum.create.client.foundation.utility.CreateLang;
-import dev.simulated_team.simulated.content.blocks.redstone.AbstractLinkedReceiverBlockEntity;
-import dev.simulated_team.simulated.data.SimLang;
-import dev.simulated_team.simulated.index.SimBlocks;
-import dev.simulated_team.simulated.mixin.accessor.RedstoneLinkBlockEntityAccessor;
-import dev.simulated_team.simulated.network.packets.linked_typewriter.TypewriterSaveKeyToItemPacket;
-import dev.simulated_team.simulated.util.SimColors;
-import dev.ryanhcode.sable.veillite.api.network.VeilPacketManager;
 import com.zurrtum.create.catnip.data.Couple;
 import com.zurrtum.create.client.catnip.lang.FontHelper;
 import com.zurrtum.create.client.catnip.outliner.Outliner;
+import com.zurrtum.create.client.foundation.item.TooltipHelper;
+import com.zurrtum.create.client.foundation.utility.CreateLang;
+import com.zurrtum.create.content.redstone.link.RedstoneLinkNetworkHandler;
+import dev.ryanhcode.sable.veillite.api.network.VeilPacketManager;
+import dev.simulated_team.simulated.data.SimLang;
+import dev.simulated_team.simulated.index.SimBlocks;
+import dev.simulated_team.simulated.network.packets.linked_typewriter.TypewriterSaveKeyToItemPacket;
+import dev.simulated_team.simulated.util.SimColors;
+import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElement;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.gui.LayeredDraw;
+import net.minecraft.client.gui.screens.inventory.tooltip.ClientTooltipComponent;
+import net.minecraft.client.gui.screens.inventory.tooltip.DefaultTooltipPositioner;
+import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResult;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.shapes.VoxelShape;
@@ -43,7 +43,11 @@ import java.util.List;
  */
 public class LinkedTypewriterItemBindHandler {
 
-    public static final LayeredDraw.Layer OVERLAY = LinkedTypewriterItemBindHandler::renderOverlay;
+    /**
+     * Hud element showing the binding hint; registered above the hotbar
+     * ({@code HudElementRegistry.attachElementAfter(VanillaHudElements.HOTBAR, simulated:linked_typewriter_binding, OVERLAY)}).
+     */
+    public static final HudElement OVERLAY = LinkedTypewriterItemBindHandler::renderOverlay;
 
     private static BlockPos clickedPos;
     private static final List<AABB> outlines = new ArrayList<>();
@@ -57,6 +61,21 @@ public class LinkedTypewriterItemBindHandler {
         } else {
             reset();
         }
+    }
+
+    /**
+     * A redstone link or linked receiver was clicked with the typewriter item
+     */
+    public static InteractionResult onLinkClicked(final BlockPos pos) {
+        //reset if we click on another link
+        if (LinkedTypewriterInteractionHandler.getMode() == LinkedTypewriterInteractionHandler.Mode.BINDING_FROM_ITEM) {
+            reset();
+            return InteractionResult.CONSUME;
+        }
+
+        LinkedTypewriterInteractionHandler.setMode(LinkedTypewriterInteractionHandler.Mode.BINDING_FROM_ITEM);
+        setClickedPos(pos);
+        return InteractionResult.SUCCESS;
     }
 
     public static void tick() {
@@ -110,7 +129,7 @@ public class LinkedTypewriterItemBindHandler {
                 LinkedTypewriterInteractionHandler.preventPress(key, scanCode);
 
                 SimLang.builder()
-                        .translate("linked_typewriter.bind_success", InputConstants.getKey(key, scanCode).getDisplayName().getString())
+                        .translate("linked_typewriter.bind_success", InputConstants.getKey(new KeyEvent(key, scanCode, modifiers)).getDisplayName().getString())
                         .sendStatus(Minecraft.getInstance().player);
             }
         }
@@ -128,7 +147,7 @@ public class LinkedTypewriterItemBindHandler {
             return;
         }
 
-        guiGraphics.pose().pushPose();
+        guiGraphics.pose().pushMatrix();
         final List<Component> list = new ArrayList<>();
         list.add(CreateLang.translateDirect("linked_controller.bind_mode")
                 .withStyle(ChatFormatting.GOLD));
@@ -144,27 +163,24 @@ public class LinkedTypewriterItemBindHandler {
 
         final int x = (guiGraphics.guiWidth() / 3) - width / 2;
         final int y = guiGraphics.guiHeight() - height - 24;
-        guiGraphics.renderComponentTooltip(Minecraft.getInstance().font, list, x, y);
+        guiGraphics.renderTooltip(
+                mc.font,
+                list.stream().map(Component::getVisualOrderText).map(ClientTooltipComponent::create).toList(),
+                x,
+                y,
+                DefaultTooltipPositioner.INSTANCE,
+                null
+        );
 
-        guiGraphics.pose().popPose();
+        guiGraphics.pose().popMatrix();
     }
 
     private static Couple<RedstoneLinkNetworkHandler.Frequency> isPosValid(final Level level) {
-        Couple<RedstoneLinkNetworkHandler.Frequency> frequency = null;
-
-        if (clickedPos != null) {
-            final BlockEntity be = level.getBlockEntity(clickedPos);
-            if (be instanceof final AbstractLinkedReceiverBlockEntity abe) {
-                frequency = abe.getFrequency();
-            }
-
-            if (be instanceof final RedstoneLinkBlockEntity lbe) {
-                frequency = ((RedstoneLinkBlockEntityAccessor) lbe).getLink().getNetworkKey();
-            }
-
+        if (clickedPos == null) {
+            return null;
         }
 
-        return frequency;
+        return LinkedTypewriterItem.getLinkFrequency(level, clickedPos);
     }
 
     private static InteractionHand getHand() {

@@ -4,6 +4,7 @@ import com.mojang.serialization.MapCodec;
 import com.zurrtum.create.AllItems;
 import com.zurrtum.create.content.redstone.diodes.AbstractDiodeBlock;
 import com.zurrtum.create.foundation.block.IBE;
+import com.zurrtum.create.foundation.block.RedStoneConnectBlock;
 import dev.simulated_team.simulated.index.SimBlockEntityTypes;
 import dev.simulated_team.simulated.index.SimBlockShapes;
 import dev.simulated_team.simulated.multiloader.CommonRedstoneBlock;
@@ -31,9 +32,9 @@ import net.minecraft.world.level.block.state.properties.BooleanProperty;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.VoxelShape;
-import org.joml.Vector3f;
+import org.jetbrains.annotations.Nullable;
 
-public class RedstoneInductorBlock extends AbstractDiodeBlock implements IBE<RedstoneInductorBlockEntity>, CommonRedstoneBlock {
+public class RedstoneInductorBlock extends AbstractDiodeBlock implements IBE<RedstoneInductorBlockEntity>, CommonRedstoneBlock, RedStoneConnectBlock {
     public static final MapCodec<RedstoneInductorBlock> CODEC = simpleCodec(RedstoneInductorBlock::new);
     public static final BooleanProperty INVERTED = BooleanProperty.create("inverted");
 
@@ -60,7 +61,7 @@ public class RedstoneInductorBlock extends AbstractDiodeBlock implements IBE<Red
             return InteractionResult.TRY_WITH_EMPTY_HAND;
         if (player.isShiftKeyDown())
             return InteractionResult.TRY_WITH_EMPTY_HAND;
-        if (AllItems.WRENCH.isIn(player.getItemInHand(pHand)))
+        if (player.getItemInHand(pHand).is(AllItems.WRENCH))
             return InteractionResult.TRY_WITH_EMPTY_HAND;
 
         if (pLevel.isClientSide()) {
@@ -92,7 +93,7 @@ public class RedstoneInductorBlock extends AbstractDiodeBlock implements IBE<Red
     }
 
     private static void addParticles(final BlockState state, final LevelAccessor level, final BlockPos pos, final float alpha) {
-        level.addParticle(new DustParticleOptions(new Vector3f(1.0F, 0.0F, 0.0F), alpha), pos.getX() + 0.5f, pos.getY() + 0.5f, pos.getZ() + 0.5f, 0.0D, 0.0D,
+        level.addParticle(new DustParticleOptions(0xFF0000, alpha), pos.getX() + 0.5f, pos.getY() + 0.5f, pos.getZ() + 0.5f, 0.0D, 0.0D,
                 0.0D);
     }
 
@@ -106,6 +107,11 @@ public class RedstoneInductorBlock extends AbstractDiodeBlock implements IBE<Red
         if (side == null) return false;
 
         return side.getAxis() == state.getValue(FACING).getAxis();
+    }
+
+    @Override
+    public boolean canConnectRedstone(final BlockState state, @Nullable final Direction side) {
+        return this.commonConnectRedstone(state, null, null, side);
     }
 
     @Override

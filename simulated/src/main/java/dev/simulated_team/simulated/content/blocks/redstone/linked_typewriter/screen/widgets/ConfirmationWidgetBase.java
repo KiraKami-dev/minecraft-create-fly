@@ -1,9 +1,10 @@
 package dev.simulated_team.simulated.content.blocks.redstone.linked_typewriter.screen.widgets;
 
-import com.zurrtum.create.client.foundation.gui.widget.IconButton;
 import com.zurrtum.create.client.catnip.gui.element.ScreenElement;
+import com.zurrtum.create.client.foundation.gui.widget.IconButton;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.MutableComponent;
 
 import java.util.List;
@@ -32,22 +33,23 @@ public class ConfirmationWidgetBase extends IconButton {
     }
 
     public void renderHoveredText(final GuiGraphics graphics, final int mouseX, final int mouseY) {
-        graphics.renderComponentTooltip(Minecraft.getInstance().font, List.of(this.message.withColor(0xff0000)), mouseX, mouseY);
+        graphics.setComponentTooltipForNextFrame(Minecraft.getInstance().font, List.of(this.message.withColor(0xff0000)), mouseX, mouseY);
     }
 
     @Override
-    protected boolean clicked(final double mouseX, final double mouseY) {
-        if (!this.isMouseOver(mouseX, mouseY)) {
+    public boolean mouseClicked(final MouseButtonEvent event, final boolean doubleClick) {
+        // clicking anywhere else cancels the confirmation
+        if (!this.isMouseOver(event.x(), event.y())) {
             this.confirmation = false;
         }
 
-        return super.clicked(mouseX, mouseY);
+        return super.mouseClicked(event, doubleClick);
     }
 
     @Override
-    public void onClick(final double mouseX, final double mouseY) {
+    public void onClick(final MouseButtonEvent event, final boolean doubleClick) {
         if (this.confirmation) {
-            this.runCallback(mouseX, mouseY);
+            this.runCallback(event.x(), event.y());
             this.confirmation = false;
         } else {
             this.confirmation = true;

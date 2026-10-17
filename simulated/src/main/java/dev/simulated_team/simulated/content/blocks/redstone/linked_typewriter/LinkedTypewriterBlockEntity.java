@@ -1,9 +1,11 @@
 package dev.simulated_team.simulated.content.blocks.redstone.linked_typewriter;
 
 import com.zurrtum.create.AllSoundEvents;
+import com.zurrtum.create.api.behaviour.BlockEntityBehaviour;
 import com.zurrtum.create.content.equipment.clipboard.ClipboardCloneable;
 import com.zurrtum.create.foundation.blockEntity.SmartBlockEntity;
-import com.zurrtum.create.api.behaviour.BlockEntityBehaviour;
+import com.zurrtum.create.foundation.gui.menu.MenuBase;
+import com.zurrtum.create.foundation.gui.menu.MenuProvider;
 import dev.ryanhcode.sable.Sable;
 import dev.simulated_team.simulated.compat.computercraft.AttachedComputerHandler;
 import dev.simulated_team.simulated.content.blocks.redstone.linked_typewriter.screen.LinkedTypewriterMenuCommon;
@@ -14,21 +16,21 @@ import dev.simulated_team.simulated.mixin_interface.PlayerTypewriterExtension;
 import dev.simulated_team.simulated.service.SimPlatformService;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.core.HolderLookup;
+import net.minecraft.core.UUIDUtil;
 import net.minecraft.core.component.DataComponents;
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.chat.Component;
 import net.minecraft.sounds.SoundSource;
-import net.minecraft.world.MenuProvider;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
-import org.jetbrains.annotations.NotNull;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
 import org.jetbrains.annotations.Nullable;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -56,7 +58,7 @@ public class LinkedTypewriterBlockEntity extends SmartBlockEntity implements Men
     }
 
     @Override
-    public void addBehaviours(final List<BlockEntityBehaviour> list) {
+    public void addBehaviours(final List<BlockEntityBehaviour<?>> list) {
     }
 
     @Override
@@ -81,7 +83,7 @@ public class LinkedTypewriterBlockEntity extends SmartBlockEntity implements Men
     }
 
     public static boolean playerInRange(final Player player, final Level world, final BlockPos pos) {
-        final double range = player.getAttribute(Attributes.BLOCK_INTERACTION_RANGE).getValue();
+        final double range = player.getAttributeValue(Attributes.BLOCK_INTERACTION_RANGE);
 
         // Make sure we take into account sub-levels! We are a sable addon after all!
         return Sable.HELPER.distanceSquaredWithSubLevels(world, player.getEyePosition(), pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5) < range * range;
@@ -231,28 +233,24 @@ public class LinkedTypewriterBlockEntity extends SmartBlockEntity implements Men
     }
 
     @Override
-    protected void write(final CompoundTag tag, final HolderLookup.Provider registries, final boolean clientPacket) {
-        super.write(tag, registries, clientPacket);
+    protected void write(final ValueOutput view, final boolean clientPacket) {
+        super.write(view, clientPacket);
 
-        tag.putString("typedEntry", this.typedEntry);
-        tag.put("Keys", this.entryMap.saveKeys(registries));
+        view.putString("typedEntry", this.typedEntry);
+        this.entryMap.saveKeys(view, "Keys");
 
         if (this.currentUser != null) {
-            tag.putUUID("CurrentUser", this.currentUser);
+            view.store("CurrentUser", UUIDUtil.CODEC, this.currentUser);
         }
     }
 
     @Override
-    protected void read(final CompoundTag tag, final HolderLookup.Provider registries, final boolean clientPacket) {
-        super.read(tag, registries, clientPacket);
+    protected void read(final ValueInput view, final boolean clientPacket) {
+        super.read(view, clientPacket);
 
-        this.typedEntry = tag.getString("typedEntry");
-        this.entryMap = LinkedTypewriterEntries.readKeys(registries, tag.getList("Keys", 10), this.getBlockPos());
-        if (tag.contains("CurrentUser")) {
-            this.currentUser = tag.getUUID("CurrentUser");
-        } else {
-            this.currentUser = null;
-        }
+        this.typedEntry = view.getStringOr("typedEntry", "");
+        this.entryMap = LinkedTypewriterEntries.readKeys(view, "Keys", this.getBlockPos());
+        this.currentUser = view.read("CurrentUser", UUIDUtil.CODEC).orElse(null);
     }
 
     public String getTypedEntry() {
@@ -278,8 +276,10 @@ public class LinkedTypewriterBlockEntity extends SmartBlockEntity implements Men
     }
 
     @Override
-    public @Nullable AbstractContainerMenu createMenu(final int id, final Inventory inventory, final Player player) {
-        return LinkedTypewriterMenuCommon.create(id, inventory, this);
+    public @Nullable MenuBase<?> createMenu(final int id, final Inventory inventory, final Player player, final RegistryFriendlyByteBuf extraData) {
+        // the client menu reads the position and the block entity data (see LinkedTypewriterScreen#create)
+        this.sendToMenu(extraData);
+        return new LinkedTypewriterMenuCommon(id, inventory, this);
     }
 
     @Override
@@ -293,17 +293,17 @@ public class LinkedTypewriterBlockEntity extends SmartBlockEntity implements Men
     }
 
     @Override
-    public boolean writeToClipboard(final HolderLookup.@NotNull Provider registries, final CompoundTag tag, final Direction side) {
-        tag.put("Keys", this.entryMap.saveKeys(registries));
+    public boolean writeToClipboard(final ValueOutput view, final Direction side) {
+        this.entryMap.saveKeys(view, "Keys");
         return true;
     }
 
     @Override
-    public boolean readFromClipboard(final HolderLookup.@NotNull Provider registries, final CompoundTag tag, final Player player, final Direction side, final boolean simulate) {
+    public boolean readFromClipboard(final ValueInput view, final Player player, final Direction side, final boolean simulate) {
         if (simulate) {
             return true;
         }
-        this.entryMap = LinkedTypewriterEntries.readKeys(registries, tag.getList("Keys", 10), this.getBlockPos());
+        this.entryMap = LinkedTypewriterEntries.readKeys(view, "Keys", this.getBlockPos());
         return true;
     }
 
