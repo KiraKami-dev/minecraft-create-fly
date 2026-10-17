@@ -9,6 +9,8 @@ dependencies {
     modRuntimeOnly "fuzs.forgeconfigapiport:forgeconfigapiport-fabric:${forgeconfigapiport_version}"
     // Sable bundles it as jar-in-jar; the mixin plugin needs it once a gated compat mod (Create Fly) is loaded
     runtimeOnly 'org.apache.maven:maven-artifact:3.8.5'
+    // -Pe2eSodium: run with Sodium installed (tools/e2e.sh passes it when E2E_SODIUM=1)
+    if (project.hasProperty('e2eSodium')) modRuntimeOnly "maven.modrinth:sodium:mc1.21.11-0.8.14-fabric"
     // -Pe2eCompat: also load the compat targets, to check their sable mixins apply
     if (project.hasProperty('e2eCompat')) {
         modRuntimeOnly "maven.modrinth:shoulder-surfing-reloaded:1.21.11-5.2.0+fabric"

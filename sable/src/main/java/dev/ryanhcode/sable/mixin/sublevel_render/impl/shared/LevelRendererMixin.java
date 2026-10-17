@@ -1,4 +1,4 @@
-package dev.ryanhcode.sable.mixin.sublevel_render.impl.vanilla;
+package dev.ryanhcode.sable.mixin.sublevel_render.impl.shared;
 
 import dev.ryanhcode.sable.Sable;
 import dev.ryanhcode.sable.api.sublevel.ClientSubLevelContainer;
