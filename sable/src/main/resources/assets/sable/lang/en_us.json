@@ -122,6 +122,7 @@
   "argument.sable.sub_level.expected_positive_range": "Expected a positive range",
   "argument.sable.sub_level.expected_sorting": "Expected sorting type of either nearest or furthest",
 
+  "command.sable.inspector.unavailable": "The ImGui inspector is not available (client only)",
   "inspector.sable.sub_level_container.title": "Sub-level Container",
 
   "attribute.name.player.sub_level_punch_strength": "Push Strength",

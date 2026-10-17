@@ -83,6 +83,16 @@ if (flywheelScenario) {
     ].join(';')
 }
 
+// -Pe2eScenario=inspector: put imguimc in the runtime (Sable's jar-in-jar is not unpacked for a project dependency)
+// and open the ImGui inspector window before the screenshots
+if (project.findProperty('e2eScenario') == 'inspector') {
+    dependencies {
+        modRuntimeOnly "maven.modrinth:imguimc:5h3ujBwr"
+        runtimeOnly "io.github.spair:imgui-java-binding:${imgui_java_version}"
+        runtimeOnly "io.github.spair:imgui-java-natives-macos:${imgui_java_version}"
+    }
+}
+
 def e2eSceneArgs = [
         '-De2e.enabled=true',
         // -Pe2ePrepare: boot without spawning anything (tools/e2e.sh uses it to make a clean template world)
