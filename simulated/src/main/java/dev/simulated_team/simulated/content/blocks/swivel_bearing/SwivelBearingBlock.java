@@ -19,7 +19,6 @@ import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
-import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.ItemStack;
@@ -41,7 +40,8 @@ import net.minecraft.world.phys.shapes.VoxelShape;
 public class SwivelBearingBlock extends DirectionalKineticBlock implements IBE<SwivelBearingBlockEntity>, IRotate, ExtraKinetics.ExtraKineticsBlock, BlockSubLevelAssemblyListener {
     public static final BooleanProperty ASSEMBLED = BooleanProperty.create("assembled");
     public static final BooleanProperty POWERED = BlockStateProperties.POWERED;
-    private static final int placementHelperId = PlacementHelpers.register(new CogwheelPlacementExtension((i) -> i.getItem() instanceof CogwheelBlockItem, SimBlocks.SWIVEL_BEARING::has));
+    // a lambda, not a method reference: SimBlocks.SWIVEL_BEARING is still being constructed when this class initializes
+    private static final int placementHelperId = PlacementHelpers.register(new CogwheelPlacementExtension((i) -> i.getItem() instanceof CogwheelBlockItem, state -> state.is(SimBlocks.SWIVEL_BEARING)));
 
     public SwivelBearingBlock(final Properties properties) {
         super(properties);
@@ -77,7 +77,7 @@ public class SwivelBearingBlock extends DirectionalKineticBlock implements IBE<S
         if (helper.matchesItem(heldItem)) {
             return helper
                     .getOffset(player, level, blockState, blockPos, blockHitResult)
-                    .placeInWorld(level, (BlockItem) heldItem.getItem(), player, interactionHand, blockHitResult);
+                    .placeInWorld(level, (BlockItem) heldItem.getItem(), player, interactionHand);
         }
 
 

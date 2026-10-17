@@ -1,19 +1,13 @@
 package dev.simulated_team.simulated.content.blocks.swivel_bearing;
 
 import com.zurrtum.create.content.contraptions.AssemblyException;
-import com.zurrtum.create.client.content.contraptions.IDisplayAssemblyExceptions;
-import com.zurrtum.create.content.contraptions.bearing.BearingBlock;
 import com.zurrtum.create.content.kinetics.base.DirectionalKineticBlock;
 import com.zurrtum.create.content.kinetics.base.IRotate;
 import com.zurrtum.create.content.kinetics.base.KineticBlockEntity;
 import com.zurrtum.create.content.kinetics.simpleRelays.ICogWheel;
 import com.zurrtum.create.content.kinetics.transmission.sequencer.SequencerInstructions;
 import com.zurrtum.create.api.behaviour.BlockEntityBehaviour;
-import com.zurrtum.create.client.foundation.blockEntity.behaviour.CenteredSideValueBoxTransform;
-import com.zurrtum.create.client.foundation.blockEntity.behaviour.scrollValue.INamedIconOptions;
-import com.zurrtum.create.client.foundation.blockEntity.behaviour.scrollValue.ScrollOptionBehaviour;
-import com.zurrtum.create.client.foundation.gui.AllIcons;
-import com.zurrtum.create.client.foundation.item.TooltipHelper;
+import com.zurrtum.create.foundation.blockEntity.behaviour.scrollValue.ServerScrollOptionBehaviour;
 import dev.ryanhcode.sable.Sable;
 import dev.ryanhcode.sable.api.SubLevelAssemblyHelper;
 import dev.ryanhcode.sable.api.block.BlockEntitySubLevelActor;
@@ -33,7 +27,6 @@ import dev.simulated_team.simulated.Simulated;
 import dev.simulated_team.simulated.config.server.physics.SimPhysics;
 import dev.simulated_team.simulated.content.blocks.swivel_bearing.link_block.SwivelBearingPlateBlock;
 import dev.simulated_team.simulated.content.blocks.swivel_bearing.link_block.SwivelBearingPlateBlockEntity;
-import dev.simulated_team.simulated.data.SimLang;
 import dev.simulated_team.simulated.data.advancements.SimAdvancements;
 import dev.simulated_team.simulated.index.SimBlocks;
 import dev.simulated_team.simulated.index.SimSoundEvents;
@@ -43,25 +36,19 @@ import dev.simulated_team.simulated.util.SimLevelUtil;
 import dev.simulated_team.simulated.util.assembly.SimAssemblyException;
 import dev.simulated_team.simulated.util.extra_kinetics.ExtraBlockPos;
 import dev.simulated_team.simulated.util.extra_kinetics.ExtraKinetics;
-import com.zurrtum.create.client.catnip.lang.FontHelper;
 import com.zurrtum.create.catnip.math.AngleHelper;
-import com.zurrtum.create.catnip.math.VecHelper;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.core.HolderLookup;
+import net.minecraft.core.UUIDUtil;
 import net.minecraft.core.Vec3i;
 import net.minecraft.core.particles.ParticleTypes;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.NbtUtils;
 import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.LevelReader;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.Rotation;
@@ -69,6 +56,8 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
 import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -78,13 +67,15 @@ import org.joml.Vector3dc;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.UUID;
-import java.util.function.BiPredicate;
 
-import static net.minecraft.ChatFormatting.GOLD;
-
-public class SwivelBearingBlockEntity extends KineticBlockEntity implements ExtraKinetics, IDisplayAssemblyExceptions, BlockEntitySubLevelActor {
-    private static final MutableComponent SCROLL_OPTION_TITLE = Component.translatable(Simulated.MOD_ID + ".scroll_option.swivel_default_locked");
+/**
+ * Client-only parts live in {@code SwivelBearingClient}: the locking-setting value box (upstream a
+ * {@code ScrollOptionBehaviour} on this block entity) and the hover / assembly-exception tooltip (upstream
+ * {@code addToTooltip} and {@code IDisplayAssemblyExceptions} on this block entity), as Create Fly splits them.
+ */
+public class SwivelBearingBlockEntity extends KineticBlockEntity implements ExtraKinetics, BlockEntitySubLevelActor {
 
     @NotNull
     private final SwivelBearingCogwheelBlockEntity cogwheel;
@@ -128,7 +119,7 @@ public class SwivelBearingBlockEntity extends KineticBlockEntity implements Extr
     /**
      * The locked default scroll option
      */
-    private ScrollOptionBehaviour<LockingSetting> lockedDefaultOption;
+    private ServerScrollOptionBehaviour<LockingSetting> lockedDefaultOption;
 
     public SwivelBearingBlockEntity(final BlockEntityType<?> typeIn, final BlockPos pos, final BlockState state) {
         super(typeIn, pos, state);
@@ -138,18 +129,19 @@ public class SwivelBearingBlockEntity extends KineticBlockEntity implements Extr
     }
 
     @Override
-    public void addBehaviours(final List<BlockEntityBehaviour> behaviours) {
+    public void addBehaviours(final List<BlockEntityBehaviour<?>> behaviours) {
         super.addBehaviours(behaviours);
 
-        this.lockedDefaultOption = new ScrollOptionBehaviour<>(LockingSetting.class, SCROLL_OPTION_TITLE, this, new SelectionModeValueBox(this::isValidForOptionPanel));
-        this.lockedDefaultOption.value = 1;
+        // the value box (title, slot, icons) is the client-side SwivelBearingClient.LockingScrollBehaviour
+        this.lockedDefaultOption = new ServerScrollOptionBehaviour<>(LockingSetting.class, this);
+        this.lockedDefaultOption.setValue(LockingSetting.LOCKED_DEFAULT.ordinal());
         behaviours.add(this.lockedDefaultOption);
     }
 
     /**
      * @return if a direction is valid for a selector to be placed on
      */
-    private boolean isValidForOptionPanel(final BlockState state, final Direction direction) {
+    public static boolean isValidForOptionPanel(final BlockState state, final Direction direction) {
         final Direction facing = state.getValue(SwivelBearingBlock.FACING);
         final Direction.Axis currentAxis = facing.getAxis();
 
@@ -277,46 +269,7 @@ public class SwivelBearingBlockEntity extends KineticBlockEntity implements Extr
         }
     }
 
-    @Override
-    public boolean addToTooltip(final List<Component> tooltip, final boolean isPlayerSneaking) {
-        if (super.addToTooltip(tooltip, isPlayerSneaking))
-            return true;
-
-        if (isPlayerSneaking)
-            return false;
-
-        if (this.cogwheel.getSpeed() == 0)
-            return false;
-
-        if (this.isAssembled()) {
-            if (this.isTooFast()) {
-                SimLang.translate("swivel_bearing.too_fast")
-                        .style(GOLD)
-                        .forGoggles(tooltip);
-
-                final MutableComponent component = SimLang.translate("swivel_bearing.too_fast_error")
-                        .component();
-
-                final List<Component> cutString = TooltipHelper.cutTextComponent(component, FontHelper.Palette.GRAY_AND_WHITE);
-                tooltip.addAll(cutString);
-
-                return true;
-            }
-
-            return false;
-        }
-        final BlockState state = this.getBlockState();
-        if (!(state.getBlock() instanceof SwivelBearingBlock))
-            return false;
-
-        final BlockState attachedState = this.level.getBlockState(this.worldPosition.relative(state.getValue(BearingBlock.FACING)));
-        if (attachedState.canBeReplaced())
-            return false;
-        TooltipHelper.addHint(tooltip, "hint.empty_bearing");
-        return true;
-    }
-
-    private boolean isTooFast() {
+    public boolean isTooFast() {
         final float maxSwivelRPM = SimConfigService.INSTANCE.server().blocks.maxSwivelBearingSpeed.getF();
         return Math.abs(this.cogwheel.getSpeed()) > maxSwivelRPM;
     }
@@ -369,7 +322,7 @@ public class SwivelBearingBlockEntity extends KineticBlockEntity implements Extr
         final SubLevel subLevelA = this.getContainingSubLevel();
         final SubLevel subLevelB = this.getAttachedSubLevel();
 
-        final Vec3i facingVec3I = this.getBlockState().getValue(DirectionalKineticBlock.FACING).getNormal();
+        final Vec3i facingVec3I = this.getBlockState().getValue(DirectionalKineticBlock.FACING).getUnitVec3i();
         final Vector3dc facingVec = new Vector3d(facingVec3I.getX(), facingVec3I.getY(), facingVec3I.getZ());
 
         double inertiaA = Double.MAX_VALUE;
@@ -580,8 +533,8 @@ public class SwivelBearingBlockEntity extends KineticBlockEntity implements Extr
         if (!plateState.is(SimBlocks.SWIVEL_BEARING_LINK_BLOCK)) return;
 
         final Vector3d anchorPos = JOMLConversion.toJOML(this.getBlockPos().relative(this.getBlockState().getValue(DirectionalKineticBlock.FACING)).getCenter());
-        final Vec3 facingVec = Vec3.atLowerCornerOf(this.getBlockState().getValue(DirectionalKineticBlock.FACING).getNormal());
-        final Vec3 plateFacingVec = Vec3.atLowerCornerOf(plateState.getValue(DirectionalKineticBlock.FACING).getNormal());
+        final Vec3 facingVec = Vec3.atLowerCornerOf(this.getBlockState().getValue(DirectionalKineticBlock.FACING).getUnitVec3i());
+        final Vec3 plateFacingVec = Vec3.atLowerCornerOf(plateState.getValue(DirectionalKineticBlock.FACING).getUnitVec3i());
 
         final RotaryConstraintConfiguration constraint = new RotaryConstraintConfiguration(
                 anchorPos,
@@ -599,9 +552,9 @@ public class SwivelBearingBlockEntity extends KineticBlockEntity implements Extr
     }
 
     @Override
-    protected void write(final CompoundTag compound, final HolderLookup.Provider registries, final boolean clientPacket) {
-        super.write(compound, registries, clientPacket);
-        compound.putDouble("TargetAngle", this.targetAngleDegrees);
+    protected void write(final ValueOutput view, final boolean clientPacket) {
+        super.write(view, clientPacket);
+        view.putDouble("TargetAngle", this.targetAngleDegrees);
 
         BlockPos platePos = this.getPlatePos();
         UUID id = this.getSubLevelID();
@@ -622,30 +575,31 @@ public class SwivelBearingBlockEntity extends KineticBlockEntity implements Extr
         }
 
         if (id != null) {
-            compound.putUUID("SubLevelID", id);
+            view.store("SubLevelID", UUIDUtil.CODEC, id);
         }
 
         if (platePos != null) {
-            compound.put("SwivelPlate", NbtUtils.writeBlockPos(platePos));
+            view.store("SwivelPlate", BlockPos.CODEC, platePos);
         }
 
         if (this.sequencedAngleLimit >= 0)
-            compound.putDouble("SequencedAngleLimit", this.sequencedAngleLimit);
+            view.putDouble("SequencedAngleLimit", this.sequencedAngleLimit);
 
-        AssemblyException.write(compound, registries, this.lastException);
+        AssemblyException.write(view, this.lastException);
     }
 
     @Override
-    protected void read(final CompoundTag compound, final HolderLookup.Provider registries, final boolean clientPacket) {
-        super.read(compound, registries, clientPacket);
-        this.targetAngleDegrees = compound.getDouble("TargetAngle");
+    protected void read(final ValueInput view, final boolean clientPacket) {
+        super.read(view, clientPacket);
+        this.targetAngleDegrees = view.getDoubleOr("TargetAngle", 0.0);
 
         final SubLevelSchematicSerializationContext schematicContext = SubLevelSchematicSerializationContext.getCurrentContext();
 
         SubLevelSchematicSerializationContext.SchematicMapping mapping = null;
 
-        if (compound.hasUUID("SubLevelID")) {
-            UUID subLevelID = compound.getUUID("SubLevelID");
+        final Optional<UUID> storedSubLevelID = view.read("SubLevelID", UUIDUtil.CODEC);
+        if (storedSubLevelID.isPresent()) {
+            UUID subLevelID = storedSubLevelID.get();
 
             if (schematicContext != null) {
                 mapping = schematicContext.getMapping(subLevelID);
@@ -658,13 +612,10 @@ public class SwivelBearingBlockEntity extends KineticBlockEntity implements Extr
             this.setSubLevelID(subLevelID);
         }
 
-        if (compound.contains("SwivelPlate")) {
-            final BlockPos blockPos = NbtUtils.readBlockPos(compound, "SwivelPlate").orElseThrow();
-            this.setPlatePos(blockPos);
-        }
+        view.read("SwivelPlate", BlockPos.CODEC).ifPresent(this::setPlatePos);
 
-        this.sequencedAngleLimit = compound.contains("SequencedAngleLimit") ? compound.getDouble("SequencedAngleLimit") : -1;
-        this.lastException = AssemblyException.read(compound, registries);
+        this.sequencedAngleLimit = view.getDoubleOr("SequencedAngleLimit", -1);
+        this.lastException = AssemblyException.read(view);
     }
 
     @Override
@@ -794,7 +745,6 @@ public class SwivelBearingBlockEntity extends KineticBlockEntity implements Extr
         return 0;
     }
 
-    @Override
     public AssemblyException getLastAssemblyException() {
         return this.lastException;
     }
@@ -812,27 +762,21 @@ public class SwivelBearingBlockEntity extends KineticBlockEntity implements Extr
 
     /**
      * TODO: separate icon for the locked settings
+     * <p>
+     * The icons ({@code AllIcons}, client-only in Create Fly) are mapped in {@code SwivelBearingClient.LockingSettingIcon}.
      */
-    public enum LockingSetting implements INamedIconOptions {
-        LOCKED_ALWAYS(AllIcons.I_CONFIG_LOCKED, "swivel_default_always_locked"),
-        LOCKED_DEFAULT(AllIcons.I_CONFIG_LOCKED, "swivel_default_locked"),
-        UNLOCKED_DEFAULT(AllIcons.I_CONFIG_UNLOCKED, "swivel_default_unlocked"),
-        UNLOCKED_ALWAYS(AllIcons.I_CONFIG_UNLOCKED, "swivel_default_always_unlocked");
+    public enum LockingSetting {
+        LOCKED_ALWAYS("swivel_default_always_locked"),
+        LOCKED_DEFAULT("swivel_default_locked"),
+        UNLOCKED_DEFAULT("swivel_default_unlocked"),
+        UNLOCKED_ALWAYS("swivel_default_always_unlocked");
 
         private final String translationKey;
-        private final AllIcons icon;
 
-        LockingSetting(final AllIcons icon, final String name) {
-            this.icon = icon;
+        LockingSetting(final String name) {
             this.translationKey = Simulated.MOD_ID + ".generic." + name;
         }
 
-        @Override
-        public AllIcons getIcon() {
-            return this.icon;
-        }
-
-        @Override
         public String getTranslationKey() {
             return this.translationKey;
         }
@@ -841,29 +785,6 @@ public class SwivelBearingBlockEntity extends KineticBlockEntity implements Extr
             if (this == UNLOCKED_ALWAYS) return false;
             if (this == LOCKED_ALWAYS) return true;
             return signal > 0 != (this == LockingSetting.LOCKED_DEFAULT);
-        }
-    }
-
-    private static class SelectionModeValueBox extends CenteredSideValueBoxTransform {
-        public SelectionModeValueBox(final BiPredicate<BlockState, Direction> allowedDirections) {
-            super(allowedDirections);
-        }
-
-        @Override
-        public Vec3 getLocalOffset(final LevelAccessor level, final BlockPos pos, final BlockState state) {
-            return super.getLocalOffset(level, pos, state)
-                    .subtract(Vec3.atLowerCornerOf(state.getValue(SwivelBearingBlock.FACING).getNormal())
-                            .scale(5 / 16f));
-        }
-
-        @Override
-        protected Vec3 getSouthLocation() {
-            return VecHelper.voxelSpace(8, 8, 15.75);
-        }
-
-        @Override
-        public float getScale() {
-            return 0.35f;
         }
     }
 
@@ -907,10 +828,8 @@ public class SwivelBearingBlockEntity extends KineticBlockEntity implements Extr
             return this.parent;
         }
 
-        @Override
-        protected void addStressImpactStats(final List<Component> tooltip, final float stressAtBase) {
-            super.addStressImpactStats(tooltip, stressAtBase);
-        }
+        // upstream also overrode addStressImpactStats, only to call super; that method lives in Create Fly's
+        // client KineticTooltipBehaviour now
 
         @Override
         protected boolean canPropagateDiagonally(final IRotate block, final BlockState state) {
@@ -919,7 +838,8 @@ public class SwivelBearingBlockEntity extends KineticBlockEntity implements Extr
 
         @Override
         public Component getKey() {
-            return SimLang.translate("extra_kinetics.extra_cogwheel").component();
+            // same key as SimLang.translate("extra_kinetics.extra_cogwheel"), without the client-only LangBuilder
+            return Component.translatable(Simulated.MOD_ID + ".extra_kinetics.extra_cogwheel");
         }
     }
 }
