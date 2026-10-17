@@ -279,7 +279,7 @@ public class LinkedTypewriterBlockEntity extends SmartBlockEntity implements Men
     public @Nullable MenuBase<?> createMenu(final int id, final Inventory inventory, final Player player, final RegistryFriendlyByteBuf extraData) {
         // the client menu reads the position and the block entity data (see LinkedTypewriterScreen#create)
         this.sendToMenu(extraData);
-        return new LinkedTypewriterMenuCommon(id, inventory, this);
+        return LinkedTypewriterMenuCommon.create(id, inventory, this);
     }
 
     @Override

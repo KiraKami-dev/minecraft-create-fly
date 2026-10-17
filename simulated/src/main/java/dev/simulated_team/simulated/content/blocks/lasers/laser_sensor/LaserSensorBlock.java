@@ -2,7 +2,6 @@ package dev.simulated_team.simulated.content.blocks.lasers.laser_sensor;
 
 import com.zurrtum.create.content.redstone.DirectedDirectionalBlock;
 import com.zurrtum.create.foundation.block.IBE;
-import com.zurrtum.create.foundation.block.RedStoneConnectBlock;
 import dev.simulated_team.simulated.index.SimBlockEntityTypes;
 import dev.simulated_team.simulated.multiloader.CommonRedstoneBlock;
 import net.minecraft.core.BlockPos;
@@ -19,7 +18,7 @@ import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.BooleanProperty;
 import org.jetbrains.annotations.Nullable;
 
-public class LaserSensorBlock extends DirectedDirectionalBlock implements IBE<LaserSensorBlockEntity>, CommonRedstoneBlock, RedStoneConnectBlock {
+public class LaserSensorBlock extends DirectedDirectionalBlock implements IBE<LaserSensorBlockEntity>, CommonRedstoneBlock {
     public static final BooleanProperty POWERED = BlockStateProperties.POWERED;
 
     public LaserSensorBlock(final Properties props) {
@@ -79,10 +78,6 @@ public class LaserSensorBlock extends DirectedDirectionalBlock implements IBE<La
         return direction != state.getValue(FACING).getOpposite();
     }
 
-    @Override
-    public boolean canConnectRedstone(final BlockState state, @Nullable final Direction side) {
-        return this.commonConnectRedstone(state, null, null, side);
-    }
 
     @Override
     public Class<LaserSensorBlockEntity> getBlockEntityClass() {

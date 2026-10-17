@@ -4,7 +4,6 @@ import com.mojang.serialization.MapCodec;
 import com.zurrtum.create.AllItems;
 import com.zurrtum.create.content.redstone.diodes.AbstractDiodeBlock;
 import com.zurrtum.create.foundation.block.IBE;
-import com.zurrtum.create.foundation.block.RedStoneConnectBlock;
 import dev.simulated_team.simulated.index.SimBlockEntityTypes;
 import dev.simulated_team.simulated.index.SimBlockShapes;
 import dev.simulated_team.simulated.multiloader.CommonRedstoneBlock;
@@ -34,7 +33,7 @@ import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.VoxelShape;
 import org.jetbrains.annotations.Nullable;
 
-public class RedstoneInductorBlock extends AbstractDiodeBlock implements IBE<RedstoneInductorBlockEntity>, CommonRedstoneBlock, RedStoneConnectBlock {
+public class RedstoneInductorBlock extends AbstractDiodeBlock implements IBE<RedstoneInductorBlockEntity>, CommonRedstoneBlock {
     public static final MapCodec<RedstoneInductorBlock> CODEC = simpleCodec(RedstoneInductorBlock::new);
     public static final BooleanProperty INVERTED = BooleanProperty.create("inverted");
 
@@ -109,10 +108,6 @@ public class RedstoneInductorBlock extends AbstractDiodeBlock implements IBE<Red
         return side.getAxis() == state.getValue(FACING).getAxis();
     }
 
-    @Override
-    public boolean canConnectRedstone(final BlockState state, @Nullable final Direction side) {
-        return this.commonConnectRedstone(state, null, null, side);
-    }
 
     @Override
     protected int getDelay(final BlockState pState) {

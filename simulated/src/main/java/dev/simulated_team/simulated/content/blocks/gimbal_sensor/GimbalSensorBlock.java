@@ -2,7 +2,6 @@ package dev.simulated_team.simulated.content.blocks.gimbal_sensor;
 
 import com.zurrtum.create.content.equipment.wrench.IWrenchable;
 import com.zurrtum.create.foundation.block.IBE;
-import com.zurrtum.create.foundation.block.RedStoneConnectBlock;
 import dev.simulated_team.simulated.index.SimBlockEntityTypes;
 import dev.simulated_team.simulated.index.SimBlockShapes;
 import dev.simulated_team.simulated.multiloader.CommonRedstoneBlock;
@@ -25,7 +24,7 @@ import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.VoxelShape;
 import org.jetbrains.annotations.Nullable;
 
-public class GimbalSensorBlock extends Block implements IBE<GimbalSensorBlockEntity>, IWrenchable, CommonRedstoneBlock, RedStoneConnectBlock {
+public class GimbalSensorBlock extends Block implements IBE<GimbalSensorBlockEntity>, IWrenchable, CommonRedstoneBlock {
 
     public static final Property<Direction.Axis> HORIZONTAL_AXIS = BlockStateProperties.HORIZONTAL_AXIS;
     public GimbalSensorBlock(final Properties pProperties) {
@@ -65,10 +64,6 @@ public class GimbalSensorBlock extends Block implements IBE<GimbalSensorBlockEnt
         return direction != null;
     }
 
-    @Override
-    public boolean canConnectRedstone(final BlockState state, @Nullable final Direction side) {
-        return this.commonConnectRedstone(state, null, null, side);
-    }
 
     @Override
     public Class<GimbalSensorBlockEntity> getBlockEntityClass() {

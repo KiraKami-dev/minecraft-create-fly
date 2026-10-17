@@ -5,7 +5,6 @@ import com.zurrtum.create.api.contraption.BlockMovementChecks;
 import com.zurrtum.create.content.equipment.wrench.IWrenchable;
 import com.zurrtum.create.foundation.block.IBE;
 import com.zurrtum.create.foundation.block.NeighborUpdateListeningBlock;
-import com.zurrtum.create.foundation.block.RedStoneConnectBlock;
 import com.zurrtum.create.foundation.block.WrenchableDirectionalBlock;
 import dev.simulated_team.simulated.index.SimBlockEntityTypes;
 import dev.simulated_team.simulated.index.SimBlockShapes;
@@ -28,7 +27,7 @@ import net.minecraft.world.phys.shapes.VoxelShape;
 import org.jetbrains.annotations.Nullable;
 
 
-public class DirectionalLinkedReceiverBlock extends WrenchableDirectionalBlock implements IBE<DirectionalLinkedReceiverBlockEntity>, IWrenchable, CommonRedstoneBlock, RedStoneConnectBlock, NeighborUpdateListeningBlock {
+public class DirectionalLinkedReceiverBlock extends WrenchableDirectionalBlock implements IBE<DirectionalLinkedReceiverBlockEntity>, IWrenchable, CommonRedstoneBlock, NeighborUpdateListeningBlock {
     public static final MapCodec<DirectionalLinkedReceiverBlock> CODEC = simpleCodec(DirectionalLinkedReceiverBlock::new);
     public static final BooleanProperty POWERED = BlockStateProperties.POWERED;
 
@@ -131,8 +130,4 @@ public class DirectionalLinkedReceiverBlock extends WrenchableDirectionalBlock i
         return side != null;
     }
 
-    @Override
-    public boolean canConnectRedstone(final BlockState state, @Nullable final Direction side) {
-        return this.commonConnectRedstone(state, null, null, side);
-    }
 }

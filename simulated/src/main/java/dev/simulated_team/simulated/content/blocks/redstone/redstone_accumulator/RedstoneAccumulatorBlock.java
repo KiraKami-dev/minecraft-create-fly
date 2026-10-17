@@ -3,7 +3,6 @@ package dev.simulated_team.simulated.content.blocks.redstone.redstone_accumulato
 import com.mojang.serialization.MapCodec;
 import com.zurrtum.create.content.redstone.diodes.AbstractDiodeBlock;
 import com.zurrtum.create.foundation.block.IBE;
-import com.zurrtum.create.foundation.block.RedStoneConnectBlock;
 import dev.simulated_team.simulated.index.SimBlockEntityTypes;
 import dev.simulated_team.simulated.index.SimBlockShapes;
 import dev.simulated_team.simulated.multiloader.CommonRedstoneBlock;
@@ -33,7 +32,7 @@ import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.VoxelShape;
 import org.jetbrains.annotations.Nullable;
 
-public class RedstoneAccumulatorBlock extends AbstractDiodeBlock implements IBE<RedstoneAccumulatorBlockEntity>, CommonRedstoneBlock, RedStoneConnectBlock {
+public class RedstoneAccumulatorBlock extends AbstractDiodeBlock implements IBE<RedstoneAccumulatorBlockEntity>, CommonRedstoneBlock {
     public static final MapCodec<RedstoneAccumulatorBlock> CODEC = simpleCodec(RedstoneAccumulatorBlock::new);
     public static BooleanProperty POWERING = BooleanProperty.create("powering");
     public static BooleanProperty SIDE_POWERED = BooleanProperty.create("side_powered");
@@ -120,10 +119,6 @@ public class RedstoneAccumulatorBlock extends AbstractDiodeBlock implements IBE<
         return direction != null;
     }
 
-    @Override
-    public boolean canConnectRedstone(final BlockState state, @Nullable final Direction side) {
-        return this.commonConnectRedstone(state, null, null, side);
-    }
 
     @Override
     protected int getOutputSignal(final BlockGetter pLevel, final BlockPos pPos, final BlockState pState) {
