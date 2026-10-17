@@ -1,14 +1,22 @@
 package dev.mcf.e2e;
 
 import dev.mcf.e2e.gametest.E2ETestReporter;
+import dev.ryanhcode.sable.api.sublevel.ServerSubLevelContainer;
 import dev.ryanhcode.sable.api.sublevel.SubLevelContainer;
+import dev.ryanhcode.sable.sublevel.SubLevel;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.minecraft.server.MinecraftServer;
+import org.joml.Vector3d;
+import org.joml.Vector3dc;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.spongepowered.asm.mixin.MixinEnvironment;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
 
 /**
  * Applies every mixin up front (so broken injections fail loudly at start-up instead of
@@ -23,6 +31,8 @@ public final class E2E implements ModInitializer {
 
     private int ticks;
     private int commandTick = -1;
+    private final Map<UUID, Vector3dc> spawnPositions = new HashMap<>();
+    private final Playtest playtest = "playtest".equals(System.getProperty("e2e.scenario")) ? new Playtest() : null;
 
     @Override
     public void onInitialize() {
@@ -52,6 +62,13 @@ public final class E2E implements ModInitializer {
     private void tick(final MinecraftServer server) {
         this.ticks++;
 
+        if (this.playtest != null) {
+            if (!server.getPlayerList().getPlayers().isEmpty() && this.ticks >= 40) {
+                this.playtest.tick(server);
+            }
+            return;
+        }
+
         if (this.commandTick < 0) {
             final boolean ready = server.isDedicatedServer()
                     ? this.ticks >= DEDICATED_COMMAND_TICK
@@ -64,15 +81,34 @@ public final class E2E implements ModInitializer {
         }
 
         final int since = this.ticks - this.commandTick;
-        if (since % 100 == 0) {
-            // sub-levels in chunks that aren't ticking are unloaded into holding chunks (ROADMAP S8a)
-            final SubLevelContainer container = SubLevelContainer.getContainer(server.overworld());
-            LOG.info("E2E: {} ticks after spawn, server alive, {} sub-levels loaded", since, container == null ? 0 : container.getLoadedCount());
+        if (since == 1 || since % 100 == 0) {
+            if (since > 1) {
+                LOG.info("E2E: {} ticks after spawn, server alive", since);
+            }
+            logSubLevels(server, since);
         }
         if (server.isDedicatedServer() && this.ticks >= DEDICATED_STOP_TICK) {
             LOG.info("E2E: done, stopping server");
             server.halt(false);
         }
+    }
+
+    /** Shows that sub-levels stay loaded and simulate (positions change after spawning). */
+    private void logSubLevels(final MinecraftServer server, final int since) {
+        final ServerSubLevelContainer container = SubLevelContainer.getContainer(server.overworld());
+        if (container == null) {
+            LOG.error("E2E: no sub-level container in the overworld");
+            return;
+        }
+        int moved = 0;
+        for (final SubLevel subLevel : container.getAllSubLevels()) {
+            final Vector3dc pos = subLevel.logicalPose().position();
+            final Vector3dc start = this.spawnPositions.putIfAbsent(subLevel.getUniqueId(), new Vector3d(pos));
+            if (start != null && start.distance(pos) > 0.1) {
+                moved++;
+            }
+        }
+        LOG.info("E2E: {} ticks: {} sub-levels loaded, {} moved since spawn", since, container.getLoadedCount(), moved);
     }
 
     private static void runCommands(final MinecraftServer server) {

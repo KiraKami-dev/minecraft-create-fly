@@ -37,7 +37,7 @@ public final class SableClientConfig {
 
         SUB_LEVEL_DYNAMIC_SHADING = builder
                 .comment("Whether sub-levels should apply block shading dynamically")
-                .define("sub_level_dynamic_shading", false); // PORT-TODO(1.21.11): see SableDynamicDirectionalShading
+                .define("sub_level_dynamic_shading", true);
         SUB_LEVEL_WATER_OCCLUSION = builder
                 .comment("Whether sub-levels can occlude the water surface")
                 .define("sub_level_water_occlusion", true);
