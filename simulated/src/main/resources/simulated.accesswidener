@@ -6,6 +6,9 @@ accessible class net/minecraft/world/item/CreativeModeTab$TabVisibility
 accessible field net/minecraft/server/level/ServerLevel entityManager Lnet/minecraft/world/level/entity/PersistentEntitySectionManager;
 accessible field net/minecraft/world/level/entity/PersistentEntitySectionManager sectionStorage Lnet/minecraft/world/level/entity/EntitySectionStorage;
 
+# platform
+accessible field net/minecraft/world/entity/Entity levelCallback Lnet/minecraft/world/level/entity/EntityInLevelCallback;
+
 # Laser Render Type
 accessible class net/minecraft/client/renderer/rendertype/RenderType$CompositeState
 accessible class net/minecraft/client/renderer/RenderStateShard$TextureStateShard
@@ -45,5 +48,3 @@ accessible field net/minecraft/server/network/ServerGamePacketListenerImpl above
 
 # Physics Staff
 accessible method net/minecraft/client/renderer/GameRenderer getFov (Lnet/minecraft/client/Camera;FZ)D
-# platform
-accessible field net/minecraft/world/entity/Entity levelCallback Lnet/minecraft/world/level/entity/EntityInLevelCallback;
