@@ -1,13 +1,13 @@
 package dev.simulated_team.simulated.mixin.new_ponder;
 
-import net.createmod.ponder.foundation.PonderTooltipHandler;
+import com.zurrtum.create.client.ponder.foundation.PonderTooltipHandler;
 import net.minecraft.world.item.ItemStack;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.gen.Accessor;
 
 @Mixin(PonderTooltipHandler.class)
 public interface PonderTooltipHandlerAccessor {
-	@Accessor
+	@Accessor(remap = false)
 	static ItemStack getTrackingStack() {
 		return null;
 	}

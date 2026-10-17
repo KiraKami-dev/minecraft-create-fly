@@ -10,16 +10,20 @@ import dev.simulated_team.simulated.index.SimPartialModels;
 import dev.simulated_team.simulated.ponder.instructions.ModifyRopeInstruction;
 import dev.simulated_team.simulated.util.SimMathUtils;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
-import net.createmod.catnip.render.CachedBuffers;
-import net.createmod.catnip.render.SuperByteBuffer;
-import net.createmod.ponder.api.element.AnimatedSceneElement;
-import net.createmod.ponder.api.level.PonderLevel;
-import net.createmod.ponder.foundation.PonderScene;
-import net.createmod.ponder.foundation.element.AnimatedSceneElementBase;
-import net.minecraft.client.gui.GuiGraphics;
+import com.zurrtum.create.client.catnip.render.CachedBuffers;
+import com.zurrtum.create.client.catnip.render.SuperByteBuffer;
+import com.zurrtum.create.client.ponder.api.element.AnimatedSceneElement;
+import com.zurrtum.create.client.ponder.api.level.PonderLevel;
+import com.zurrtum.create.client.ponder.foundation.PonderScene;
+import com.zurrtum.create.client.ponder.foundation.element.AnimatedSceneElementBase;
+import net.minecraft.client.Camera;
 import net.minecraft.client.renderer.LightTexture;
 import net.minecraft.client.renderer.MultiBufferSource;
-import net.minecraft.client.renderer.rendertype.RenderType;
+import net.minecraft.client.renderer.SubmitNodeCollector;
+import net.minecraft.client.renderer.entity.EntityRenderDispatcher;
+import net.minecraft.client.renderer.item.ItemModelResolver;
+import net.minecraft.client.renderer.rendertype.RenderTypes;
+import net.minecraft.client.renderer.state.CameraRenderState;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.util.Mth;
@@ -74,12 +78,14 @@ public class RopeStrandElement extends AnimatedSceneElementBase implements Anima
         return new ModifyRopeInstruction(duration, this);
     }
 
+    // Create Fly ponder: renderLast receives the scene PoseStack (GuiGraphics is 2D in 1.21.11) and the render dispatchers
     @Override
-    protected void renderLast(final PonderLevel world, final MultiBufferSource buffer, final GuiGraphics graphics, final float fade, final float pt) {
-        final SuperByteBuffer middle = CachedBuffers.partialFacing(SimPartialModels.ROPE, AllBlocks.ROPE.getDefaultState(), Direction.NORTH);
-        final SuperByteBuffer knot = CachedBuffers.partialFacing(SimPartialModels.ROPE_KNOT, AllBlocks.ROPE.getDefaultState(), Direction.NORTH);
-        final VertexConsumer vb = buffer.getBuffer(RenderType.solid());
-        final PoseStack ps = graphics.pose();
+    protected void renderLast(final EntityRenderDispatcher entityRenderManager, final ItemModelResolver itemModelManager, final PonderLevel world,
+                              final MultiBufferSource buffer, final SubmitNodeCollector queue, final Camera camera, final CameraRenderState cameraRenderState,
+                              final PoseStack ps, final float fade, final float pt) {
+        final SuperByteBuffer middle = CachedBuffers.partialFacing(SimPartialModels.ROPE, AllBlocks.ROPE.defaultBlockState(), Direction.NORTH);
+        final SuperByteBuffer knot = CachedBuffers.partialFacing(SimPartialModels.ROPE_KNOT, AllBlocks.ROPE.defaultBlockState(), Direction.NORTH);
+        final VertexConsumer vb = buffer.getBuffer(RenderTypes.solidMovingBlock());
 
         final PonderRopePose currentPose = new PonderRopePose();
         currentPose.set(this.lastPose);
@@ -126,20 +132,20 @@ public class RopeStrandElement extends AnimatedSceneElementBase implements Anima
             final int worldLight = LightTexture.FULL_BLOCK;
 
             knot.light(worldLight)
-                    .renderInto(ps, vb);
+                    .renderInto(ps.last(), vb);
 
             ps.pushPose();
             ps.translate(0.0, 0.5, 0.0);
             ps.scale(1.0f, (float) length, 1.0f);
 
             middle.light(worldLight)
-                    .renderInto(ps, vb);
+                    .renderInto(ps.last(), vb);
             ps.popPose();
 
             if(renderPoint1 == renderPoints.getLast()) {
                 ps.translate(0, length, 0);
                 knot.light(worldLight)
-                        .renderInto(ps, vb);
+                        .renderInto(ps.last(), vb);
             }
 
             ps.popPose();

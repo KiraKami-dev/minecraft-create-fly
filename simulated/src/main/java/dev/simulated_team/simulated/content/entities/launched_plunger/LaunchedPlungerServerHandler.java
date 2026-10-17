@@ -5,7 +5,7 @@ import dev.ryanhcode.sable.api.SubLevelHelper;
 import dev.ryanhcode.sable.sublevel.ServerSubLevel;
 import dev.ryanhcode.sable.sublevel.system.SubLevelPhysicsSystem;
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
-import net.createmod.catnip.data.WorldAttached;
+import com.zurrtum.create.catnip.data.WorldAttached;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;

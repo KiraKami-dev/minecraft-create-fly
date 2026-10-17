@@ -8,12 +8,12 @@ import dev.simulated_team.simulated.index.SimBlockEntityTypes;
 import dev.simulated_team.simulated.index.SimBlocks;
 import dev.simulated_team.simulated.util.extra_kinetics.ExtraKinetics;
 import dev.simulated_team.simulated.util.placement_helpers.CogwheelPlacementExtension;
-import net.createmod.catnip.placement.IPlacementHelper;
-import net.createmod.catnip.placement.PlacementHelpers;
+import com.zurrtum.create.catnip.placement.IPlacementHelper;
+import com.zurrtum.create.catnip.placement.PlacementHelpers;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.InteractionHand;
-import net.minecraft.world.ItemInteractionResult;
+import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.ItemStack;
@@ -33,7 +33,7 @@ import net.minecraft.world.phys.BlockHitResult;
  */
 public class AnalogTransmissionBlock extends RotatedPillarKineticBlock implements IBE<AnalogTransmissionBlockEntity>, ExtraKinetics.ExtraKineticsBlock {
 
-    public static final int placementHelperId = PlacementHelpers.register(new CogwheelPlacementExtension((i) -> i.getItem() instanceof CogwheelBlockItem, SimBlocks.ANALOG_TRANSMISSION::has));
+    public static final int placementHelperId = PlacementHelpers.register(new CogwheelPlacementExtension((i) -> i.getItem() instanceof CogwheelBlockItem, (s) -> s.is(SimBlocks.ANALOG_TRANSMISSION)));
 
     public static final BooleanProperty POWERED = BlockStateProperties.POWERED;
 
@@ -42,14 +42,14 @@ public class AnalogTransmissionBlock extends RotatedPillarKineticBlock implement
     }
 
     @Override
-    protected ItemInteractionResult useItemOn(final ItemStack itemStack, final BlockState blockState, final Level level, final BlockPos blockPos, final Player player, final InteractionHand interactionHand, final BlockHitResult blockHitResult) {
+    protected InteractionResult useItemOn(final ItemStack itemStack, final BlockState blockState, final Level level, final BlockPos blockPos, final Player player, final InteractionHand interactionHand, final BlockHitResult blockHitResult) {
         final ItemStack heldItem = player.getItemInHand(interactionHand);
 
         final IPlacementHelper helper = PlacementHelpers.get(placementHelperId);
         if (helper.matchesItem(heldItem)) {
             return helper
                     .getOffset(player, level, blockState, blockPos, blockHitResult)
-                    .placeInWorld(level, (BlockItem) heldItem.getItem(), player, interactionHand, blockHitResult);
+                    .placeInWorld(level, (BlockItem) heldItem.getItem(), player, interactionHand);
         }
 
         return super.useItemOn(itemStack, blockState, level, blockPos, player, interactionHand, blockHitResult);
@@ -88,6 +88,6 @@ public class AnalogTransmissionBlock extends RotatedPillarKineticBlock implement
 
     @Override
     public BlockEntityType<? extends AnalogTransmissionBlockEntity> getBlockEntityType() {
-        return SimBlockEntityTypes.SIMPLE_BE.get();
+        return SimBlockEntityTypes.SIMPLE_BE;
     }
 }

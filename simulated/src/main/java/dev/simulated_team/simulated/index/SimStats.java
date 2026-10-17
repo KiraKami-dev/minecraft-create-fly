@@ -1,6 +1,6 @@
 package dev.simulated_team.simulated.index;
 
-import net.createmod.catnip.lang.LangNumberFormat;
+import com.zurrtum.create.client.catnip.lang.LangNumberFormat;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 import net.minecraft.stats.StatFormatter;

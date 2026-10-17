@@ -1,38 +1,32 @@
 package dev.simulated_team.simulated.content.blocks.lasers.laser_pointer;
 
-import com.mojang.blaze3d.vertex.PoseStack;
-import com.zurrtum.create.content.equipment.clipboard.ClipboardCloneable;
 import com.zurrtum.create.api.behaviour.BlockEntityBehaviour;
-import com.zurrtum.create.client.foundation.blockEntity.behaviour.ValueBoxTransform;
-import com.zurrtum.create.client.foundation.blockEntity.behaviour.scrollValue.ScrollValueBehaviour;
-import dev.engine_room.flywheel.lib.transform.TransformStack;
+import com.zurrtum.create.content.equipment.clipboard.ClipboardCloneable;
+import com.zurrtum.create.foundation.blockEntity.behaviour.scrollValue.ServerScrollValueBehaviour;
 import dev.simulated_team.simulated.content.blocks.lasers.AbstractLaserBlockEntity;
 import dev.simulated_team.simulated.content.blocks.lasers.laser_sensor.LaserSensorBlockEntity;
 import dev.simulated_team.simulated.content.blocks.lasers.laser_sensor.LaserSensorInteractorBehaviour;
-import dev.simulated_team.simulated.data.SimLang;
 import dev.simulated_team.simulated.service.SimConfigService;
 import dev.simulated_team.simulated.util.SimColors;
 import dev.simulated_team.simulated.util.SimLevelUtil;
-import net.createmod.catnip.math.AngleHelper;
-import net.createmod.catnip.math.VecHelper;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.core.HolderLookup;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.Tag;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
-import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 
 public class LaserPointerBlockEntity extends AbstractLaserBlockEntity implements ClipboardCloneable {
-    private ScrollValueBehaviour range;
+    /**
+     * Server half of the max length setting, the value box is {@link LaserPointerScrollValueBehaviour} on the client
+     */
+    private ServerScrollValueBehaviour range;
     public LaserSensorInteractorBehaviour sensorInteraction;
     private boolean rainbow;
     public int laserColor;
@@ -46,12 +40,10 @@ public class LaserPointerBlockEntity extends AbstractLaserBlockEntity implements
     }
 
     @Override
-    public void addBehaviours(final List<BlockEntityBehaviour> behaviours) {
+    public void addBehaviours(final List<BlockEntityBehaviour<?>> behaviours) {
         final int rangeMax = SimConfigService.INSTANCE.server().blocks.laserPointerRange.get();
-        this.range = new ScrollValueBehaviour(
-                SimLang.translate("laser_pointer.max_length").component(), this, new RangeValueBoxTransform()
-        ).between(1, rangeMax);
-        this.range.value = rangeMax;
+        this.range = new ServerScrollValueBehaviour(this).between(1, rangeMax);
+        this.range.setValue(rangeMax);
 
         this.sensorInteraction = new LaserSensorInteractorBehaviour(this, this::gatherStartAndEnd, this::getRaycastLength, this::getPower, this::matchesSensor);
         this.sensorInteraction.setShouldCast(this::shouldCast);
@@ -66,7 +58,7 @@ public class LaserPointerBlockEntity extends AbstractLaserBlockEntity implements
             return;
         }
 
-        if (!this.level.isClientSide || this.isVirtual()) {
+        if (!this.level.isClientSide() || this.isVirtual()) {
             final int currentPower = this.level.getBestNeighborSignal(this.worldPosition);
             if (currentPower != this.bestPower) {
                 this.bestPower = currentPower;
@@ -99,37 +91,24 @@ public class LaserPointerBlockEntity extends AbstractLaserBlockEntity implements
     }
 
     @Override
-    protected void read(final CompoundTag tag, final HolderLookup.Provider registries, final boolean clientPacket) {
-        this.laserColor = tag.contains("LaserColor", Tag.TAG_ANY_NUMERIC) ? tag.getInt("LaserColor") : SimColors.MEDIA_OURPLE;
-        this.bestPower = tag.getInt("BestPower");
-        this.rainbow = tag.getBoolean("Rainbow");
+    protected void read(final ValueInput view, final boolean clientPacket) {
+        this.laserColor = view.getIntOr("LaserColor", SimColors.MEDIA_OURPLE);
+        this.bestPower = view.getIntOr("BestPower", 0);
+        this.rainbow = view.getBooleanOr("Rainbow", false);
 
-        this.currentHitPos = this.readHitPos(tag);
-        super.read(tag, registries, clientPacket);
+        this.currentHitPos = view.read("HitPos", Vec3.CODEC).orElse(Vec3.ZERO);
+        super.read(view, clientPacket);
     }
 
     @Override
-    protected void write(final CompoundTag tag, final HolderLookup.Provider registries, final boolean clientPacket) {
-        tag.putInt("LaserColor", this.laserColor);
-        tag.putInt("BestPower", this.bestPower);
-        tag.putBoolean("Rainbow", this.isRainbow());
+    protected void write(final ValueOutput view, final boolean clientPacket) {
+        view.putInt("LaserColor", this.laserColor);
+        view.putInt("BestPower", this.bestPower);
+        view.putBoolean("Rainbow", this.isRainbow());
 
-        this.writeHitPos(tag);
-        super.write(tag, registries, clientPacket);
-    }
-
-    private void writeHitPos(final CompoundTag tag) {
-        tag.put("HitPos", VecHelper.writeNBT(this.currentHitPos));
-    }
-
-    private Vec3 readHitPos(final CompoundTag tag) {
-        Vec3 currentHit = Vec3.ZERO;
-
-        if (tag.contains("HitPos")) {
-            currentHit = VecHelper.readNBT(tag.getList("HitPos", Tag.TAG_COMPOUND));
-        }
-
-        return currentHit;
+        // a list of three doubles, as VecHelper#writeNBT wrote it
+        view.store("HitPos", Vec3.CODEC, this.currentHitPos);
+        super.write(view, clientPacket);
     }
 
     @Override
@@ -139,7 +118,7 @@ public class LaserPointerBlockEntity extends AbstractLaserBlockEntity implements
 
     @Override
     public float getRaycastLength() {
-        return this.range.value;
+        return this.range.getValue();
     }
 
     @Override
@@ -167,19 +146,19 @@ public class LaserPointerBlockEntity extends AbstractLaserBlockEntity implements
     }
 
     @Override
-    public boolean writeToClipboard(final HolderLookup.@NotNull Provider registries, final CompoundTag tag, final Direction side) {
-        tag.putInt("Color", this.laserColor);
-        tag.putBoolean("Rainbow", this.isRainbow());
+    public boolean writeToClipboard(final ValueOutput view, final Direction side) {
+        view.putInt("Color", this.laserColor);
+        view.putBoolean("Rainbow", this.isRainbow());
         return true;
     }
 
     @Override
-    public boolean readFromClipboard(final HolderLookup.@NotNull Provider registries, final CompoundTag tag, final Player player, final Direction side, final boolean simulate) {
+    public boolean readFromClipboard(final ValueInput view, final Player player, final Direction side, final boolean simulate) {
         if(simulate) {
             return true;
         }
-        this.setLaserColor(tag.getInt("Color"));
-        this.setRainbow(tag.getBoolean("Rainbow"));
+        this.setLaserColor(view.getIntOr("Color", 0));
+        this.setRainbow(view.getBooleanOr("Rainbow", false));
         return true;
     }
 
@@ -190,36 +169,8 @@ public class LaserPointerBlockEntity extends AbstractLaserBlockEntity implements
     public void setRainbow(final boolean rainbow) {
         this.rainbow = rainbow;
 
-        if (!this.getLevel().isClientSide) {
+        if (!this.getLevel().isClientSide()) {
             this.notifyUpdate();
-        }
-    }
-
-    private static class RangeValueBoxTransform extends ValueBoxTransform.Sided {
-
-        @Override
-        protected boolean isSideActive(final BlockState state, final Direction direction) {
-            return state.getValue(LaserPointerBlock.FACING).getOpposite() == direction;
-        }
-
-        @Override
-        protected Vec3 getSouthLocation() {
-            return VecHelper.voxelSpace(8, 8, 15.5);
-        }
-
-        @Override
-        public void rotate(final LevelAccessor level, final BlockPos pos, final BlockState state, final PoseStack ms) {
-            super.rotate(level, pos, state, ms);
-            final Direction facing = state.getValue(LaserPointerBlock.FACING);
-
-            if (facing.getAxis() == Direction.Axis.Y)
-                return;
-
-            if (this.getSide() != Direction.UP)
-                return;
-
-            TransformStack.of(ms)
-                    .rotateZDegrees(-AngleHelper.horizontalAngle(facing) + 180);
         }
     }
 }

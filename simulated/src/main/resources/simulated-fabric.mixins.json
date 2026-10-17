@@ -1,0 +1,22 @@
+{
+  "required": true,
+  "package": "dev.simulated_team.simulated.fabric.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "minVersion": "0.8",
+  "client": [
+    "client.ItemStackMixin",
+    "client.KeyboardHandlerMixin",
+    "client.MinecraftMixin",
+    "client.MultiPlayerGameModeMixin",
+    "diagram.VisualizationManagerImplMixin"
+  ],
+  "mixins": [
+    "harvesters.BlockBreakingKineticBlockEntityMixin",
+    "harvesters.HarvesterBlockEntityMixin",
+    "harvesters.HarvesterTickerMixin",
+    "harvesters.SawBlockEntityMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

@@ -4,11 +4,11 @@ import com.zurrtum.create.client.foundation.ponder.CreatePonderPlugin;
 import dev.simulated_team.simulated.Simulated;
 import dev.simulated_team.simulated.index.SimPonderScenes;
 import dev.simulated_team.simulated.index.SimPonderTags;
-import net.createmod.ponder.api.level.PonderLevel;
-import net.createmod.ponder.api.registration.IndexExclusionHelper;
-import net.createmod.ponder.api.registration.PonderSceneRegistrationHelper;
-import net.createmod.ponder.api.registration.PonderTagRegistrationHelper;
-import net.createmod.ponder.api.registration.SharedTextRegistrationHelper;
+import com.zurrtum.create.client.ponder.api.level.PonderLevel;
+import com.zurrtum.create.client.ponder.api.registration.IndexExclusionHelper;
+import com.zurrtum.create.client.ponder.api.registration.PonderSceneRegistrationHelper;
+import com.zurrtum.create.client.ponder.api.registration.PonderTagRegistrationHelper;
+import com.zurrtum.create.client.ponder.api.registration.SharedTextRegistrationHelper;
 import net.minecraft.resources.Identifier;
 import org.jetbrains.annotations.NotNull;
 

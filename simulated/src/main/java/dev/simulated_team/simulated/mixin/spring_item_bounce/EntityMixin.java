@@ -29,7 +29,8 @@ public abstract class EntityMixin {
 
     @Shadow public abstract Vec3 getPosition(float partialTicks);
 
-    @WrapOperation(method = "move", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/level/block/Block;updateEntityAfterFallOn(Lnet/minecraft/world/level/BlockGetter;Lnet/minecraft/world/entity/Entity;)V"))
+    // 1.21.11: Block.updateEntityAfterFallOn was renamed to updateEntityMovementAfterFallOn
+    @WrapOperation(method = "move", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/level/block/Block;updateEntityMovementAfterFallOn(Lnet/minecraft/world/level/BlockGetter;Lnet/minecraft/world/entity/Entity;)V"))
     private void simulated$bouncyItemVelocity(final Block instance, final BlockGetter level, final Entity entity,
                                               final Operation<Void> original) {
         if (entity instanceof final ItemEntity item) {

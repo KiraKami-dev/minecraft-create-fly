@@ -5,6 +5,7 @@ import dev.simulated_team.simulated.index.SimSoundEvents;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
+import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.client.sounds.SoundManager;
 import net.minecraft.network.chat.Component;
@@ -31,8 +32,8 @@ public class DiagramButton extends AbstractWidget {
     }
 
     @Override
-    public void onClick(final double mouseX, final double mouseY) {
-        super.onClick(mouseX, mouseY);
+    public void onClick(final MouseButtonEvent event, final boolean doubleClick) {
+        super.onClick(event, doubleClick);
         this.onClick.run();
     }
 

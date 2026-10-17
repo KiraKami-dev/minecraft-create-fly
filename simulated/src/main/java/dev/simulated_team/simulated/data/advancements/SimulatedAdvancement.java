@@ -1,18 +1,13 @@
 package dev.simulated_team.simulated.data.advancements;
 
-import com.tterrag.registrate.util.entry.ItemProviderEntry;
-import dev.simulated_team.simulated.util.SimColors;
-import net.minecraft.advancements.*;
-import net.minecraft.advancements.criterion.InventoryChangeTrigger;
-import net.minecraft.advancements.criterion.ItemPredicate;
-import net.minecraft.advancements.criterion.ItemUsedOnLocationTrigger;
+import net.minecraft.advancements.AdvancementHolder;
+import net.minecraft.advancements.Criterion;
+import net.minecraft.advancements.CriterionTriggerInstance;
 import net.minecraft.core.BlockPos;
-import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.ItemLike;
@@ -23,19 +18,18 @@ import net.minecraft.world.phys.AABB;
 import java.util.List;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
-import java.util.function.Consumer;
 import java.util.function.UnaryOperator;
 
 // i pretty much yoinked everything from Create's advancement/trigger stuff
 // the only notable difference is it's not hardcoded to simulated, and addons *should* be able to use it
+//
+// Port note: the advancement JSON is shipped (no datagen), so only the runtime part is kept: the builtin
+// "<id>_builtin" trigger and the award helpers. Builder calls that only fed datagen (icon, criteria) are no-ops.
 public class SimulatedAdvancement {
     static final String SECRET_SUFFIX = "\n§7(Hidden Advancement)";
 
-    private final Advancement.Builder builder;
     private SimpleSimulatedTrigger builtinTrigger;
     private SimulatedAdvancement parent;
-
-    AdvancementHolder datagenResult;
 
     private final Identifier background;
     private final String lang;
@@ -46,7 +40,6 @@ public class SimulatedAdvancement {
     private String description;
 
     public SimulatedAdvancement(final String id, final UnaryOperator<Builder> b, final Identifier background, final String modid, final BiFunction<String,String, SimpleSimulatedTrigger> triggerHandler) {
-        this.builder = Advancement.Builder.advancement();
         this.id = id;
         this.modid = modid;
         this.background = background;
@@ -57,12 +50,7 @@ public class SimulatedAdvancement {
 
         if(!t.externalTrigger) {
             this.builtinTrigger = triggerHandler.apply(modid,id + "_builtin");
-            this.builder.addCriterion("0", this.builtinTrigger.createCriterion(this.builtinTrigger.instance()));
         }
-
-        this.builder.display(t.icon, Component.translatable(this.titleKey()),
-                Component.translatable(this.descriptionKey()).withStyle(s -> s.withColor(SimColors.ADVANCABLE_GOLD)),
-                id.equals("root") ? this.background : null, t.type.advancementType, t.type.toast, t.type.announce, t.type.hide);
 
         if(t.type == TaskType.SECRET)
             this.description += SECRET_SUFFIX;
@@ -76,12 +64,20 @@ public class SimulatedAdvancement {
         return this.titleKey() + ".desc";
     }
 
+    public Identifier getId() {
+        return Identifier.fromNamespaceAndPath(this.modid, this.id);
+    }
+
+    public SimulatedAdvancement getParent() {
+        return this.parent;
+    }
+
     public boolean isAlreadyAwardedTo(final Player player) {
         if (!(player instanceof final ServerPlayer sp))
             return true;
-        final AdvancementHolder advancement = sp.getServer()
+        final AdvancementHolder advancement = sp.level().getServer()
                 .getAdvancements()
-                .get(Identifier.fromNamespaceAndPath(this.modid, this.id));
+                .get(this.getId());
         if (advancement == null)
             return true;
         return sp.getAdvancements()
@@ -121,14 +117,6 @@ public class SimulatedAdvancement {
         }
     }
 
-    public void save(final Consumer<AdvancementHolder> t) {
-        if (this.parent != null)
-            this.builder.parent(this.parent.datagenResult);
-
-        this.datagenResult = this.builder.save(t, Identifier.fromNamespaceAndPath(this.modid, this.id)
-                .toString());
-    }
-
     public void provideLang(final BiConsumer<String, String> consumer) {
         consumer.accept(this.titleKey(), this.title);
         consumer.accept(this.descriptionKey(), this.description);
@@ -143,32 +131,19 @@ public class SimulatedAdvancement {
      */
     public enum TaskType {
 
-        SILENT(AdvancementType.TASK, false, false, false),
-        NORMAL(AdvancementType.TASK, true, false, false),
-        NOISY(AdvancementType.TASK, true, true, false),
-        EXPERT(AdvancementType.GOAL, true, true, false),
-        SECRET(AdvancementType.GOAL, true, true, true),
+        SILENT,
+        NORMAL,
+        NOISY,
+        EXPERT,
+        SECRET,
 
         ;
-
-        private final AdvancementType advancementType;
-        private final boolean toast;
-        private final boolean announce;
-        private final boolean hide;
-
-        TaskType(final AdvancementType advancementType, final boolean toast, final boolean announce, final boolean hide) {
-            this.advancementType = advancementType;
-            this.toast = toast;
-            this.announce = announce;
-            this.hide = hide;
-        }
     }
+
     public class Builder {
 
         private TaskType type = TaskType.NORMAL;
         private boolean externalTrigger;
-        private int keyIndex;
-        private ItemStack icon;
 
         public Builder special(final TaskType type) {
             this.type = type;
@@ -180,16 +155,12 @@ public class SimulatedAdvancement {
             return this;
         }
 
-        public Builder icon(final ItemProviderEntry<?, ?> item) {
-            return this.icon(item.asStack());
-        }
-
+        // display data lives in the advancement JSON
         public Builder icon(final ItemLike item) {
-            return this.icon(new ItemStack(item));
+            return this;
         }
 
         public Builder icon(final ItemStack stack) {
-            this.icon = stack;
             return this;
         }
 
@@ -203,43 +174,38 @@ public class SimulatedAdvancement {
             return this;
         }
 
+        // the criteria live in the advancement JSON; these only mark the advancement as not using the builtin trigger
+
         public Builder whenBlockPlaced(final Block block) {
-            return this.externalTrigger(ItemUsedOnLocationTrigger.TriggerInstance.placedBlock(block));
+            return this.markExternal();
         }
 
         public Builder whenIconCollected() {
-            return this.externalTrigger(InventoryChangeTrigger.TriggerInstance.hasItems(this.icon.getItem()));
+            return this.markExternal();
         }
 
         public Builder whenIconPlaced() {
-            if(this.icon.getItem() instanceof final BlockItem blockItem) {
-                return this.externalTrigger(ItemUsedOnLocationTrigger.TriggerInstance.placedBlock(blockItem.getBlock()));
-            }
-            return this.whenIconCollected();
-        }
-
-        public Builder whenItemCollected(final ItemProviderEntry<?, ?> item) {
-            return this.whenItemCollected(item.asStack()
-                    .getItem());
+            return this.markExternal();
         }
 
         public Builder whenItemCollected(final ItemLike itemProvider) {
-            return this.externalTrigger(InventoryChangeTrigger.TriggerInstance.hasItems(itemProvider));
+            return this.markExternal();
         }
 
         public Builder whenItemCollected(final TagKey<Item> tag) {
-            return this.externalTrigger(InventoryChangeTrigger.TriggerInstance
-                    .hasItems(ItemPredicate.Builder.item().of(tag).build()));
+            return this.markExternal();
         }
 
         public  Builder awardedForFree() {
-            return this.externalTrigger(InventoryChangeTrigger.TriggerInstance.hasItems(new ItemLike[] {}));
+            return this.markExternal();
         }
 
         public Builder externalTrigger(final Criterion<? extends CriterionTriggerInstance> trigger) {
-            SimulatedAdvancement.this.builder.addCriterion(String.valueOf(this.keyIndex), trigger);
+            return this.markExternal();
+        }
+
+        private Builder markExternal() {
             this.externalTrigger = true;
-            this.keyIndex++;
             return this;
         }
     }

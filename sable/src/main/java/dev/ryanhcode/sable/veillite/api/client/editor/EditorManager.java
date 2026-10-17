@@ -12,8 +12,7 @@ import java.util.List;
 /**
  * Keeps track of registered debug inspectors.
  * <p>
- * PORT-TODO(1.21.11): Veil's ImGui editor overlay does not exist on 1.21.11. Inspectors are tracked here, but nothing
- * draws them yet ({@link dev.ryanhcode.sable.veillite.api.client.render.VeilRenderSystem#hasImGui()} is always false).
+ * Drawn by {@link dev.ryanhcode.sable.veillite.impl.client.ImGuiEditorBackend} when the imguimc mod is present.
  */
 public class EditorManager {
 
@@ -44,6 +43,21 @@ public class EditorManager {
 
     public boolean isVisible(final Inspector inspector) {
         return this.visible.contains(inspector);
+    }
+
+    public void toggle(final Inspector inspector) {
+        if (this.isVisible(inspector)) {
+            this.hide(inspector);
+        } else {
+            this.show(inspector);
+        }
+    }
+
+    /**
+     * @return A snapshot of the shown inspectors
+     */
+    public List<Inspector> getVisible() {
+        return new ArrayList<>(this.visible);
     }
 
     public List<Inspector> getInspectors() {

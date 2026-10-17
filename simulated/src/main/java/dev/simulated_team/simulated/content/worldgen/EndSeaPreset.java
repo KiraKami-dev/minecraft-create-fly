@@ -13,7 +13,8 @@ import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.chunk.ChunkAccess;
-import net.minecraft.world.level.portal.DimensionTransition;
+import net.minecraft.world.level.portal.TeleportTransition;
+import net.minecraft.world.level.storage.LevelData;
 import net.minecraft.world.phys.Vec3;
 
 public class EndSeaPreset extends SimulatedWorldPreset {
@@ -26,11 +27,11 @@ public class EndSeaPreset extends SimulatedWorldPreset {
 	@Override
 	public void onPlayerJoin(final ServerLevel level, final ServerPlayer player) {
 		if(!level.dimension().equals(Level.END)) {
-			player.setRespawnPosition(Level.END, BlockPos.containing(PLAYER_SPAWN_POS), 0.0f, true, false);
+			player.setRespawnPosition(new ServerPlayer.RespawnConfig(LevelData.RespawnData.of(Level.END, BlockPos.containing(PLAYER_SPAWN_POS), 0.0f, 0.0f), true), false);
 
 			final ServerLevel endLevel = level.getServer().getLevel(Level.END);
-			final DimensionTransition transition = new DimensionTransition(endLevel, player, DimensionTransition.DO_NOTHING);
-			player.changeDimension(transition);
+			final TeleportTransition transition = new TeleportTransition(endLevel, PLAYER_SPAWN_POS, Vec3.ZERO, 0.0f, 0.0f, TeleportTransition.DO_NOTHING);
+			player.teleport(transition);
 			player.teleportTo(PLAYER_SPAWN_POS.x(), PLAYER_SPAWN_POS.y(), PLAYER_SPAWN_POS.z());
 		}
 	}

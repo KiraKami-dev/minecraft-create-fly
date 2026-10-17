@@ -12,22 +12,26 @@ import dev.simulated_team.simulated.ponder.SmoothMovementUtils;
 import dev.simulated_team.simulated.ponder.instructions.ChasingLineInstruction;
 import dev.simulated_team.simulated.ponder.instructions.CustomAnimateWorldSectionInstruction;
 import dev.simulated_team.simulated.ponder.instructions.PullTheAssemblerKronkInstruction;
-import net.createmod.catnip.math.Pointing;
-import net.createmod.ponder.api.PonderPalette;
-import net.createmod.ponder.api.element.ElementLink;
-import net.createmod.ponder.api.element.WorldSectionElement;
-import net.createmod.ponder.api.level.PonderLevel;
-import net.createmod.ponder.api.scene.*;
-import net.createmod.ponder.foundation.PonderScene;
+import com.zurrtum.create.catnip.math.Pointing;
+import com.zurrtum.create.client.ponder.api.PonderPalette;
+import com.zurrtum.create.client.ponder.api.element.ElementLink;
+import com.zurrtum.create.client.ponder.api.element.WorldSectionElement;
+import com.zurrtum.create.client.ponder.api.level.PonderLevel;
+import com.zurrtum.create.client.ponder.api.scene.*;
+import com.zurrtum.create.client.ponder.foundation.PonderScene;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.RegistryAccess;
+import dev.simulated_team.simulated.Simulated;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtOps;
+import net.minecraft.util.ProblemReporter;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.RedStoneWireBlock;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.properties.IntegerProperty;
+import net.minecraft.world.level.storage.TagValueInput;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 
@@ -287,12 +291,15 @@ public class RedstoneScenes {
 
     private static void setNBTValue(final CreateSceneBuilder scene, final BlockPos modulatingLink, final String FrequencyLast, final ItemStack iron) {
         scene.addInstruction((final PonderScene subScene) -> {
-            final PonderLevel level = subScene.getWorld();
+            final PonderLevel level = subScene.getLevel();
             final BlockEntity blockEntity = level.getBlockEntity(modulatingLink);
             final RegistryAccess registryAccess = level.registryAccess();
             final CompoundTag tag = blockEntity.saveWithFullMetadata(registryAccess);
-            tag.put(FrequencyLast, iron.save(registryAccess, new CompoundTag()));
-            blockEntity.loadWithComponents(tag, registryAccess);
+            // link frequencies are stored with ItemStack.OPTIONAL_CODEC (Frequency.CODEC) under registry ops
+            tag.store(FrequencyLast, ItemStack.OPTIONAL_CODEC, registryAccess.createSerializationContext(NbtOps.INSTANCE), iron);
+            try (final ProblemReporter.ScopedCollector logging = new ProblemReporter.ScopedCollector(blockEntity.problemPath(), Simulated.LOGGER)) {
+                blockEntity.loadWithComponents(TagValueInput.create(logging, registryAccess, tag));
+            }
         });
     }
 
@@ -843,7 +850,7 @@ public class RedstoneScenes {
                 .placeNearTarget()
                 .pointAt(leverVec);
         scene.idle(70);
-        overlay.showControls(vector.centerOf(leverPos), Pointing.DOWN, 40).rightClick().withItem(AllItems.WRENCH.asStack());
+        overlay.showControls(vector.centerOf(leverPos), Pointing.DOWN, 40).rightClick().withItem(new ItemStack(AllItems.WRENCH));
         scene.idle(6);
         for (int i = 0; i < 10; i++) {
             final int state = i + 1;

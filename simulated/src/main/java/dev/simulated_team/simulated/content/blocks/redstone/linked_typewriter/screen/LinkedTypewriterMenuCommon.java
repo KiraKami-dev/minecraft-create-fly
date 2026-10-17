@@ -1,45 +1,31 @@
 package dev.simulated_team.simulated.content.blocks.redstone.linked_typewriter.screen;
 
 import com.zurrtum.create.foundation.gui.menu.GhostItemMenu;
+import com.zurrtum.create.foundation.gui.menu.MenuType;
 import dev.simulated_team.simulated.content.blocks.redstone.linked_typewriter.LinkedTypewriterBlockEntity;
 import dev.simulated_team.simulated.index.SimMenuTypes;
 import dev.simulated_team.simulated.service.SimMenuService;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.multiplayer.ClientLevel;
-import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.world.Container;
 import net.minecraft.world.entity.player.Inventory;
-import net.minecraft.world.inventory.MenuType;
 import net.minecraft.world.inventory.Slot;
-import net.minecraft.world.level.block.entity.BlockEntity;
 
+/**
+ * The linked typewriter menu, a Create Fly {@link GhostItemMenu} around the typewriter block entity. The ghost slots
+ * are added by the loader half ({@code fabric/menu/LinkedTypewriterMenuImpl}).
+ * <p>
+ * {@link #create} is the menu factory of {@code SimMenuTypes.LINKED_TYPEWRITER} (a Create Fly
+ * {@link MenuType}); the screen factory is {@link LinkedTypewriterScreen#create}.
+ */
 public abstract class LinkedTypewriterMenuCommon extends GhostItemMenu<LinkedTypewriterBlockEntity> {
 
     public boolean slotsActive = false;
 
-    public LinkedTypewriterMenuCommon(final MenuType<?> type, final int id, final Inventory inv, final RegistryFriendlyByteBuf extraData) {
-        super(type, id, inv, extraData);
-    }
-
-    public LinkedTypewriterMenuCommon(final MenuType<?> type, final int id, final Inventory inv, final LinkedTypewriterBlockEntity be) {
+    public LinkedTypewriterMenuCommon(final MenuType<LinkedTypewriterBlockEntity> type, final int id, final Inventory inv, final LinkedTypewriterBlockEntity be) {
         super(type, id, inv, be);
     }
 
     public static LinkedTypewriterMenuCommon create(final int id, final Inventory inv, final LinkedTypewriterBlockEntity be) {
-        return SimMenuService.INSTANCE.getLoaderLinkedTypewriter(SimMenuTypes.LINKED_TYPEWRITER.get(), id, inv, be);
-    }
-
-    @Override
-    protected LinkedTypewriterBlockEntity createOnClient(final RegistryFriendlyByteBuf extraData) {
-        final ClientLevel world = Minecraft.getInstance().level;
-
-        final BlockEntity blockEntity = world.getBlockEntity(extraData.readBlockPos());
-        if (blockEntity instanceof final LinkedTypewriterBlockEntity linkedTypewriter) {
-            linkedTypewriter.readClient(extraData.readNbt(), extraData.registryAccess());
-            return linkedTypewriter;
-        }
-
-        return null;
+        return SimMenuService.INSTANCE.getLoaderLinkedTypewriter(SimMenuTypes.LINKED_TYPEWRITER, id, inv, be);
     }
 
     @Override

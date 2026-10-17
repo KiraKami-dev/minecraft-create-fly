@@ -3,7 +3,6 @@ package dev.simulated_team.simulated.content.display_sources;
 import com.zurrtum.create.content.redstone.displayLink.DisplayLinkContext;
 import com.zurrtum.create.content.redstone.displayLink.target.DisplayTargetStats;
 import dev.simulated_team.simulated.content.blocks.gimbal_sensor.GimbalSensorBlockEntity;
-import dev.simulated_team.simulated.data.SimLang;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 
@@ -12,7 +11,7 @@ import java.util.List;
 public class GimbalSensorDisplaySource extends AbstractNumericDisplaysource {
     @Override
     List<Component> getOptions() {
-        return SimLang.translatedOptions("display_source.gimbal_sensor", "x_angle", "z_angle");
+        return DisplaySourceLang.translatedOptions("display_source.gimbal_sensor", "x_angle", "z_angle");
     }
 
     @Override
@@ -36,12 +35,12 @@ public class GimbalSensorDisplaySource extends AbstractNumericDisplaysource {
             return ZERO.copy();
         }
 
-        switch (displayLinkContext.sourceConfig().getInt(this.getSelectionKey())) {
+        switch (displayLinkContext.sourceConfig().getIntOr(this.getSelectionKey(), 0)) {
             case (0) -> {
-                return SimLang.number(Math.toDegrees(be.getXAngle())).component();
+                return DisplaySourceLang.number(Math.toDegrees(be.getXAngle()));
             }
             case (1) -> {
-                return SimLang.number(Math.toDegrees(be.getZAngle())).component();
+                return DisplaySourceLang.number(Math.toDegrees(be.getZAngle()));
             }
         }
 

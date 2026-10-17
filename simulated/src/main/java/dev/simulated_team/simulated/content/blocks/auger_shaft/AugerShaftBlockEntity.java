@@ -1,30 +1,26 @@
 package dev.simulated_team.simulated.content.blocks.auger_shaft;
 
+import com.zurrtum.create.catnip.animation.LerpedFloat;
+import com.zurrtum.create.catnip.math.VecHelper;
 import com.zurrtum.create.content.kinetics.base.IRotate;
 import com.zurrtum.create.content.kinetics.base.KineticBlock;
 import com.zurrtum.create.content.kinetics.base.KineticBlockEntity;
 import com.zurrtum.create.content.kinetics.base.KineticEffectHandler;
 import com.zurrtum.create.content.redstone.displayLink.DisplayLinkBlock;
 import com.zurrtum.create.content.redstone.displayLink.source.ItemThroughputDisplaySource;
-import com.zurrtum.create.client.foundation.utility.CreateLang;
 import dev.ryanhcode.sable.util.LevelAccelerator;
 import dev.simulated_team.simulated.content.blocks.auger_shaft.auger_groups.AugerDistributor;
 import dev.simulated_team.simulated.content.particle.AugerIndicatorParticleData;
-import dev.simulated_team.simulated.data.SimLang;
 import dev.simulated_team.simulated.multiloader.inventory.ContainerSlot;
 import dev.simulated_team.simulated.multiloader.inventory.InventoryLoaderWrapper;
 import dev.simulated_team.simulated.multiloader.inventory.ItemInfoWrapper;
 import dev.simulated_team.simulated.service.SimInventoryService;
 import dev.simulated_team.simulated.util.Observable;
 import dev.simulated_team.simulated.util.SimDirectionUtil;
-import net.createmod.catnip.animation.LerpedFloat;
-import net.createmod.catnip.math.VecHelper;
-import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.Mth;
 import net.minecraft.world.Clearable;
@@ -35,11 +31,14 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
 import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.ApiStatus;
 
-import java.util.List;
-
+/**
+ * Goggle information is added client side by {@link AugerShaftTooltipBehaviour}.
+ */
 public class AugerShaftBlockEntity extends KineticBlockEntity implements ItemReciever, Observable, Clearable {
 
     /**
@@ -92,7 +91,7 @@ public class AugerShaftBlockEntity extends KineticBlockEntity implements ItemRec
     private boolean maxSpeed;
 
     /**
-     * Set by {@link AugerShaftBlockEntity#addToGoggleTooltip(List, boolean)} for indicator particles
+     * Set by {@link AugerShaftTooltipBehaviour} (goggle tooltip) for indicator particles
      */
     private boolean observed = false;
     /**
@@ -128,7 +127,7 @@ public class AugerShaftBlockEntity extends KineticBlockEntity implements ItemRec
 
         this.accelerator.clearCache();
 
-        if (this.level.isClientSide) {
+        if (this.level.isClientSide()) {
             this.particleCooldown--;
             if (this.observed && this.particleCooldown < 0) {
                 this.particleCooldown = 100;
@@ -146,7 +145,7 @@ public class AugerShaftBlockEntity extends KineticBlockEntity implements ItemRec
         }
 
         if (this.inventory.isEmpty()) {
-            if (!this.level.isClientSide) {
+            if (!this.level.isClientSide()) {
                 this.extract();
             }
 
@@ -203,7 +202,7 @@ public class AugerShaftBlockEntity extends KineticBlockEntity implements ItemRec
      * Handles movement of the current held item stack across augers
      */
     private void handleItemPassed() {
-        assert this.level != null && !this.level.isClientSide;
+        assert this.level != null && !this.level.isClientSide();
 
         final BlockEntity gatheredBE = this.level.getBlockEntity(this.worldPosition.relative(this.flowDirection));
         if (gatheredBE instanceof final AugerShaftBlockEntity abe) {
@@ -220,11 +219,15 @@ public class AugerShaftBlockEntity extends KineticBlockEntity implements ItemRec
         }
     }
 
-    private float getItemSpeed() {
+    float getItemSpeed() {
         final float totalTicks = MAX_AUGER_SPEED_TICKS / (Math.abs(this.getSpeed()) / 256f);
         this.maxSpeed = totalTicks == MAX_AUGER_SPEED_TICKS;
 
         return 1 / totalTicks;
+    }
+
+    void markObserved() {
+        this.observed = true;
     }
 
     private void resetUpdateTracker() {
@@ -235,17 +238,17 @@ public class AugerShaftBlockEntity extends KineticBlockEntity implements ItemRec
     public void lazyTick() {
         super.lazyTick();
 
-        if (!this.level.isClientSide && this.getSpeed() != 0) {
+        if (!this.level.isClientSide() && this.getSpeed() != 0) {
             this.refreshActors();
         }
 
-        if (!this.level.isClientSide) {
+        if (!this.level.isClientSide()) {
             DisplayLinkBlock.sendToGatherers(this.level, this.getBlockPos(),
                     (dlbe, a) -> a.itemReceived(dlbe, this.itemsMoved), ItemThroughputDisplaySource.class);
             this.itemsMoved = 0;
         }
 
-        if (this.level.isClientSide && this.maxSpeed && this.itemsMoved > 0) {
+        if (this.level.isClientSide() && this.maxSpeed && this.itemsMoved > 0) {
             this.sendObserved(this.getBlockPos());
         }
     }
@@ -284,7 +287,7 @@ public class AugerShaftBlockEntity extends KineticBlockEntity implements ItemRec
     public void destroy() {
         super.destroy();
 
-        if (!this.level.isClientSide && !this.beingWrenched) {
+        if (!this.level.isClientSide() && !this.beingWrenched) {
             Containers.dropContents(this.level, this.worldPosition, this.inventory);
             this.inventory.clearContent();
 
@@ -294,65 +297,35 @@ public class AugerShaftBlockEntity extends KineticBlockEntity implements ItemRec
     }
 
     @Override
-    protected void write(final CompoundTag compound, final HolderLookup.Provider registries, final boolean clientPacket) {
-        super.write(compound, registries, clientPacket);
+    protected void write(final ValueOutput view, final boolean clientPacket) {
+        super.write(view, clientPacket);
 
-        compound.put("Inventory", this.inventory.write(registries));
-        compound.put("ActorInventory", this.actorInventory.write(registries));
+        // the multiloader inventories serialize to NBT with a registry lookup
+        final HolderLookup.Provider registries = this.level.registryAccess();
+        view.store("Inventory", CompoundTag.CODEC, this.inventory.write(registries));
+        view.store("ActorInventory", CompoundTag.CODEC, this.actorInventory.write(registries));
 
         if (!clientPacket) {
-            compound.putFloat("Progress", this.updateTracker.getValue());
+            view.putFloat("Progress", this.updateTracker.getValue());
         }
     }
 
     @Override
-    protected void read(final CompoundTag compound, final HolderLookup.Provider registries, final boolean clientPacket) {
-        super.read(compound, registries, clientPacket);
+    @SuppressWarnings("deprecation") // ValueInput#lookup: the multiloader inventories read NBT with a registry lookup
+    protected void read(final ValueInput view, final boolean clientPacket) {
+        super.read(view, clientPacket);
 
-        this.inventory.read(registries, compound.getCompound("Inventory"));
-        this.actorInventory.read(registries, compound.getCompound("ActorInventory"));
+        final HolderLookup.Provider registries = view.lookup();
+        this.inventory.read(registries, view.read("Inventory", CompoundTag.CODEC).orElseGet(CompoundTag::new));
+        this.actorInventory.read(registries, view.read("ActorInventory", CompoundTag.CODEC).orElseGet(CompoundTag::new));
 
         if (!clientPacket) {
-            this.updateTracker.setValue(compound.getFloat("Progress"));
+            this.updateTracker.setValue(view.getFloatOr("Progress", 0));
         }
     }
 
     public AugerInventory getInventory() {
         return this.inventory;
-    }
-
-    @Override
-    public boolean addToGoggleTooltip(final List<Component> tooltip, final boolean isPlayerSneaking) {
-        boolean added = super.addToGoggleTooltip(tooltip, isPlayerSneaking);
-
-        if (this.getSpeed() > 0) {
-            final float perTickSpeed = this.getItemSpeed();
-            final float perSecondSpeed = perTickSpeed * 20;
-            SimLang.translate("auger_shaft.item_flow", Math.floor(perSecondSpeed * 100) / 100)
-                    .style(ChatFormatting.YELLOW)
-                    .forGoggles(tooltip);
-            added = true;
-        }
-
-        final int actorItems = this.actorInventory.storedItemCount;
-        if (actorItems > 0) {
-            SimLang.translate("auger_shaft.actor_items", actorItems)
-                    .style(ChatFormatting.GRAY)
-                    .forGoggles(tooltip);
-            added = true;
-        }
-
-        final int count = this.inventory.slot.getStack().getCount();
-        if (count > 0) {
-            CreateLang.translate("tooltip.chute.contains", Component.translatable(this.inventory.slot.getStack().getDescriptionId())
-                            .getString(), count)
-                    .style(ChatFormatting.GREEN)
-                    .forGoggles(tooltip);
-            added = true;
-        }
-
-        this.observed = true;
-        return added;
     }
 
     @Override
@@ -394,6 +367,7 @@ public class AugerShaftBlockEntity extends KineticBlockEntity implements ItemRec
             super(kte);
         }
 
+        @Override
         public void spawnRotationIndicators() {
             final AugerShaftBlockEntity auger = AugerShaftBlockEntity.this;
             final float speed = auger.getSpeed();

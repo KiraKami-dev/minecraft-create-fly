@@ -1,0 +1,20 @@
+package dev.ryanhcode.sable.fabric.mixin.compatibility.create.airflow;
+
+import com.llamalad7.mixinextras.injector.wrapmethod.WrapMethod;
+import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
+import com.zurrtum.create.content.kinetics.fan.processing.FanProcessingType;
+import dev.ryanhcode.sable.ActiveSableCompanion;
+import dev.ryanhcode.sable.Sable;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.level.Level;
+import org.spongepowered.asm.mixin.Mixin;
+
+@Mixin(FanProcessingType.class)
+public interface FanProcessingTypeMixin {
+	@WrapMethod(method = "getAt", remap = false)
+	private static FanProcessingType getAt(final Level level, final BlockPos pos, final Operation<FanProcessingType> original) {
+		final ActiveSableCompanion helper = Sable.HELPER;
+		return helper.runIncludingSubLevels(level, pos.getCenter(), true, helper.getContaining(level, pos),
+				(subLevel, relativePos) -> original.call(level, relativePos));
+	}
+}

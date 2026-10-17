@@ -12,6 +12,8 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -105,7 +107,7 @@ public abstract class MultiSlotContainer implements AbstractContainer {
 
     @Override
     public ItemStack extractSlot(final int index, final int amountToExtract, final boolean simulate) {
-        final ContainerSlot slot = this.getSlot(index);
+        final ContainerSlot slot = this.getContainerSlot(index);
         if (slot.isEmpty())
             return ItemStack.EMPTY;
 
@@ -222,10 +224,10 @@ public abstract class MultiSlotContainer implements AbstractContainer {
     }
 
     private void shiftSlot(final SlotAndItemHolder holder) {
-        final ContainerSlot next = this.getSlot(holder.nextIndex());
+        final ContainerSlot next = this.getContainerSlot(holder.nextIndex());
         if (next.isEmpty()) {
             next.setStack(holder.stack());
-            this.getSlot(holder.currentIndex()).setStack(ItemStack.EMPTY);
+            this.getContainerSlot(holder.currentIndex()).setStack(ItemStack.EMPTY);
         }
     }
 
@@ -301,11 +303,12 @@ public abstract class MultiSlotContainer implements AbstractContainer {
 
     /**
      * Gets the {@link ContainerSlot ContainerSlot} with the desired
+     * (was {@code getSlot}, which clashes with {@link Container#getSlot(int)} on 1.21.11)
      *
      * @param slot The slot to get
      * @return The ContainerSlot in that slot
      */
-    public ContainerSlot getSlot(final int slot) {
+    public ContainerSlot getContainerSlot(final int slot) {
         return this.inventory.get(slot);
     }
 
@@ -333,9 +336,14 @@ public abstract class MultiSlotContainer implements AbstractContainer {
      */
     @Override
     public void clearContent() {
-        Collections.fill(this.inventory, ContainerSlot.EMPTY);
+        // the slots are cleared in place: replacing them with ContainerSlot.EMPTY (which has no parent) broke every later write
         this.populatedSlots.clear();
         this.filteredSlots.clear();
+        for (final ContainerSlot slot : this.inventory) {
+            slot.clear();
+            this.filteredSlots.computeIfAbsent(slot.getType(), $ -> new HashSet<>()).add(slot);
+        }
+        this.storedItemCount = 0;
 
         this.setChanged();
     }
@@ -356,6 +364,13 @@ public abstract class MultiSlotContainer implements AbstractContainer {
         this.storedItemCount += newCount - oldcount;
         //
 
+        this.updateViews(slot, oldSlotStack, newSlotStack);
+    }
+
+    /**
+     * Updates the filtered and populated views of this inventory after the stack of a slot changed.
+     */
+    private void updateViews(final ContainerSlot slot, final ItemStack oldSlotStack, final ItemStack newSlotStack) {
         //If we're the same item as before
         if (ItemStack.isSameItem(oldSlotStack, newSlotStack))
             return;
@@ -400,15 +415,53 @@ public abstract class MultiSlotContainer implements AbstractContainer {
     //This will be called after this container has been instantiated.
     @Override
     public void read(final HolderLookup.Provider provider, final CompoundTag nbt) {
-        this.storedItemCount = nbt.getInt("Stored Count");
+        this.storedItemCount = nbt.getIntOr("Stored Count", 0);
 
-        final ListTag inv = nbt.getList("Items", Tag.TAG_COMPOUND);
+        final ListTag inv = nbt.getListOrEmpty("Items");
         for (final Tag tag : inv) {
-            final CompoundTag itemTag = (CompoundTag) tag;
-            final ContainerSlot slot = this.inventory.get(itemTag.getInt("index"));
+            if (!(tag instanceof final CompoundTag itemTag)) {
+                continue;
+            }
+
+            final ContainerSlot slot = this.inventory.get(itemTag.getIntOr("index", 0));
+            final ItemStack before = slot.getStack();
             slot.read(provider, itemTag);
-            this.populatedSlots.add(slot);
+            this.updateViews(slot, before, slot.getStack());
         }
+    }
+
+    @Override
+    public void write(final ValueOutput view) {
+        view.putInt("Stored Count", this.storedItemCount);
+
+        final ValueOutput.ValueOutputList inv = view.childrenList("Items");
+        for (final ContainerSlot slot : this.inventory) {
+            slot.write(inv.addChild());
+        }
+    }
+
+    @Override
+    public void read(final ValueInput view) {
+        this.storedItemCount = view.getIntOr("Stored Count", 0);
+
+        for (final ValueInput itemView : view.childrenListOrEmpty("Items")) {
+            final ContainerSlot slot = this.inventory.get(itemView.getIntOr("index", 0));
+            final ItemStack before = slot.getStack();
+            slot.read(itemView);
+            this.updateViews(slot, before, slot.getStack());
+        }
+    }
+
+    @Override
+    public void setItemSilently(final int slot, final ItemStack stack) {
+        this.inventory.get(slot).setStackSilently(stack);
+    }
+
+    @Override
+    public void onTransferCommitted(final int slot, final ItemStack oldStack, final ItemStack newStack) {
+        // same notifications as ContainerSlot#setStack
+        this.onStackItemChange(this.inventory.get(slot), oldStack, newStack);
+        this.setChanged();
     }
 
     @Override
@@ -452,11 +505,11 @@ public abstract class MultiSlotContainer implements AbstractContainer {
     }
 
     public ContainerSlot getFirst() {
-        return this.getSlot(0);
+        return this.getContainerSlot(0);
     }
 
     public ContainerSlot getLast() {
-        return this.getSlot(this.getContainerSize() - 1);
+        return this.getContainerSlot(this.getContainerSize() - 1);
     }
 
     public record SlotAndItemHolder(int currentIndex, int nextIndex, ItemStack stack) {

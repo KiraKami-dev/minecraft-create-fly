@@ -12,7 +12,7 @@ import org.spongepowered.asm.mixin.injection.At;
 @Mixin(WaterWheelBlockEntity.class)
 public class WaterWheelBlockEntityMixin {
 
-    @ModifyReturnValue(method = "getFlowVectorAtPosition", at = @At("RETURN"))
+    @ModifyReturnValue(method = "getFlowVectorAtPosition", at = @At("RETURN"), remap = false)
     private Vec3 aeronautics$getFlowVectorAtPosition(Vec3 original, @Local(name = "fluid") FluidState fluidstate) {
         if(fluidstate.getType().getBucket().equals(AeroLevititeService.INSTANCE.getBucket())) {
             original = original.reverse();

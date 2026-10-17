@@ -11,7 +11,7 @@ import org.spongepowered.asm.mixin.injection.At;
 public class RotationPropagatorMixin {
 
     // TODO: REPLACE WITH MORE SOPHISTICATED FLICKER SYSTEM
-    @WrapOperation(method = "propagateNewSource", at = @At(value = "INVOKE", target = "Lcom/simibubi/create/content/kinetics/base/KineticBlockEntity;getFlickerScore()I"))
+    @WrapOperation(method = "propagateNewSource", at = @At(value = "INVOKE", target = "Lcom/zurrtum/create/content/kinetics/base/KineticBlockEntity;getFlickerScore()I"), remap = false)
     private static int removeFlicker(final KineticBlockEntity instance, final Operation<Integer> original) {
         return 0;
     }

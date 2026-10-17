@@ -3,18 +3,18 @@ package dev.simulated_team.simulated.content.blocks.redstone.modulating_receiver
 
 import com.zurrtum.create.content.equipment.clipboard.ClipboardCloneable;
 import dev.simulated_team.simulated.content.blocks.redstone.AbstractLinkedReceiverBlockEntity;
-import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.core.HolderLookup;
-import net.minecraft.nbt.CompoundTag;
 import net.minecraft.util.Mth;
 import net.minecraft.util.Tuple;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
 import net.minecraft.world.phys.Vec3;
-import org.jetbrains.annotations.NotNull;
+
+import java.util.Optional;
 
 
 public class ModulatingLinkedReceiverBlockEntity extends AbstractLinkedReceiverBlockEntity implements ClipboardCloneable {
@@ -94,26 +94,25 @@ public class ModulatingLinkedReceiverBlockEntity extends AbstractLinkedReceiverB
     }
 
     @Override
-    public void write(final CompoundTag compound, final HolderLookup.Provider registries, final boolean clientPacket) {
-        compound.putInt("MinRange", this.minRange);
-        compound.putInt("MaxRange", this.maxRange);
-        compound.putDouble("DistanceToClosest", this.distanceToClosest);
+    public void write(final ValueOutput view, final boolean clientPacket) {
+        view.putInt("MinRange", this.minRange);
+        view.putInt("MaxRange", this.maxRange);
+        view.putDouble("DistanceToClosest", this.distanceToClosest);
 
-        super.write(compound, registries, clientPacket);
+        super.write(view, clientPacket);
     }
 
     @Override
-    protected void read(final CompoundTag compound, final HolderLookup.Provider registries, final boolean clientPacket) {
-        this.distanceToClosest = compound.getDouble("DistanceToClosest");
+    protected void read(final ValueInput view, final boolean clientPacket) {
+        this.distanceToClosest = view.getDoubleOr("DistanceToClosest", 0);
 
-        if (!clientPacket ||
-                !(Minecraft.getInstance().screen instanceof final ModulatingLinkedReceiverScreen screen) ||
-                !screen.isThisBlock(this.getBlockPos())) {
-            this.minRange = compound.getInt("MinRange");
-            this.maxRange = compound.getInt("MaxRange");
+        // don't overwrite the values the player is currently editing (client only)
+        if (!clientPacket || !ModulatingLinkedReceiverScreen.isEditing(this.getBlockPos())) {
+            this.minRange = view.getIntOr("MinRange", 0);
+            this.maxRange = view.getIntOr("MaxRange", 0);
         }
 
-        super.read(compound, registries, clientPacket);
+        super.read(view, clientPacket);
     }
 
     @Override
@@ -122,21 +121,22 @@ public class ModulatingLinkedReceiverBlockEntity extends AbstractLinkedReceiverB
     }
 
     @Override
-    public boolean writeToClipboard(final HolderLookup.@NotNull Provider provider, final CompoundTag tag, final Direction direction) {
-        tag.putInt("minRange", this.minRange);
-        tag.putInt("maxRange", this.maxRange);
+    public boolean writeToClipboard(final ValueOutput view, final Direction direction) {
+        view.putInt("minRange", this.minRange);
+        view.putInt("maxRange", this.maxRange);
         return true;
     }
 
     @Override
-    public boolean readFromClipboard(final HolderLookup.@NotNull Provider provider, final CompoundTag tag, final Player player, final Direction direction, final boolean simulate) {
-        if (!tag.contains("minRange"))
+    public boolean readFromClipboard(final ValueInput view, final Player player, final Direction direction, final boolean simulate) {
+        final Optional<Integer> minRange = view.getInt("minRange");
+        if (minRange.isEmpty())
             return false;
         if (simulate)
             return true;
 
-        this.minRange = tag.getInt("minRange");
-        this.maxRange = tag.getInt("maxRange");
+        this.minRange = minRange.get();
+        this.maxRange = view.getIntOr("maxRange", 0);
         this.sendData();
         return true;
     }

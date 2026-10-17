@@ -4,7 +4,6 @@ import com.zurrtum.create.content.processing.burner.BlazeBurnerBlock;
 import com.zurrtum.create.content.processing.burner.LitBlazeBurnerBlock;
 import dev.eriksonn.aeronautics.index.AeroRegistries;
 import dev.eriksonn.aeronautics.service.AeroLevititeService;
-import dev.ryanhcode.sable.veillite.platform.registry.RegistryObject;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.particles.ParticleOptions;
@@ -29,7 +28,7 @@ public class LevititeBlendHelper {
     public static BlockState crystallizeLevititeBlend(final Level level, final BlockPos pos, final CrystalPropagationContext context) {
         context.onCrystallize(level, pos);
 
-        if (!level.isClientSide) {
+        if (!level.isClientSide()) {
             updateSurroundingLevititeBlend(level, pos, context);
         }
 
@@ -62,7 +61,7 @@ public class LevititeBlendHelper {
     }
 
     public static void spawnParticles(final Level pLevel, final BlockPos pPos, final ParticleOptions type, final int count) {
-        if (!pLevel.isClientSide) {
+        if (!pLevel.isClientSide()) {
             final double d0 = 0.5625D;
             final RandomSource random = pLevel.random;
             final ServerLevel serverLevel = (ServerLevel) pLevel;
@@ -72,15 +71,15 @@ public class LevititeBlendHelper {
     }
 
     public static void addLevititeBlendTicker(final Level level, final BlockPos pPos, final boolean requiresCatalyst, final boolean isDormant, final CrystalPropagationContext context) {
-        if (!level.isClientSide) {
+        if (!level.isClientSide()) {
             LevititeCrystallizerManager.addTicker(level, pPos, context.getNewAge(level, 0, isDormant), requiresCatalyst, isDormant, context);
         }
     }
 
     public static CrystalPropagationContext getContextFromBlock(final Level pLevel, final BlockPos pPos) {
         final BlockState state = pLevel.getBlockState(pPos);
-        CrystalPropagationContext standardContext = STANDARD_CONTEXT.get();
-        CrystalPropagationContext soulContext = SOUL_CONTEXT.get();
+        CrystalPropagationContext standardContext = STANDARD_CONTEXT;
+        CrystalPropagationContext soulContext = SOUL_CONTEXT;
 
         if (state.getBlock() instanceof BlazeBurnerBlock && state.getValue(BlazeBurnerBlock.HEAT_LEVEL).isAtLeast(BlazeBurnerBlock.HeatLevel.SMOULDERING))
             return standardContext;
@@ -91,8 +90,7 @@ public class LevititeBlendHelper {
         if (litState.isPresent() && !litState.get())
             return null;
 
-        for (RegistryObject<CrystalPropagationContext> entry : AeroRegistries.LEVITITE_CRYSTAL_PROPAGATION_CONTEXT.getEntries()) {
-            CrystalPropagationContext context = entry.get();
+        for (CrystalPropagationContext context : AeroRegistries.LEVITITE_CRYSTAL_PROPAGATION_CONTEXT) {
             if(state.is(context.getCatalyzerTag())) {
                 return context;
             }

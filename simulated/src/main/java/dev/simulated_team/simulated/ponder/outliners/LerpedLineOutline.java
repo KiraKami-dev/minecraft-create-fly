@@ -4,9 +4,10 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import dev.ryanhcode.sable.companion.math.JOMLConversion;
 import dev.simulated_team.simulated.ponder.records.PonderLineRecord;
-import net.createmod.catnip.outliner.LineOutline;
-import net.createmod.catnip.render.PonderRenderTypes;
-import net.createmod.catnip.render.SuperRenderTypeBuffer;
+import com.zurrtum.create.client.catnip.outliner.LineOutline;
+import com.zurrtum.create.client.catnip.render.PonderRenderTypes;
+import com.zurrtum.create.client.catnip.render.SuperRenderTypeBuffer;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.LightTexture;
 import net.minecraft.util.Mth;
 import net.minecraft.world.phys.Vec3;
@@ -36,7 +37,7 @@ public class LerpedLineOutline extends LineOutline {
     }
 
     @Override
-    public void render(final PoseStack ms, final SuperRenderTypeBuffer buffer, final Vec3 camera, final float pt) {
+    public void render(final Minecraft mc, final PoseStack ms, final SuperRenderTypeBuffer buffer, final Vec3 camera, final float pt) {
         final float width = this.params.getLineWidth();
         if (width == 0)
             return;

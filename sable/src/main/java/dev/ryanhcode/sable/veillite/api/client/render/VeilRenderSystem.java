@@ -6,7 +6,10 @@
 package dev.ryanhcode.sable.veillite.api.client.render;
 
 import com.mojang.blaze3d.systems.RenderSystem;
+import dev.ryanhcode.sable.veillite.impl.client.ImGuiEditorBackend;
 import dev.ryanhcode.sable.veillite.impl.event.VeilLiteEvents;
+import net.fabricmc.api.EnvType;
+import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.Minecraft;
 import org.jetbrains.annotations.ApiStatus;
 
@@ -37,6 +40,9 @@ public final class VeilRenderSystem {
     public static void init() {
         if (renderer == null) {
             renderer = new VeilRenderer();
+            if (hasImGui()) {
+                ImGuiEditorBackend.install(renderer.getEditorManager());
+            }
             VeilLiteEvents.fireRendererAvailable(renderer);
         }
     }
@@ -59,10 +65,11 @@ public final class VeilRenderSystem {
     }
 
     /**
-     * @return Whether the ImGui editor is available. Always <code>false</code> on 1.21.11.
+     * @return Whether ImGui is available: the client has the (bundled) imguimc mod loaded
      */
     public static boolean hasImGui() {
-        return false;
+        return FabricLoader.getInstance().getEnvironmentType() == EnvType.CLIENT
+                && FabricLoader.getInstance().isModLoaded("imguimc");
     }
 
     /**

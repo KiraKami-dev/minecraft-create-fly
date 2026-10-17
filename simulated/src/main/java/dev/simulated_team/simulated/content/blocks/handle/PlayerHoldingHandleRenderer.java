@@ -17,8 +17,19 @@ public class PlayerHoldingHandleRenderer {
         holdingPlayers.addAll(uuids);
     }
 
+    public static boolean isHoldingHandle(final UUID player) {
+        return holdingPlayers.contains(player);
+    }
+
     public static void afterSetupAnim(final Player player, final HumanoidModel<?> model) {
-        if (holdingPlayers.contains(player.getUUID()))
+        afterSetupAnim(player.getUUID(), model);
+    }
+
+    /**
+     * 1.21.11 models animate from render states, so the (handle) mixin may only know the player's UUID
+     */
+    public static void afterSetupAnim(final UUID player, final HumanoidModel<?> model) {
+        if (holdingPlayers.contains(player))
             setHangingPose(model);
     }
 

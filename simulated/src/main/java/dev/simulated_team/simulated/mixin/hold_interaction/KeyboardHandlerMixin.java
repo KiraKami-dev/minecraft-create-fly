@@ -5,6 +5,7 @@ import dev.simulated_team.simulated.util.SimDistUtil;
 import dev.simulated_team.simulated.util.click_interactions.InteractCallback;
 import net.minecraft.client.KeyboardHandler;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.input.KeyEvent;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -16,11 +17,12 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public class KeyboardHandlerMixin {
     @Shadow @Final private Minecraft minecraft;
 
+    // 1.21.11: keyPress(long window, int action, KeyEvent event) replaces keyPress(long, int key, int scanCode, int action, int modifiers)
     @Inject(method = "keyPress", at = @At(value = "FIELD", target = "Lnet/minecraft/client/Minecraft;screen:Lnet/minecraft/client/gui/screens/Screen;", ordinal = 0, opcode = 180/*GETFIELD*/), cancellable = true)
-    private void simulated$preOnPress(final long windowPointer, final int key, final int scanCode, final int action, final int modifiers, final CallbackInfo ci) {
+    private void simulated$preOnPress(final long windowPointer, final int action, final KeyEvent keyEvent, final CallbackInfo ci) {
         if (this.minecraft.screen == null) {
             if (SimDistUtil.getClientPlayer() != null && !SimDistUtil.getClientPlayer().isSpectator()) {
-                final InteractCallback.Result status = SimulatedCommonClientEvents.onBeforeMouseInput(InteractCallback.Input.key(key, scanCode), modifiers, action);
+                final InteractCallback.Result status = SimulatedCommonClientEvents.onBeforeMouseInput(InteractCallback.Input.key(keyEvent.key(), keyEvent.scancode()), keyEvent.modifiers(), action);
                 if (status.cancelled()) {
                     ci.cancel();
                 }

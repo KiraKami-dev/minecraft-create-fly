@@ -20,8 +20,9 @@ import net.minecraft.sounds.SoundSource;
 import net.minecraft.tags.ItemTags;
 import net.minecraft.util.StringRepresentable;
 import net.minecraft.world.InteractionHand;
-import net.minecraft.world.ItemInteractionResult;
+import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.InsideBlockEffectApplier;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
@@ -30,6 +31,7 @@ import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.redstone.Orientation;
 import net.minecraft.world.level.block.RenderShape;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityType;
@@ -42,6 +44,7 @@ import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.VoxelShape;
+import org.jetbrains.annotations.Nullable;
 import org.joml.Vector3d;
 
 public class HotAirBurnerBlock extends Block implements IBE<HotAirBurnerBlockEntity>, IWrenchable {
@@ -56,7 +59,9 @@ public class HotAirBurnerBlock extends Block implements IBE<HotAirBurnerBlockEnt
         return state.getValue(POWERED) ? 15 : 0;
     }
 
-    public void entityInside(final BlockState state, final Level level, final BlockPos pos, final Entity entity) {
+    @Override
+    protected void entityInside(final BlockState state, final Level level, final BlockPos pos, final Entity entity,
+                                final InsideBlockEffectApplier effectApplier, final boolean intersects) {
         final BlockEntity blockEntity = level.getBlockEntity(pos);
         if (blockEntity instanceof final HotAirBurnerBlockEntity be) {
             if (!entity.fireImmune() && state.getValue(POWERED) && entity instanceof LivingEntity) {
@@ -78,7 +83,7 @@ public class HotAirBurnerBlock extends Block implements IBE<HotAirBurnerBlockEnt
                 }
             }
 
-            super.entityInside(state, level, pos, entity);
+            super.entityInside(state, level, pos, entity, effectApplier, intersects);
         }
     }
 
@@ -94,7 +99,7 @@ public class HotAirBurnerBlock extends Block implements IBE<HotAirBurnerBlockEnt
     }
 
     @Override
-    protected ItemInteractionResult useItemOn(final ItemStack stack, final BlockState state, final Level level, final BlockPos pos, final Player player, final InteractionHand hand, final BlockHitResult hitResult) {
+    protected InteractionResult useItemOn(final ItemStack stack, final BlockState state, final Level level, final BlockPos pos, final Player player, final InteractionHand hand, final BlockHitResult hitResult) {
         final Variant conversion = Variant.getConversionFromItem(stack.getItem());
 
         if (conversion != null) {
@@ -102,11 +107,11 @@ public class HotAirBurnerBlock extends Block implements IBE<HotAirBurnerBlockEnt
             if (conversion != current) {
                 level.setBlockAndUpdate(pos, state.setValue(VARIANT, conversion));
                 level.playLocalSound(pos.getX(), pos.getY(), pos.getZ(), conversion.sound, SoundSource.BLOCKS, 1, 1, false);
-                return ItemInteractionResult.SUCCESS;
+                return InteractionResult.SUCCESS;
             }
         }
 
-        return ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
+        return InteractionResult.TRY_WITH_EMPTY_HAND;
     }
 
     @Override
@@ -116,9 +121,9 @@ public class HotAirBurnerBlock extends Block implements IBE<HotAirBurnerBlockEnt
     }
 
     @Override
-    public void neighborChanged(final BlockState state, final Level level, final BlockPos pos, final Block blockIn, final BlockPos fromPos,
+    public void neighborChanged(final BlockState state, final Level level, final BlockPos pos, final Block blockIn, @Nullable final Orientation orientation,
                                 final boolean isMoving) {
-        if (level.isClientSide)
+        if (level.isClientSide())
             return;
         this.withBlockEntityDo(level, pos, HotAirBurnerBlockEntity::updateSignal);
         final boolean previouslyPowered = state.getValue(POWERED);
@@ -129,7 +134,7 @@ public class HotAirBurnerBlock extends Block implements IBE<HotAirBurnerBlockEnt
 
     @Override
     public BlockEntityType<? extends HotAirBurnerBlockEntity> getBlockEntityType() {
-        return AeroBlockEntityTypes.HOT_AIR_BURNER.get();
+        return AeroBlockEntityTypes.HOT_AIR_BURNER;
     }
 
     @Override

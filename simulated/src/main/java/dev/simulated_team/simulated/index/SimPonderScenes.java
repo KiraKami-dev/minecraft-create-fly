@@ -1,21 +1,20 @@
 package dev.simulated_team.simulated.index;
 
 import com.zurrtum.create.AllBlocks;
-import com.tterrag.registrate.util.entry.ItemProviderEntry;
+import com.zurrtum.create.catnip.registry.RegisteredObjectsHelper;
 import dev.simulated_team.simulated.Simulated;
-import dev.simulated_team.simulated.data.SimBlockStateGen;
 import dev.simulated_team.simulated.ponder.new_ponder_tooltip.NewPonderTooltipManager;
 import dev.simulated_team.simulated.ponder.scenes.*;
-import net.createmod.ponder.api.registration.PonderSceneRegistrationHelper;
-import net.minecraft.core.registries.Registries;
-import net.minecraft.resources.ResourceKey;
+import com.zurrtum.create.client.ponder.api.registration.PonderSceneRegistrationHelper;
 import net.minecraft.resources.Identifier;
-import net.minecraft.world.item.Item;
-import net.neoforged.neoforge.registries.DeferredHolder;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.level.ItemLike;
 
 public class SimPonderScenes {
     public static void register(final PonderSceneRegistrationHelper<Identifier> registry) {
-        final PonderSceneRegistrationHelper<ItemProviderEntry<?, ?>> helper = registry.withKeyFunction(DeferredHolder::getId);
+        // registry fields are the blocks/items themselves now (no Registrate entries): key them by registry id, like
+        // Create Fly's AllCreatePonderTags
+        final PonderSceneRegistrationHelper<ItemLike> helper = registry.withKeyFunction(RegisteredObjectsHelper::getKeyOrThrow);
 
         //PHYSICS
         helper.forComponents(SimBlocks.PHYSICS_ASSEMBLER)
@@ -24,7 +23,7 @@ public class SimPonderScenes {
                 .addStoryBoard("physics_assembler/block_properties", PhysicsAssemblerScenes::physicsAssemblerBlockProperties)
                 .addStoryBoard("physics_assembler/sub_level_splitting", PhysicsAssemblerScenes::physicsAssemblerSubLevelSplitting);
 
-        helper.forComponents(vanillaItemProvider("slime_ball"))
+        helper.forComponents(Items.SLIME_BALL)
                 .addStoryBoard("physics_assembler/sub_level_splitting", PhysicsAssemblerScenes::physicsAssemblerSubLevelSplitting);
 
         helper.forComponents(SimBlocks.SWIVEL_BEARING)
@@ -100,12 +99,5 @@ public class SimPonderScenes {
                 .addStoryBoard("honey_glue/intro", HoneyGlueScenes::honeyGlueIntro)
                 .addStoryBoard("honey_glue/super_glue", HoneyGlueScenes::honeyGlueSuperGlue);
 
-    }
-
-    private static ItemProviderEntry<Item, Item> vanillaItemProvider(final String id) {
-        return new ItemProviderEntry<>(
-                Simulated.getRegistrate(),
-                DeferredHolder.create(ResourceKey.create(Registries.ITEM, Identifier.withDefaultNamespace(id)))
-        );
     }
 }

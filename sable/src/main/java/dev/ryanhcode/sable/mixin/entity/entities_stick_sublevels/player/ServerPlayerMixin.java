@@ -3,6 +3,7 @@ package dev.ryanhcode.sable.mixin.entity.entities_stick_sublevels.player;
 import dev.ryanhcode.sable.Sable;
 import dev.ryanhcode.sable.api.entity.EntitySubLevelUtil;
 import dev.ryanhcode.sable.companion.math.JOMLConversion;
+import dev.ryanhcode.sable.companion.math.Pose3d;
 import dev.ryanhcode.sable.companion.math.Pose3dc;
 import dev.ryanhcode.sable.sublevel.SubLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -23,6 +24,17 @@ public abstract class ServerPlayerMixin extends Entity {
     @Unique
     private final Vector3d sable$trackedSubLevelPos = new Vector3d();
 
+    /**
+     * The pose of the tracked sub-level when it last carried us. A teleport (e.g. {@code /sable physics translation})
+     * moves the pose after this player ticked, and the next physics tick overwrites {@link SubLevel#lastPose()} before
+     * we tick again, so {@code lastPose -> pose} alone would miss that move.
+     */
+    @Unique
+    private final Pose3d sable$carriedFromPose = new Pose3d();
+
+    @Unique
+    private SubLevel sable$carriedFromSubLevel = null;
+
     public ServerPlayerMixin(final EntityType<?> entityType, final Level level) {
         super(entityType, level);
     }
@@ -38,7 +50,7 @@ public abstract class ServerPlayerMixin extends Entity {
             final double entityCenterZ = entityCenter.z();
 
             final Pose3dc pose = trackingSubLevel.logicalPose();
-            final Pose3dc lastPose = trackingSubLevel.lastPose();
+            final Pose3dc lastPose = trackingSubLevel == this.sable$carriedFromSubLevel ? this.sable$carriedFromPose : trackingSubLevel.lastPose();
 
             final Vector3d inherited = pose.transformPosition(lastPose.transformPositionInverse(entityCenter, entityCenter));
 
@@ -47,6 +59,11 @@ public abstract class ServerPlayerMixin extends Entity {
                     position.x + inherited.x - entityCenterX,
                     position.y + inherited.y - entityCenterY,
                     position.z + inherited.z - entityCenterZ));
+
+            this.sable$carriedFromPose.set(pose);
+            this.sable$carriedFromSubLevel = trackingSubLevel;
+        } else {
+            this.sable$carriedFromSubLevel = null;
         }
     }
 }

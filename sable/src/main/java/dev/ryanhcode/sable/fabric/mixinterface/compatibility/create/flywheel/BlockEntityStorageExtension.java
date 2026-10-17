@@ -1,10 +1,13 @@
 package dev.ryanhcode.sable.fabric.mixinterface.compatibility.create.flywheel;
 
-import net.minecraft.client.multiplayer.ClientLevel;
+import com.zurrtum.create.client.flywheel.api.visualization.VisualizationContext;
+import dev.ryanhcode.sable.fabric.mixinhelper.compatibility.create.flywheel.SubLevelEmbedding;
+import dev.ryanhcode.sable.sublevel.SubLevel;
 
 public interface BlockEntityStorageExtension {
-    /**
-     * Removes stale sub-level embeddings and moves the others to their sub-level's render pose.
-     */
-    void sable$preFlywheelFrame(ClientLevel level, float partialTick);
+    void sable$setPlanVisualizationContext(VisualizationContext visualizationContext);
+
+    SubLevelEmbedding sable$getEmbeddingInfo(SubLevel subLevel);
+
+    void sable$preFlywheelFrame();
 }

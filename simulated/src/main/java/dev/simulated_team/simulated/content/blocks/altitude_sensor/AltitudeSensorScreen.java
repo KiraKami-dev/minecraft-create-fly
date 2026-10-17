@@ -1,19 +1,19 @@
 package dev.simulated_team.simulated.content.blocks.altitude_sensor;
 
-import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.vertex.*;
+import dev.simulated_team.simulated.content.blocks.redstone.GradientBlitRenderState;
 import dev.simulated_team.simulated.data.SimLang;
 import dev.simulated_team.simulated.index.SimGUITextures;
 import dev.simulated_team.simulated.network.packets.ConfigureAltitudeSensorPacket;
 import dev.simulated_team.simulated.util.SimColors;
 import dev.ryanhcode.sable.veillite.api.network.VeilPacketManager;
-import net.createmod.catnip.animation.AnimationTickHolder;
-import net.createmod.catnip.animation.LerpedFloat;
-import net.createmod.catnip.gui.AbstractSimiScreen;
-import net.createmod.catnip.gui.ScreenOpener;
+import com.zurrtum.create.client.catnip.animation.AnimationTickHolder;
+import com.zurrtum.create.catnip.animation.LerpedFloat;
+import com.zurrtum.create.client.catnip.gui.AbstractSimiScreen;
+import com.zurrtum.create.client.catnip.gui.ScreenOpener;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.renderer.GameRenderer;
+import net.minecraft.client.input.MouseButtonEvent;
+import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.util.Mth;
 
@@ -73,6 +73,11 @@ public class AltitudeSensorScreen extends AbstractSimiScreen {
     }
 
     @Override
+    protected void renderWindowBackground(final GuiGraphics graphics, final int mouseX, final int mouseY, final float partialTicks) {
+        // the background is drawn by renderBackground (Create Fly would draw the menu background over it here)
+    }
+
+    @Override
     protected void renderWindow(final GuiGraphics graphics, final int mouseX, final int mouseY, final float partialTicks) {
 
         final float visualHighPT = this.visualHighSignal.getValue(partialTicks);
@@ -87,21 +92,12 @@ public class AltitudeSensorScreen extends AbstractSimiScreen {
         final int lowMax = (int) (visualLowPT * this.barHeight);
 
         if (this.lowSignal > this.highSignal) {
-            graphics.blit(BAR.location, x, y + BAR.height - highMax, BAR.startX, BAR.height - highMax - BAR.startY, BAR.width, BAR.height - (BAR.height - highMax));
+            graphics.blit(RenderPipelines.GUI_TEXTURED, BAR.location, x, y + BAR.height - highMax, BAR.startX, BAR.height - highMax - BAR.startY, BAR.width, BAR.height - (BAR.height - highMax), 256, 256);
         } else {
-            graphics.blit(BAR.location, x, y, BAR.startX, BAR.startY, BAR.width, BAR.height - highMax);
+            graphics.blit(RenderPipelines.GUI_TEXTURED, BAR.location, x, y, BAR.startX, BAR.startY, BAR.width, BAR.height - highMax, 256, 256);
         }
 
-        final PoseStack ps = graphics.pose();
-
-        BAR.bind();
-        RenderSystem.disableCull();
-        RenderSystem.enableBlend();
-        RenderSystem.defaultBlendFunc();
-        RenderSystem.setShader(GameRenderer::getPositionTexColorShader);
-        final Tesselator tesselator = Tesselator.getInstance();
-        final BufferBuilder bufferbuilder = tesselator.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX_COLOR);
-
+        // the part of the bar between the two signals fades out from the high signal
         final float imageSize = 256f;
         final float uvx1 = BAR.startX / imageSize;
         final float uvx2 = (BAR.startX + BAR.width) / imageSize;
@@ -113,14 +109,14 @@ public class AltitudeSensorScreen extends AbstractSimiScreen {
         final float py1 = (y - highMax) + BAR.height;
         final float py2 = (y - lowMax) + BAR.height;
 
-        bufferbuilder.addVertex(ps.last().pose(), px2, py1, 0.0f).setUv(uvx2, uvy1).setColor(1.0f, 1.0f, 1.0f, 1.0f);
-        bufferbuilder.addVertex(ps.last().pose(), px1, py1, 0.0f).setUv(uvx1, uvy1).setColor(1.0f, 1.0f, 1.0f, 1.0f);
-        bufferbuilder.addVertex(ps.last().pose(), px1, py2, 0.0f).setUv(uvx1, uvy2).setColor(1.0f, 1.0f, 1.0f, 0.0f);
-        bufferbuilder.addVertex(ps.last().pose(), px2, py2, 0.0f).setUv(uvx2, uvy2).setColor(1.0f, 1.0f, 1.0f, 0.0f);
-        BufferUploader.drawWithShader(bufferbuilder.buildOrThrow());
-
-        RenderSystem.enableCull();
-        RenderSystem.disableBlend();
+        // GUI quads are culled, keep the quad's top edge on top
+        if (py1 <= py2) {
+            GradientBlitRenderState.submit(graphics, BAR.location, px1, py1, px2, py2, uvx1, uvx2, uvy1, uvy2,
+                    0xFFFFFFFF, 0xFFFFFFFF, 0x00FFFFFF, 0x00FFFFFF);
+        } else {
+            GradientBlitRenderState.submit(graphics, BAR.location, px1, py2, px2, py1, uvx1, uvx2, uvy2, uvy1,
+                    0x00FFFFFF, 0x00FFFFFF, 0xFFFFFFFF, 0xFFFFFFFF);
+        }
 
         final int invHighMax = (int) (invHighSignal * this.barHeight);
         final int invLowMax = (int) (invLowSignal * this.barHeight);
@@ -165,11 +161,11 @@ public class AltitudeSensorScreen extends AbstractSimiScreen {
     }
 
     @Override
-    public boolean mouseClicked(final double mouseX, final double mouseY, final int button) {
-        this.draggingLeft = this.overGrabby(mouseX, mouseY, true);
-        this.draggingRight = this.overGrabby(mouseX, mouseY, false);
+    public boolean mouseClicked(final MouseButtonEvent event, final boolean doubleClick) {
+        this.draggingLeft = this.overGrabby(event.x(), event.y(), true);
+        this.draggingRight = this.overGrabby(event.x(), event.y(), false);
 
-        return super.mouseClicked(mouseX, mouseY, button);
+        return super.mouseClicked(event, doubleClick);
     }
 
     @Override
@@ -187,7 +183,7 @@ public class AltitudeSensorScreen extends AbstractSimiScreen {
         final float mouseProgress = (float) Mth.clamp(1.0 - (mouseY - barTop) / barHeight, 0.0f, 1.0f);
 
         final float change;
-        if (hasControlDown()) {
+        if (Minecraft.getInstance().hasControlDown()) {
             change = this.draggingLeft ? mouseProgress - this.lowSignal : mouseProgress - this.highSignal;
         } else {
             change = 0;
@@ -222,10 +218,10 @@ public class AltitudeSensorScreen extends AbstractSimiScreen {
     }
 
     @Override
-    public boolean mouseReleased(final double mouseX, final double mouseY, final int button) {
+    public boolean mouseReleased(final MouseButtonEvent event) {
         this.draggingLeft = false;
         this.draggingRight = false;
-        return super.mouseReleased(mouseX, mouseY, button);
+        return super.mouseReleased(event);
     }
 
     @Override

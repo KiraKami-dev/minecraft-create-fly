@@ -2,9 +2,12 @@ package dev.simulated_team.simulated.multiloader.inventory;
 
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtOps;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
 
 public class ContainerSlot implements NBTSerializable {
 
@@ -142,13 +145,22 @@ public class ContainerSlot implements NBTSerializable {
         this.type = Items.AIR;
     }
 
+    /**
+     * Replaces the stack without notifying the parent container. Used by the Fabric transfer wrapper, which reports the
+     * change once the transaction commits.
+     */
+    public void setStackSilently(final ItemStack stack) {
+        this.stack = stack;
+        this.type = stack.getItem();
+    }
+
     @Override
     public CompoundTag write(final HolderLookup.Provider provider) {
         final CompoundTag slotTag = new CompoundTag();
 
         slotTag.putInt("index", this.getIndex());
         if (!this.getStack().isEmpty()) {
-            slotTag.put("item", this.getStack().save(provider));
+            slotTag.store("item", ItemStack.CODEC, provider.createSerializationContext(NbtOps.INSTANCE), this.getStack());
         }
 
         return slotTag;
@@ -156,12 +168,21 @@ public class ContainerSlot implements NBTSerializable {
 
     @Override
     public void read(final HolderLookup.Provider provider, final CompoundTag nbt) {
-        this.stack = ItemStack.EMPTY;
+        this.stack = nbt.read("item", ItemStack.CODEC, provider.createSerializationContext(NbtOps.INSTANCE)).orElse(ItemStack.EMPTY);
+        this.type = this.stack.getItem();
+    }
 
-        if (nbt.contains("item")) {
-            this.stack = ItemStack.parseOptional(provider, nbt.getCompound("item"));
+    @Override
+    public void write(final ValueOutput view) {
+        view.putInt("index", this.getIndex());
+        if (!this.getStack().isEmpty()) {
+            view.store("item", ItemStack.CODEC, this.getStack());
         }
+    }
 
+    @Override
+    public void read(final ValueInput view) {
+        this.stack = view.read("item", ItemStack.CODEC).orElse(ItemStack.EMPTY);
         this.type = this.stack.getItem();
     }
 }

@@ -21,23 +21,24 @@ import dev.simulated_team.simulated.index.SimBlocks;
 import dev.simulated_team.simulated.ponder.SceneScheduler;
 import dev.simulated_team.simulated.ponder.SmoothMovementUtils;
 import dev.simulated_team.simulated.ponder.instructions.*;
-import net.createmod.catnip.math.Pointing;
-import net.createmod.ponder.api.PonderPalette;
-import net.createmod.ponder.api.element.ElementLink;
-import net.createmod.ponder.api.element.ParrotElement;
-import net.createmod.ponder.api.element.ParrotPose;
-import net.createmod.ponder.api.element.WorldSectionElement;
-import net.createmod.ponder.api.scene.*;
-import net.createmod.ponder.foundation.element.ElementLinkImpl;
-import net.createmod.ponder.foundation.instruction.CreateParrotInstruction;
-import net.createmod.ponder.foundation.instruction.FadeOutOfSceneInstruction;
-import net.createmod.ponder.foundation.instruction.RotateSceneInstruction;
+import com.zurrtum.create.catnip.math.Pointing;
+import com.zurrtum.create.client.ponder.api.PonderPalette;
+import com.zurrtum.create.client.ponder.api.element.ElementLink;
+import com.zurrtum.create.client.ponder.api.element.ParrotElement;
+import com.zurrtum.create.client.ponder.api.element.ParrotPose;
+import com.zurrtum.create.client.ponder.api.element.WorldSectionElement;
+import com.zurrtum.create.client.ponder.api.scene.*;
+import com.zurrtum.create.client.ponder.foundation.element.ElementLinkImpl;
+import com.zurrtum.create.client.ponder.foundation.instruction.CreateParrotInstruction;
+import com.zurrtum.create.client.ponder.foundation.instruction.FadeOutOfSceneInstruction;
+import com.zurrtum.create.client.ponder.foundation.instruction.RotateSceneInstruction;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.GlobalPos;
 import net.minecraft.core.component.DataComponentPatch;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtOps;
 import net.minecraft.util.Mth;
 import net.minecraft.world.item.DyeItem;
 import net.minecraft.world.item.ItemStack;
@@ -173,7 +174,7 @@ public class SensorScenes {
         setAltitudeSensorRedstone(scene, nixieSelection, redstonePos, 4, true);
         scene.idle(30);
 
-        scene.overlay().showControls(util.vector().blockSurface(sensorPos, Direction.EAST), Pointing.RIGHT, 60).withItem(AllItems.GOGGLES.asStack());
+        scene.overlay().showControls(util.vector().blockSurface(sensorPos, Direction.EAST), Pointing.RIGHT, 60).withItem(new ItemStack(AllItems.GOGGLES));
         scene.overlay().showText(110)
                 .attachKeyFrame()
                 .text("When wearing Engineers' Goggles, information about air pressure and exact altitude can be seen")
@@ -186,7 +187,7 @@ public class SensorScenes {
                 .text("A Wrench can also be used to see more precise changes in elevation")
                 .placeNearTarget()
                 .pointAt(util.vector().blockSurface(sensorPos, Direction.WEST));
-        scene.overlay().showControls(util.vector().blockSurface(sensorPos, Direction.EAST), Pointing.RIGHT, 30).withItem(AllItems.WRENCH.asStack());
+        scene.overlay().showControls(util.vector().blockSurface(sensorPos, Direction.EAST), Pointing.RIGHT, 30).withItem(new ItemStack(AllItems.WRENCH));
         scene.idle(20);
         world.modifyBlock(sensorPos,
                 state -> state.setValue(AltitudeSensorBlock.DIAL, AltitudeSensorBlock.FaceType.RADIAL), true);
@@ -235,7 +236,7 @@ public class SensorScenes {
     // Optical Sensor
 
     private static void opticalSensorSetHitPos(final WorldInstructions world, final BlockPos hitBlockPos, final BlockPos lp, final Direction laserDir, final float scale) {
-        final Vec3 newHit = Vec3.atCenterOf(hitBlockPos).add(Vec3.atLowerCornerOf(laserDir.getOpposite().getNormal()).scale(scale));
+        final Vec3 newHit = Vec3.atCenterOf(hitBlockPos).add(Vec3.atLowerCornerOf(laserDir.getOpposite().getUnitVec3i()).scale(scale));
         world.modifyBlockEntity(lp, OpticalSensorBlockEntity.class, laser -> laser.laser.setVirtualHitPos(newHit));
     }
 
@@ -305,7 +306,7 @@ public class SensorScenes {
 
         world.replaceBlocks(util.select().position(3, 1, 1), Blocks.OAK_TRAPDOOR.defaultBlockState(), false);
 
-        world.replaceBlocks(util.select().position(3, 1, 3), SimBlocks.OPTICAL_SENSOR.getDefaultState(), false);
+        world.replaceBlocks(util.select().position(3, 1, 3), SimBlocks.OPTICAL_SENSOR.defaultBlockState(), false);
 
         world.toggleRedstonePower(util.select().position(3, 1, 3));
 
@@ -387,14 +388,14 @@ public class SensorScenes {
         world.toggleRedstonePower(util.select().position(3, 1, 3));
 
         world.modifyBlockEntityNBT(util.select().position(3, 1, 3), OpticalSensorBlockEntity.class,
-                nbt -> nbt.put("Filter", gold.saveOptional(world.getHolderLookupProvider())));
+                nbt -> nbt.store("Filter", ItemStack.OPTIONAL_CODEC, world.getHolderLookupProvider().createSerializationContext(NbtOps.INSTANCE), gold));
 
         scene.idle(20);
 
         scene.overlay().showControls(rightSlot, Pointing.DOWN, 40).withItem(iron);
 
         world.modifyBlockEntityNBT(util.select().position(1, 1, 3), OpticalSensorBlockEntity.class,
-                nbt -> nbt.put("Filter", iron.saveOptional(world.getHolderLookupProvider())));
+                nbt -> nbt.store("Filter", ItemStack.OPTIONAL_CODEC, world.getHolderLookupProvider().createSerializationContext(NbtOps.INSTANCE), iron));
 
         scene.idle(60);
 
@@ -421,7 +422,7 @@ public class SensorScenes {
     }
 
     private static void laserSetHitPos(final WorldInstructions world, final BlockPos hitBlockPos, final BlockPos lp, final Direction laserDir) {
-        final Vec3 newHit = Vec3.atCenterOf(hitBlockPos).add(Vec3.atLowerCornerOf(laserDir.getOpposite().getNormal()).scale(0.5f));
+        final Vec3 newHit = Vec3.atCenterOf(hitBlockPos).add(Vec3.atLowerCornerOf(laserDir.getOpposite().getUnitVec3i()).scale(0.5f));
         world.modifyBlockEntity(lp, LaserPointerBlockEntity.class, laser -> laser.sensorInteraction.setVirtualHitPos(newHit));
     }
 
@@ -532,7 +533,7 @@ public class SensorScenes {
 
         scene.overlay().showControls(sensorFilterPos, Pointing.DOWN, 40).withItem(dye);
 
-        world.modifyBlockEntityNBT(laserSensor, LaserSensorBlockEntity.class, nbt -> nbt.put("Filter", dye.saveOptional(world.getHolderLookupProvider())));
+        world.modifyBlockEntityNBT(laserSensor, LaserSensorBlockEntity.class, nbt -> nbt.store("Filter", ItemStack.OPTIONAL_CODEC, world.getHolderLookupProvider().createSerializationContext(NbtOps.INSTANCE), dye));
         world.toggleRedstonePower(laserSensor);
         laserSetRedstone(0, world, laserNixiePos, laserRedstonePos);
 
@@ -552,7 +553,7 @@ public class SensorScenes {
         scene.idle(50);
 
         scene.addKeyframe();
-        scene.overlay().showControls(util.vector().blockSurface(laserPointerPos, Direction.NORTH), Pointing.RIGHT, 20).withItem(AllItems.WRENCH.asStack());
+        scene.overlay().showControls(util.vector().blockSurface(laserPointerPos, Direction.NORTH), Pointing.RIGHT, 20).withItem(new ItemStack(AllItems.WRENCH));
         scene.idle(10);
         world.cycleBlockProperty(laserPointerPos, LaserPointerBlock.INVERTED);
         laserSetRedstone(9, world, laserNixiePos, laserRedstonePos);
@@ -609,7 +610,7 @@ public class SensorScenes {
 
         scene.world().modifyBlockEntityNBT(util.select().position(gimbalLocation), GimbalSensorBlockEntity.class,
             nbt -> {
-                final CompoundTag powers = nbt.getCompound("Powers");
+                final CompoundTag powers = nbt.getCompoundOrEmpty("Powers");
                 powers.putInt(directions[index].getName(), power ? 15 : 0);
                 nbt.put("Powers", powers);
             });
@@ -638,7 +639,7 @@ public class SensorScenes {
         );
         scene.world().modifyBlockEntityNBT(util.select().position(gimbalLocation), GimbalSensorBlockEntity.class,
                 nbt -> {
-                    final CompoundTag powers = nbt.getCompound("Powers");
+                    final CompoundTag powers = nbt.getCompoundOrEmpty("Powers");
                     powers.putInt(directions[index].getName(), strength == 0 ? 0 : 15);
                     nbt.put("Powers", powers);
                 });
@@ -760,7 +761,7 @@ public class SensorScenes {
         scene.addInstruction(CustomAnimateWorldSectionInstruction.rotate(platformSelection, new Vec3(-11, 0, 0), 30, SmoothMovementUtils.quadraticRiseInOut()));
         scene.idle(10);
 
-        world.replaceBlocks(redstoneLamps, AllBlocks.ANDESITE_SCAFFOLD.getDefaultState().setValue(ScaffoldingBlock.BOTTOM, true), false);
+        world.replaceBlocks(redstoneLamps, AllBlocks.ANDESITE_SCAFFOLD.defaultBlockState().setValue(ScaffoldingBlock.BOTTOM, true), false);
 
         redstoneLampSelection = world.showIndependentSection(redstoneLamps, Direction.DOWN);
         final ElementLink<WorldSectionElement> nixieTubesZSelection = world.showIndependentSection(nixieTubesZ, Direction.DOWN);
@@ -1017,7 +1018,7 @@ public class SensorScenes {
         world.setKineticSpeed(allKinetics, 8);
         world.setKineticSpeed(inverseKinetics, -8);
         world.modifyBlockEntityNBT(util.select().position(swivelBearing), SwivelBearingBlockEntity.class, nbt -> {
-            nbt.getCompound("SwivelCog").putFloat("Speed", 8f);
+            nbt.getCompoundOrEmpty("SwivelCog").putFloat("Speed", 8f);
         });
 
         world.rotateSection(platformLink, 0, 360, 0, 160);
@@ -1061,7 +1062,7 @@ public class SensorScenes {
         world.setKineticSpeed(allKinetics, 0);
         world.setKineticSpeed(inverseKinetics, 0);
         world.modifyBlockEntityNBT(util.select().position(swivelBearing), SwivelBearingBlockEntity.class, nbt -> {
-            nbt.getCompound("SwivelCog").putFloat("Speed", 0f);
+            nbt.getCompoundOrEmpty("SwivelCog").putFloat("Speed", 0f);
         });
 
         scene.idle(20);
@@ -1079,7 +1080,7 @@ public class SensorScenes {
         world.setKineticSpeed(allKinetics, -8);
         world.setKineticSpeed(inverseKinetics, 8);
         world.modifyBlockEntityNBT(util.select().position(swivelBearing), SwivelBearingBlockEntity.class, nbt -> {
-            nbt.getCompound("SwivelCog").putFloat("Speed", -8f);
+            nbt.getCompoundOrEmpty("SwivelCog").putFloat("Speed", -8f);
         });
 
         for (int i = 0; i < 20; i++) {
@@ -1101,7 +1102,7 @@ public class SensorScenes {
         world.setKineticSpeed(allKinetics, 0);
         world.setKineticSpeed(inverseKinetics, 0);
         world.modifyBlockEntityNBT(util.select().position(swivelBearing), SwivelBearingBlockEntity.class, nbt -> {
-            nbt.getCompound("SwivelCog").putFloat("Speed", 0f);
+            nbt.getCompoundOrEmpty("SwivelCog").putFloat("Speed", 0f);
         });
 
         scene.overlay().showText(90)
@@ -1131,7 +1132,7 @@ public class SensorScenes {
         scene.overlay().showControls(util.vector().blockSurface(navigationTable2, Direction.UP), Pointing.DOWN, 50).withItem(lodestoneCompass);
         scene.idle(5);
         world.modifyBlockEntityNBT(util.select().position(navigationTable2), NavTableBlockEntity.class,
-                tag -> tag.put("CurrentStack", lodestoneCompass.saveOptional(world.getHolderLookupProvider())), true);
+                tag -> tag.store("CurrentStack", ItemStack.OPTIONAL_CODEC, world.getHolderLookupProvider().createSerializationContext(NbtOps.INSTANCE), lodestoneCompass), true);
         world.showSection(lodestone, Direction.SOUTH);
 
         world.toggleRedstonePower(navTable2Left);
@@ -1199,10 +1200,10 @@ public class SensorScenes {
     private static void modifyKineticSpeed(final SceneBuilder scene, final Selection selection, final UnaryOperator<Float> speedFunc) {
         scene.world().modifyBlockEntityNBT(selection, KineticBlockEntity.class, nbt -> {
             if (nbt.contains("SwivelCog")) {
-                final CompoundTag innerTag = nbt.getCompound("SwivelCog");
-                innerTag.putFloat("Speed", -speedFunc.apply(innerTag.getFloat("Speed")));
+                final CompoundTag innerTag = nbt.getCompoundOrEmpty("SwivelCog");
+                innerTag.putFloat("Speed", -speedFunc.apply(innerTag.getFloatOr("Speed", 0)));
             } else {
-                nbt.putFloat("Speed", speedFunc.apply(nbt.getFloat("Speed")));
+                nbt.putFloat("Speed", speedFunc.apply(nbt.getFloatOr("Speed", 0)));
             }
         });
     }

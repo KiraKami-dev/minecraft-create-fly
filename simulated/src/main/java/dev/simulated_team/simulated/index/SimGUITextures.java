@@ -1,15 +1,16 @@
 package dev.simulated_team.simulated.index;
 
-import com.mojang.blaze3d.systems.RenderSystem;
 import dev.simulated_team.simulated.Simulated;
-import net.createmod.catnip.gui.UIRenderHelper;
-import net.createmod.catnip.gui.element.ScreenElement;
-import net.createmod.catnip.theme.Color;
+import com.zurrtum.create.client.catnip.gui.TextureSheetSegment;
+import com.zurrtum.create.client.catnip.gui.UIRenderHelper;
+import com.zurrtum.create.client.catnip.gui.element.ScreenElement;
+import com.zurrtum.create.catnip.theme.Color;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.resources.Identifier;
 import org.jetbrains.annotations.NotNull;
 
-public enum SimGUITextures implements ScreenElement {
+public enum SimGUITextures implements ScreenElement, TextureSheetSegment {
 
     MODULATINGLINK("modulating_linked_receiver", 182, 99),
     MODULATINGLINK_MARKER("modulating_linked_receiver", 193, 4, 3, 20),
@@ -121,20 +122,42 @@ public enum SimGUITextures implements ScreenElement {
         this.texHeight = texHeight;
     }
 
-    public void bind() {
-        RenderSystem.setShaderTexture(0, this.location);
+    // 1.21.11: bind() comes from BindableTexture and returns the TextureSetup (RenderSystem.setShaderTexture is gone)
+
+    @Override
+    public Identifier getLocation() {
+        return this.location;
+    }
+
+    @Override
+    public int getStartX() {
+        return this.startX;
+    }
+
+    @Override
+    public int getStartY() {
+        return this.startY;
+    }
+
+    @Override
+    public int getWidth() {
+        return this.width;
+    }
+
+    @Override
+    public int getHeight() {
+        return this.height;
     }
 
     public void render(final GuiGraphics graphics, final int x, final int y) {
-        graphics.blit(this.location, x, y, this.startX, this.startY, this.width, this.height, this.texWidth, this.texHeight);
+        graphics.blit(RenderPipelines.GUI_TEXTURED, this.location, x, y, this.startX, this.startY, this.width, this.height, this.texWidth, this.texHeight);
     }
 
     public void render (final GuiGraphics graphics, final int x, final int y, final int width, final int height) {
-        graphics.blit(this.location, x, y, this.startX, this.startY, width, height, this.texWidth, this.texHeight);
+        graphics.blit(RenderPipelines.GUI_TEXTURED, this.location, x, y, this.startX, this.startY, width, height, this.texWidth, this.texHeight);
     }
 
     public void render(final GuiGraphics graphics, final int x, final int y, final Color c) {
-        this.bind();
-        UIRenderHelper.drawColoredTexture(graphics, c, x, y, 0, this.startX, this.startY, this.width, this.height, this.texWidth, this.texHeight);
+        UIRenderHelper.drawColoredTexture(graphics, this.bind(), c, x, y, this.startX, this.startY, this.width, this.height, this.texWidth, this.texHeight);
     }
 }

@@ -1,6 +1,6 @@
 package dev.eriksonn.aeronautics.index;
 
-import dev.engine_room.flywheel.lib.model.baked.PartialModel;
+import com.zurrtum.create.client.flywheel.lib.model.baked.PartialModel;
 import dev.eriksonn.aeronautics.Aeronautics;
 
 public class AeroPartialModels {

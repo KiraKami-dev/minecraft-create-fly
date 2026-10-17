@@ -4,6 +4,8 @@ import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.HashSet;
@@ -82,6 +84,32 @@ public abstract class SingleSlotContainer implements AbstractContainer {
     @Override
     public void read(final HolderLookup.Provider provider, final CompoundTag nbt) {
         this.slot.read(provider, nbt);
+    }
+
+    @Override
+    public void write(final ValueOutput view) {
+        this.slot.write(view);
+    }
+
+    @Override
+    public void read(final ValueInput view) {
+        this.slot.read(view);
+    }
+
+    @Override
+    public void setItemSilently(final int slot, final ItemStack stack) {
+        if (slot == 0) {
+            this.slot.setStackSilently(stack);
+        }
+    }
+
+    @Override
+    public void onTransferCommitted(final int slot, final ItemStack oldStack, final ItemStack newStack) {
+        if (slot == 0) {
+            // same notifications as ContainerSlot#setStack
+            this.onStackItemChange(this.slot, oldStack, newStack);
+            this.setChanged();
+        }
     }
 
     @Override

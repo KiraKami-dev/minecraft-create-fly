@@ -9,7 +9,7 @@ import net.minecraft.core.Direction;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.InteractionHand;
-import net.minecraft.world.ItemInteractionResult;
+import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.context.BlockPlaceContext;
@@ -25,8 +25,9 @@ import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.BooleanProperty;
 import net.minecraft.world.phys.BlockHitResult;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
-public class OpticalSensorBlock extends DirectedDirectionalBlock implements IBE<OpticalSensorBlockEntity>, CommonRedstoneBlock  {
+public class OpticalSensorBlock extends DirectedDirectionalBlock implements IBE<OpticalSensorBlockEntity>, CommonRedstoneBlock {
 
     public static final BooleanProperty POWERED = BlockStateProperties.POWERED;
 
@@ -41,12 +42,12 @@ public class OpticalSensorBlock extends DirectedDirectionalBlock implements IBE<
     }
 
     @Override
-    protected ItemInteractionResult useItemOn(final ItemStack stack, final BlockState state, final Level level, final BlockPos pos, final Player player, final InteractionHand hand, final BlockHitResult hitResult) {
+    protected InteractionResult useItemOn(final ItemStack stack, final BlockState state, final Level level, final BlockPos pos, final Player player, final InteractionHand hand, final BlockHitResult hitResult) {
         if (level.getBlockEntity(pos) instanceof final OpticalSensorBlockEntity be) {
             if (be.tryApplyDye(stack)) {
                 level.playLocalSound(pos.getX(), pos.getY(), pos.getZ(), SoundEvents.DYE_USE, SoundSource.PLAYERS,
                         0.3f, 1.0f, false);
-                return ItemInteractionResult.SUCCESS;
+                return InteractionResult.SUCCESS;
             }
         }
         return super.useItemOn(stack, state, level, pos, player, hand, hitResult);
@@ -75,13 +76,6 @@ public class OpticalSensorBlock extends DirectedDirectionalBlock implements IBE<
                 .getOpposite();
     }
 
-    @Override
-    public void onRemove(final BlockState state, final @NotNull Level level, final @NotNull BlockPos pos, final @NotNull BlockState newState, final boolean isMoving) {
-        if (state.hasBlockEntity() && state.getBlock() != newState.getBlock()) {
-            IBE.onRemove(state, level, pos, newState);
-            level.removeBlockEntity(pos);
-        }
-    }
 
     @Override
     public boolean isSignalSource(final BlockState state) {
@@ -112,6 +106,6 @@ public class OpticalSensorBlock extends DirectedDirectionalBlock implements IBE<
 
     @Override
     public BlockEntityType<? extends OpticalSensorBlockEntity> getBlockEntityType() {
-        return SimBlockEntityTypes.OPTICAL_SENSOR.get();
+        return SimBlockEntityTypes.OPTICAL_SENSOR;
     }
 }

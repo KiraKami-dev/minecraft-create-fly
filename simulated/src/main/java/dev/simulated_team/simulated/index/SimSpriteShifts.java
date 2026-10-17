@@ -1,8 +1,8 @@
 package dev.simulated_team.simulated.index;
 
 import dev.simulated_team.simulated.Simulated;
-import net.createmod.catnip.render.SpriteShiftEntry;
-import net.createmod.catnip.render.SpriteShifter;
+import com.zurrtum.create.client.catnip.render.SpriteShiftEntry;
+import com.zurrtum.create.client.catnip.render.SpriteShifter;
 
 public class SimSpriteShifts {
 

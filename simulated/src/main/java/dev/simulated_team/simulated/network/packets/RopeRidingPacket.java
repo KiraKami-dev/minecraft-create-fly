@@ -33,10 +33,11 @@ public record RopeRidingPacket(UUID uuid, boolean stop) implements CustomPacketP
         player.connection.aboveGroundVehicleTickCount = 0;
         player.fallDistance = 0.0f;
 
+        // Create Fly's handler takes the server too (it syncs the riding players itself)
         if (this.stop) {
-            ServerChainConveyorHandler.handleStopRidingPacket(player);
+            ServerChainConveyorHandler.handleStopRidingPacket(ctx.server(), player);
         } else {
-            ServerChainConveyorHandler.handleTTLPacket(player);
+            ServerChainConveyorHandler.handleTTLPacket(ctx.server(), player);
         }
     }
 }

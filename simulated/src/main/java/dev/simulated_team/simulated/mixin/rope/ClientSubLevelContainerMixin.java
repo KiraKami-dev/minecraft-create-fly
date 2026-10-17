@@ -13,11 +13,11 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(ClientSubLevelContainer.class)
 public abstract class ClientSubLevelContainerMixin {
-    @Shadow @Final private ClientSableInterpolationState interpolation;
+    @Shadow(remap = false) @Final private ClientSableInterpolationState interpolation;
 
-    @Shadow public abstract ClientLevel getLevel();
+    @Shadow(remap = false) public abstract ClientLevel getLevel();
 
-    @Inject(method = "tick", at = @At("TAIL"))
+    @Inject(method = "tick", at = @At("TAIL"), remap = false)
     private void sable$tickRopeInterpolation(final CallbackInfo ci) {
         final ClientLevel level = this.getLevel();
         final ClientLevelRopeManager ropeManager = ClientLevelRopeManager.getOrCreate(level);

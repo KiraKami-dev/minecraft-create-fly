@@ -1,13 +1,42 @@
 package dev.ryanhcode.sable.fabric.mixinhelper.compatibility.create.flywheel;
 
 import com.zurrtum.create.client.flywheel.api.visualization.VisualEmbedding;
-import com.zurrtum.create.client.flywheel.api.visualization.VisualizationContext;
 import net.minecraft.world.level.block.entity.BlockEntity;
 
 import java.util.List;
 
-/**
- * The Flywheel embedding that a sub-level's block entity visuals live in, with the context it was created from.
- */
-public record SubLevelEmbedding(VisualEmbedding embedding, VisualizationContext parent, List<BlockEntity> blockEntities) {
+public final class SubLevelEmbedding {
+    private final VisualEmbedding embedding;
+    private final List<BlockEntity> blockEntities;
+    private int latestSkyLightScale;
+
+    public SubLevelEmbedding(final VisualEmbedding embedding, final List<BlockEntity> blockEntities, final int latestSkyLightScale) {
+        this.embedding = embedding;
+        this.blockEntities = blockEntities;
+        this.latestSkyLightScale = latestSkyLightScale;
+    }
+
+    public VisualEmbedding embedding() {
+        return this.embedding;
+    }
+
+    public List<BlockEntity> blockEntities() {
+        return this.blockEntities;
+    }
+
+    public int latestSkyLightScale() {
+        return this.latestSkyLightScale;
+    }
+
+    public void setLatestSkyLightScale(final int latestSkyLightScale) {
+        this.latestSkyLightScale = latestSkyLightScale;
+    }
+
+    @Override
+    public String toString() {
+        return "SubLevelEmbedding[" +
+                "embedding=" + this.embedding + ", " +
+                "blockEntities=" + this.blockEntities + ", " +
+                "latestSkyLightScale=" + this.latestSkyLightScale + ']';
+    }
 }

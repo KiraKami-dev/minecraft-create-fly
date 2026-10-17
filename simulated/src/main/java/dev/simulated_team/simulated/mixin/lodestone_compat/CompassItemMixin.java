@@ -7,13 +7,15 @@ import dev.simulated_team.simulated.content.navigation_targets.lodestone_compass
 import dev.simulated_team.simulated.index.SimDataComponents;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.component.DataComponentType;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.item.CompassItem;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.context.UseOnContext;
-import net.minecraft.world.level.Level;
+import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -27,15 +29,14 @@ public abstract class CompassItemMixin extends Item {
 		super(properties);
 	}
 
+	// 1.21.11: inventoryTick(ItemStack, ServerLevel, Entity, EquipmentSlot) only runs on the server
 	@Inject(method = "inventoryTick", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/item/ItemStack;get(Lnet/minecraft/core/component/DataComponentType;)Ljava/lang/Object;"))
-	private void simulated$checkID(final ItemStack stack, final Level level, final Entity entity, final int itemSlot, final boolean isSelected, final CallbackInfo ci) {
-		if (!level.isClientSide) {
-			if (stack.has(SimDataComponents.LODESTONE_COMPASS_SUBLEVEL_TRACKER)) {
-				final UUID trackerID = stack.get(SimDataComponents.LODESTONE_COMPASS_SUBLEVEL_TRACKER);
-				final LodestoneTrackingMap map = LodestoneTrackingMap.getOrLoad(level);
-				if (map != null && entity instanceof final ServerPlayer sp) {
-					map.sendUpdateForPlayer(trackerID, sp);
-				}
+	private void simulated$checkID(final ItemStack stack, final ServerLevel level, final Entity entity, @Nullable final EquipmentSlot slot, final CallbackInfo ci) {
+		if (stack.has(SimDataComponents.LODESTONE_COMPASS_SUBLEVEL_TRACKER)) {
+			final UUID trackerID = stack.get(SimDataComponents.LODESTONE_COMPASS_SUBLEVEL_TRACKER);
+			final LodestoneTrackingMap map = LodestoneTrackingMap.getOrLoad(level);
+			if (map != null && entity instanceof final ServerPlayer sp) {
+				map.sendUpdateForPlayer(trackerID, sp);
 			}
 		}
 	}

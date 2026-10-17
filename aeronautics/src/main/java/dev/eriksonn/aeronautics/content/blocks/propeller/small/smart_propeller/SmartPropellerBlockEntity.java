@@ -1,6 +1,5 @@
 package dev.eriksonn.aeronautics.content.blocks.propeller.small.smart_propeller;
 
-import com.zurrtum.create.Create;
 import dev.ryanhcode.sable.Sable;
 import dev.simulated_team.simulated.util.SimMathUtils;
 import dev.eriksonn.aeronautics.config.AeroConfig;
@@ -11,11 +10,12 @@ import dev.ryanhcode.sable.api.physics.handle.RigidBodyHandle;
 import dev.ryanhcode.sable.sublevel.ServerSubLevel;
 import dev.ryanhcode.sable.sublevel.SubLevel;
 import dev.ryanhcode.sable.companion.math.JOMLConversion;
-import net.createmod.catnip.animation.LerpedFloat;
-import net.createmod.catnip.math.VecHelper;
+import com.zurrtum.create.catnip.animation.LerpedFloat;
+import com.zurrtum.create.catnip.math.VecHelper;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.util.Mth;
+import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
@@ -104,12 +104,14 @@ public class SmartPropellerBlockEntity extends BasePropellerBlockEntity {
         final Direction dir = Direction.get(Direction.AxisDirection.POSITIVE, this.getBlockState().getValue(BlockStateProperties.HORIZONTAL_AXIS)).getClockWise();
         final Quaterniond rot = new Quaterniond(new AxisAngle4d(-Math.toRadians(this.hingeAngle.getValue()), dir.getStepX(), dir.getStepY(), dir.getStepZ()));
 
-        double particleCount = 1 + Create.RANDOM.nextFloat() - 1.0f;
+        // upstream Create.RANDOM (absent in Create Fly)
+        final RandomSource random = this.level.random;
+        double particleCount = 1 + random.nextFloat() - 1.0f;
         particleCount = Math.min(particleCount, 10);
 
         for (int i = 0; i < particleCount; i++) {
-            final double R = this.getRadius() * Math.sqrt(Create.RANDOM.nextFloat());
-            final double angle = Math.PI * 2.0 * Create.RANDOM.nextFloat();
+            final double R = this.getRadius() * Math.sqrt(random.nextFloat());
+            final double angle = Math.PI * 2.0 * random.nextFloat();
 
             Vec3 particlePos = new Vec3(Math.cos(angle) * R, this.getOffset(), Math.sin(angle) * R);
             Vec3 speedVector = new Vec3(0, this.getAirflow() / 40f, 0);

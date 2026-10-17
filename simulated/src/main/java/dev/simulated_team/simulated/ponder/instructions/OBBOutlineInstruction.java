@@ -1,9 +1,9 @@
 package dev.simulated_team.simulated.ponder.instructions;
 
 import dev.ryanhcode.sable.companion.math.JOMLConversion;
-import net.createmod.ponder.api.PonderPalette;
-import net.createmod.ponder.foundation.PonderScene;
-import net.createmod.ponder.foundation.instruction.TickingInstruction;
+import com.zurrtum.create.client.ponder.api.PonderPalette;
+import com.zurrtum.create.client.ponder.foundation.PonderScene;
+import com.zurrtum.create.client.ponder.foundation.instruction.TickingInstruction;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.NotNull;

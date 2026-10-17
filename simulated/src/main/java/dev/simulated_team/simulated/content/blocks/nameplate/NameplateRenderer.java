@@ -2,13 +2,16 @@ package dev.simulated_team.simulated.content.blocks.nameplate;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.math.Axis;
-import com.zurrtum.create.foundation.blockEntity.renderer.SafeBlockEntityRenderer;
 import dev.simulated_team.simulated.data.SimLang;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.player.LocalPlayer;
-import net.minecraft.client.renderer.MultiBufferSource;
+import net.minecraft.client.renderer.SubmitNodeCollector;
+import net.minecraft.client.renderer.blockentity.BlockEntityRenderer;
 import net.minecraft.client.renderer.blockentity.BlockEntityRendererProvider;
+import net.minecraft.client.renderer.blockentity.state.BlockEntityRenderState;
+import net.minecraft.client.renderer.feature.ModelFeatureRenderer;
+import net.minecraft.client.renderer.state.CameraRenderState;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.network.chat.MutableComponent;
@@ -18,10 +21,11 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.item.DyeColor;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 
-public class NameplateRenderer extends SafeBlockEntityRenderer<NameplateBlockEntity> {
+public class NameplateRenderer implements BlockEntityRenderer<NameplateBlockEntity, NameplateRenderer.NameplateRenderState> {
 
     //taken from sign renderer
     private static final int OUTLINE_RENDER_DISTANCE = Mth.square(16);
@@ -32,25 +36,60 @@ public class NameplateRenderer extends SafeBlockEntityRenderer<NameplateBlockEnt
     }
 
     @Override
-    public void renderSafe(final NameplateBlockEntity be, final float pPartialTick, final PoseStack ps, final MultiBufferSource pBuffer, int packedLight, final int pPackedOverlay) {
-        final Font font = this.context.getFont();
+    public NameplateRenderState createRenderState() {
+        return new NameplateRenderState();
+    }
 
-        final BlockState state = be.getBlockState();
-        final Direction facing = state.getValue(NameplateBlock.FACING);
+    @Override
+    public void extractRenderState(final NameplateBlockEntity be, final NameplateRenderState state, final float partialTicks,
+                                   final Vec3 cameraPos, @Nullable final ModelFeatureRenderer.CrumblingOverlay crumblingOverlay) {
+        BlockEntityRenderState.extractBase(be, state, crumblingOverlay);
+        final Font font = this.context.font();
+
+        final BlockState blockState = state.blockState;
+        state.facing = blockState.getValue(NameplateBlock.FACING);
 
         // can't just use be.isController() because it is never set properly on create contraptions
-        final NameplateBlock.Position pos = state.getValue(NameplateBlock.POSITION);
-        if (pos == NameplateBlock.Position.LEFT) {
-            // the controllerWidth also isn't set properly, so this needs to be called
-//            be.controllerCheckTick();
-        } else if (pos != NameplateBlock.Position.SINGLE) {
+        final NameplateBlock.Position pos = blockState.getValue(NameplateBlock.POSITION);
+        state.visible = pos == NameplateBlock.Position.LEFT || pos == NameplateBlock.Position.SINGLE;
+        if (!state.visible) {
+            return;
+        }
+
+        state.pixelsTall = be.glowing ? 5 : 6;
+        final int pixelsLeft = 3;
+
+        final int availableSpace = ((be.getControllerWidth()) * 16 - pixelsLeft * 2) * 7 / state.pixelsTall + 1;
+        final String trimmed = font.plainSubstrByWidth(be.getName(), availableSpace);
+
+        final int width = font.width(trimmed);
+
+        state.centerPixels = (availableSpace - 1) / 2.0 - width / 2.0;
+
+        final MutableComponent textComponent = SimLang.text(trimmed).component();
+        state.sequences = font.split(textComponent, width);
+
+        if (be.glowing) {
+            state.textColor = be.getTextColor().getTextColor();
+            state.outlineColor = isOutlineVisible(be.getBlockPos(), state.textColor) ? be.getDarkColor(be.getTextColor()) : 0;
+            state.textLight = 15728880;
+        } else {
+            state.textColor = be.getDarkColor(be.getTextColor());
+            state.outlineColor = 0;
+            state.textLight = state.lightCoords;
+        }
+    }
+
+    @Override
+    public void submit(final NameplateRenderState state, final PoseStack ps, final SubmitNodeCollector queue, final CameraRenderState cameraState) {
+        if (!state.visible) {
             return;
         }
 
         ps.pushPose();
 
         ps.translate(0.5, 0.5, 0.5);
-        ps.mulPose(Axis.YP.rotationDegrees(-facing.toYRot() + 180.0f));
+        ps.mulPose(Axis.YP.rotationDegrees(-state.facing.toYRot() + 180.0f));
         ps.translate(-0.5, -0.5, -0.5);
 
         ps.translate(1.0, 1.0, 1.0);
@@ -58,7 +97,7 @@ public class NameplateRenderer extends SafeBlockEntityRenderer<NameplateBlockEnt
         // push 4 pixels out
         ps.translate(0.0, 0.0, -4.05 / 16.0);
 
-        final int pixelsTall = be.glowing ? 5 : 6;
+        final int pixelsTall = state.pixelsTall;
         final int pixelsLeft = 3;
 
         ps.translate(-pixelsLeft / 16.0f, -(16.0 - pixelsTall) / 16.0 / 2.0, 0.0);
@@ -68,36 +107,12 @@ public class NameplateRenderer extends SafeBlockEntityRenderer<NameplateBlockEnt
 
         ps.mulPose(Axis.ZP.rotationDegrees(180.0f));
 
-        final int availableSpace = ((be.getControllerWidth()) * 16 - pixelsLeft * 2) * 7 / pixelsTall + 1;
-        final String trimmed = font.plainSubstrByWidth(be.getName(), availableSpace);
-
-        final int width = font.width(trimmed);
-
-        final double centerPixels = (availableSpace - 1) / 2.0 - width / 2.0;
-
         // translate to center
-        ps.translate(centerPixels, 0.0, 0.0);
+        ps.translate(state.centerPixels, 0.0, 0.0);
 
-        final MutableComponent textComponent = SimLang.text(trimmed).component();
-        final List<FormattedCharSequence> sequences = font.split(textComponent, width);
-
-        final int textColor;
-        final boolean glowing;
-        if (be.glowing) {
-            textColor = be.getTextColor().getTextColor();
-            glowing = isOutlineVisible(be.getBlockPos(), textColor);
-            packedLight = 15728880;
-        } else {
-            textColor = be.getDarkColor(be.getTextColor());
-            glowing = false;
-        }
-
-        for (final FormattedCharSequence sequence : sequences) {
-            if (glowing) {
-                font.drawInBatch8xOutline(sequence, 0, 0, textColor, be.getDarkColor(be.getTextColor()), ps.last().pose(), pBuffer, packedLight);
-            } else {
-                font.drawInBatch(sequence, 0f /*x offset*/, 0f /*y offset*/, textColor, false, ps.last().pose(), pBuffer, Font.DisplayMode.NORMAL, 0x000000, packedLight);
-            }
+        for (final FormattedCharSequence sequence : state.sequences) {
+            // a non-zero outline color draws the glowing 8x outline
+            queue.submitText(ps, 0f /*x offset*/, 0f /*y offset*/, sequence, false, Font.DisplayMode.NORMAL, state.textLight, state.textColor, 0, state.outlineColor);
         }
 
         ps.popPose();
@@ -117,5 +132,16 @@ public class NameplateRenderer extends SafeBlockEntityRenderer<NameplateBlockEnt
                 return entity != null && entity.distanceToSqr(Vec3.atCenterOf(blockPos)) < (double)OUTLINE_RENDER_DISTANCE;
             }
         }
+    }
+
+    public static class NameplateRenderState extends BlockEntityRenderState {
+        public boolean visible;
+        public Direction facing;
+        public int pixelsTall;
+        public double centerPixels;
+        public List<FormattedCharSequence> sequences = List.of();
+        public int textColor;
+        public int outlineColor;
+        public int textLight;
     }
 }

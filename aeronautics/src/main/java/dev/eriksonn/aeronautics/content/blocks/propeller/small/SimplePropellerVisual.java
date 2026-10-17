@@ -3,13 +3,13 @@ package dev.eriksonn.aeronautics.content.blocks.propeller.small;
 import com.zurrtum.create.client.AllPartialModels;
 import com.zurrtum.create.client.content.kinetics.base.OrientedRotatingVisual;
 import dev.simulated_team.simulated.util.SimMathUtils;
-import dev.engine_room.flywheel.api.instance.Instance;
-import dev.engine_room.flywheel.api.visualization.VisualizationContext;
-import dev.engine_room.flywheel.lib.instance.InstanceTypes;
-import dev.engine_room.flywheel.lib.instance.OrientedInstance;
-import dev.engine_room.flywheel.lib.model.Models;
-import dev.engine_room.flywheel.lib.model.baked.PartialModel;
-import dev.engine_room.flywheel.lib.visual.SimpleDynamicVisual;
+import com.zurrtum.create.client.flywheel.api.instance.Instance;
+import com.zurrtum.create.client.flywheel.api.visualization.VisualizationContext;
+import com.zurrtum.create.client.flywheel.lib.instance.InstanceTypes;
+import com.zurrtum.create.client.flywheel.lib.instance.OrientedInstance;
+import com.zurrtum.create.client.flywheel.lib.model.Models;
+import com.zurrtum.create.client.flywheel.lib.model.baked.PartialModel;
+import com.zurrtum.create.client.flywheel.lib.visual.SimpleDynamicVisual;
 import net.minecraft.core.Direction;
 import net.minecraft.core.Vec3i;
 import net.minecraft.util.Mth;
@@ -33,7 +33,7 @@ public abstract class SimplePropellerVisual<T extends BasePropellerBlockEntity> 
         super(context, blockEntity, partialTick, Direction.SOUTH, blockEntity.getBlockState().getValue(BlockStateProperties.FACING).getOpposite(), Models.partial(AllPartialModels.SHAFT_HALF));
         final Direction facing = this.blockState.getValue(BlockStateProperties.FACING);
 
-        final Vec3i normal = facing.getNormal();
+        final Vec3i normal = facing.getUnitVec3i();
         final Vec3 normalPos = new Vec3(normal.getX(), normal.getY(), normal.getZ());
         final Vector3f pos = Vec3.atLowerCornerOf(this.getVisualPosition()).add(normalPos.scale(3 / 16f)).toVector3f();
 

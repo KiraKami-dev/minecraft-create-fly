@@ -8,8 +8,8 @@ import dev.simulated_team.simulated.index.SimDataComponents;
 import dev.simulated_team.simulated.index.SimItems;
 import dev.simulated_team.simulated.service.SimConfigService;
 import dev.simulated_team.simulated.util.SimColors;
-import net.createmod.catnip.outliner.Outliner;
-import net.createmod.catnip.theme.Color;
+import com.zurrtum.create.client.catnip.outliner.Outliner;
+import com.zurrtum.create.catnip.theme.Color;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.DustParticleOptions;
@@ -36,7 +36,7 @@ public class ClientRopeItemHandler {
         for (final InteractionHand hand : InteractionHand.values()) {
             final ItemStack heldItem = player.getItemInHand(hand);
 
-            if (!SimItems.ROPE_COUPLING.isIn(heldItem))
+            if (!heldItem.is(SimItems.ROPE_COUPLING))
                 continue;
 
             if (!heldItem.has(SimDataComponents.ROPE_FIRST_CONNECTION))
@@ -108,7 +108,7 @@ public class ClientRopeItemHandler {
                             .disableLineNormals();
                 }
 
-                final DustParticleOptions data = new DustParticleOptions(color.asVectorF(), 1);
+                final DustParticleOptions data = new DustParticleOptions(color.getRGB(), 1);
                 final double totalFlyingTicks = 10;
                 final int segments = (((int) totalFlyingTicks) / 3) + 1;
 

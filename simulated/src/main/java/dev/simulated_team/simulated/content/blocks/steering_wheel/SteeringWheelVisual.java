@@ -3,19 +3,19 @@ package dev.simulated_team.simulated.content.blocks.steering_wheel;
 import com.zurrtum.create.client.AllPartialModels;
 import com.zurrtum.create.client.content.kinetics.base.KineticBlockEntityVisual;
 import com.zurrtum.create.client.content.kinetics.base.RotatingInstance;
+import com.zurrtum.create.client.flywheel.api.instance.Instance;
+import com.zurrtum.create.client.flywheel.api.model.Model;
+import com.zurrtum.create.client.flywheel.api.visualization.VisualizationContext;
+import com.zurrtum.create.client.flywheel.lib.instance.ColoredLitInstance;
+import com.zurrtum.create.client.flywheel.lib.instance.InstanceTypes;
+import com.zurrtum.create.client.flywheel.lib.instance.TransformedInstance;
+import com.zurrtum.create.client.flywheel.lib.model.Models;
+import com.zurrtum.create.client.flywheel.lib.model.baked.BakedModelBuilder;
+import com.zurrtum.create.client.flywheel.lib.util.RendererReloadCache;
+import com.zurrtum.create.client.flywheel.lib.visual.SimpleDynamicVisual;
 import com.zurrtum.create.client.foundation.render.AllInstanceTypes;
-import dev.engine_room.flywheel.api.instance.Instance;
-import dev.engine_room.flywheel.api.model.Model;
-import dev.engine_room.flywheel.api.visualization.VisualizationContext;
-import dev.engine_room.flywheel.lib.instance.ColoredLitInstance;
-import dev.engine_room.flywheel.lib.instance.InstanceTypes;
-import dev.engine_room.flywheel.lib.instance.TransformedInstance;
-import dev.engine_room.flywheel.lib.model.Models;
-import dev.engine_room.flywheel.lib.model.baked.BakedModelBuilder;
-import dev.engine_room.flywheel.lib.util.RendererReloadCache;
-import dev.engine_room.flywheel.lib.visual.SimpleDynamicVisual;
 import dev.simulated_team.simulated.index.SimPartialModels;
-import net.minecraft.client.resources.model.BakedModel;
+import net.minecraft.client.renderer.block.model.SimpleModelWrapper;
 import net.minecraft.core.Direction;
 import net.minecraft.world.level.block.state.BlockState;
 import org.jetbrains.annotations.Nullable;
@@ -125,7 +125,7 @@ public class SteeringWheelVisual extends KineticBlockEntityVisual<SteeringWheelB
     }
 
     private static Model generateModel(final SteeringWheelRenderer.ModelKey modelKey) {
-        final BakedModel bakedModel = SteeringWheelRenderer.generateModel(SimPartialModels.STEERING_WHEEL.get(), modelKey.material());
+        final SimpleModelWrapper bakedModel = SteeringWheelRenderer.generateModel(SimPartialModels.STEERING_WHEEL.get(), modelKey.material());
         return new BakedModelBuilder(bakedModel).build();
     }
 }

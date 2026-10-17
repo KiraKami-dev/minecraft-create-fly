@@ -5,11 +5,18 @@ import dev.ryanhcode.sable.SableClient;
 import dev.ryanhcode.sable.SableClientConfig;
 import dev.ryanhcode.sable.physics.config.FloatingBlockMaterialDataHandler;
 import dev.ryanhcode.sable.sublevel.render.SubLevelRenderer;
+import dev.ryanhcode.sable.veillite.api.client.editor.EditorManager;
+import dev.ryanhcode.sable.veillite.api.client.editor.Inspector;
+import dev.ryanhcode.sable.veillite.api.client.render.VeilRenderSystem;
 import fuzs.forgeconfigapiport.fabric.api.v5.ConfigRegistry;
 import fuzs.forgeconfigapiport.fabric.api.v5.ModConfigEvents;
 import net.fabricmc.api.ClientModInitializer;
+import net.fabricmc.fabric.api.client.command.v2.ClientCommandManager;
+import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import net.fabricmc.fabric.api.resource.v1.ResourceLoader;
+import net.fabricmc.loader.api.FabricLoader;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.packs.PackType;
 import net.neoforged.fml.config.ModConfig;
 
@@ -18,6 +25,20 @@ public final class SableFabricClient implements ClientModInitializer {
     @Override
     public void onInitializeClient() {
         SableClient.init();
+
+        // Debug inspectors (ImGui); off until toggled
+        ClientCommandRegistrationCallback.EVENT.register((dispatcher, buildContext) ->
+                dispatcher.register(ClientCommandManager.literal("sableinspector").executes(context -> {
+                    if (!VeilRenderSystem.hasImGui()) {
+                        context.getSource().sendError(Component.translatable("command.sable.inspector.unavailable"));
+                        return 0;
+                    }
+                    final EditorManager editorManager = VeilRenderSystem.renderer().getEditorManager();
+                    for (final Inspector inspector : editorManager.getInspectors()) {
+                        editorManager.toggle(inspector);
+                    }
+                    return 1;
+                })));
 
         ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> FloatingBlockMaterialDataHandler.clearMaterials());
         // The dispatcher is resolved lazily on every reload, as the selected renderer can change at runtime
@@ -36,5 +57,10 @@ public final class SableFabricClient implements ClientModInitializer {
         });
 
         ConfigRegistry.INSTANCE.register(Sable.MOD_ID, ModConfig.Type.CLIENT, SableClientConfig.SPEC);
+
+        // Create Fly bundles Flywheel
+        if (FabricLoader.getInstance().isModLoaded("create")) {
+            Sable.LOGGER.warn("NOTE: Sable is loaded with Flywheel (bundled in Create Fly). Sable contains extensive shader overrides and a full light-storage replacement. Expect this to cause compatibility issues. If issues arise, please report them to the Sable issue tracker ({}) instead of the Flywheel issue tracker.", Sable.ISSUE_TRACKER_URL);
+        }
     }
 }

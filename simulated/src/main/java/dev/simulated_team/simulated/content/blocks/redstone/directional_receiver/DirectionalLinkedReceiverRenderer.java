@@ -1,18 +1,13 @@
 package dev.simulated_team.simulated.content.blocks.redstone.directional_receiver;
 
-import com.mojang.blaze3d.vertex.PoseStack;
 import com.zurrtum.create.client.foundation.blockEntity.renderer.SmartBlockEntityRenderer;
-import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.blockentity.BlockEntityRendererProvider;
 
-
-public class DirectionalLinkedReceiverRenderer extends SmartBlockEntityRenderer<DirectionalLinkedReceiverBlockEntity> {
+/**
+ * Only renders the frequency items (from {@link dev.simulated_team.simulated.content.blocks.redstone.LinkedReceiverLinkBehaviour}).
+ */
+public class DirectionalLinkedReceiverRenderer extends SmartBlockEntityRenderer<DirectionalLinkedReceiverBlockEntity, SmartBlockEntityRenderer.SmartRenderState> {
     public DirectionalLinkedReceiverRenderer(final BlockEntityRendererProvider.Context context) {
         super(context);
-    }
-
-    @Override
-    protected void renderSafe(final DirectionalLinkedReceiverBlockEntity be, final float partialTicks, final PoseStack ms, final MultiBufferSource bufferSource, final int light, final int overlay) {
-        super.renderSafe(be, partialTicks, ms, bufferSource, light, overlay);
     }
 }

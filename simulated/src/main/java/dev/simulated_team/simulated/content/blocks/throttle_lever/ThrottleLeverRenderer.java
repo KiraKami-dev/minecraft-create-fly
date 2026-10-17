@@ -2,35 +2,45 @@ package dev.simulated_team.simulated.content.blocks.throttle_lever;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
+import com.zurrtum.create.catnip.math.AngleHelper;
+import com.zurrtum.create.client.catnip.render.CachedBuffers;
+import com.zurrtum.create.client.catnip.render.SuperByteBuffer;
+import com.zurrtum.create.client.flywheel.api.visualization.VisualizationManager;
+import com.zurrtum.create.client.flywheel.lib.transform.PoseTransformStack;
+import com.zurrtum.create.client.flywheel.lib.transform.TransformStack;
 import com.zurrtum.create.content.redstone.analogLever.AnalogLeverBlock;
-import com.zurrtum.create.foundation.blockEntity.renderer.SafeBlockEntityRenderer;
-import dev.engine_room.flywheel.api.visualization.VisualizationManager;
-import dev.engine_room.flywheel.lib.transform.PoseTransformStack;
-import dev.engine_room.flywheel.lib.transform.TransformStack;
 import dev.simulated_team.simulated.index.SimBlocks;
 import dev.simulated_team.simulated.index.SimPartialModels;
-import dev.simulated_team.simulated.mixin.accessor.LevelRendererAccessor;
 import dev.simulated_team.simulated.util.SimColors;
-import net.createmod.catnip.math.AngleHelper;
-import net.createmod.catnip.render.CachedBuffers;
-import net.createmod.catnip.render.SuperByteBuffer;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.MultiBufferSource;
-import net.minecraft.client.renderer.rendertype.RenderType;
+import net.minecraft.client.renderer.SubmitNodeCollector;
+import net.minecraft.client.renderer.blockentity.BlockEntityRenderer;
 import net.minecraft.client.renderer.blockentity.BlockEntityRendererProvider;
+import net.minecraft.client.renderer.blockentity.state.BlockEntityRenderState;
+import net.minecraft.client.renderer.feature.ModelFeatureRenderer;
+import net.minecraft.client.renderer.rendertype.RenderTypes;
+import net.minecraft.client.renderer.state.CameraRenderState;
 import net.minecraft.core.Direction;
 import net.minecraft.world.level.block.FaceAttachedHorizontalDirectionalBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.AttachFace;
 import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.shapes.VoxelShape;
+import org.jetbrains.annotations.Nullable;
+import org.joml.Vector3f;
 
-public class ThrottleLeverRenderer extends SafeBlockEntityRenderer<ThrottleLeverBlockEntity> {
+/**
+ * Draws the lever parts without Flywheel and, always, the outline of the handle when it is looked at
+ * (so this renderer must not skip vanilla rendering when the visual is active).
+ */
+public class ThrottleLeverRenderer implements BlockEntityRenderer<ThrottleLeverBlockEntity, ThrottleLeverRenderer.ThrottleLeverRenderState> {
 
     protected static final double ANGLE_LIMIT = 40.0;
+    // upstream drew the handle outline black at 40% alpha
+    private static final int OUTLINE_COLOR = 0x66000000;
 
     public ThrottleLeverRenderer(final BlockEntityRendererProvider.Context context) {
-        
     }
 
     public static void transformHandleExternal(final ThrottleLeverBlockEntity blockEntity, final float partialTicks, final PoseStack ms) {
@@ -51,73 +61,77 @@ public class ThrottleLeverRenderer extends SafeBlockEntityRenderer<ThrottleLever
     }
 
     @Override
-    protected void renderSafe(final ThrottleLeverBlockEntity be, final float partialTicks, final PoseStack ms, final MultiBufferSource bufferSource,
-                              final int light, final int overlay) {
-        final BlockState leverState = be.getBlockState();
-        final float state = be.clientAngle.getValue(partialTicks);
-        final AttachFace face = be.getBlockState().getValue(FaceAttachedHorizontalDirectionalBlock.FACE);
-        float angle = (float) (((state / 15) * (ANGLE_LIMIT * 2) - ANGLE_LIMIT) / 180 * Math.PI);
+    public ThrottleLeverRenderState createRenderState() {
+        return new ThrottleLeverRenderState();
+    }
+
+    @Override
+    public void extractRenderState(final ThrottleLeverBlockEntity be, final ThrottleLeverRenderState state, final float partialTicks,
+                                   final Vec3 cameraPos, @Nullable final ModelFeatureRenderer.CrumblingOverlay crumblingOverlay) {
+        BlockEntityRenderState.extractBase(be, state, crumblingOverlay);
+
+        final BlockState leverState = state.blockState;
+        final float leverValue = be.clientAngle.getValue(partialTicks);
+        final AttachFace face = leverState.getValue(FaceAttachedHorizontalDirectionalBlock.FACE);
+        float angle = (float) (((leverValue / 15) * (ANGLE_LIMIT * 2) - ANGLE_LIMIT) / 180 * Math.PI);
 
         if (face == AttachFace.WALL) {
             angle = -angle;
         }
 
-        if (!VisualizationManager.supportsVisualization(be.getLevel())) {
-            final VertexConsumer vb = bufferSource.getBuffer(RenderType.cutoutMipped());
+        state.angle = angle;
+        state.face = face;
 
-            final SuperByteBuffer handle = CachedBuffers.partial(SimPartialModels.THROTTLE_LEVER_HANDLE, leverState);
-            final SuperByteBuffer button = CachedBuffers.partial(SimPartialModels.THROTTLE_LEVER_BUTTON, leverState);
+        state.renderParts = !VisualizationManager.supportsVisualization(be.getLevel());
+        if (state.renderParts) {
+            state.handle = CachedBuffers.partial(SimPartialModels.THROTTLE_LEVER_HANDLE, leverState);
+            state.button = CachedBuffers.partial(SimPartialModels.THROTTLE_LEVER_BUTTON, leverState);
+            state.diode = CachedBuffers.partial(SimPartialModels.THROTTLE_LEVER_DIODE, leverState);
 
             final float signalStrength = Math.max(0, be.state / 15F);
-            final SuperByteBuffer diode = CachedBuffers.partial(SimPartialModels.THROTTLE_LEVER_DIODE, leverState);
-            final int color = SimColors.redstone(signalStrength);
-
-            final double buttonAngle = be.clientPressedLerp.getValue(partialTicks) * -7f;
-
-            transform(handle, leverState);
-            transform(button, leverState);
-            transform(diode, leverState);
-
-            this.transformHandleExternal(handle, angle, face);
-            handle
-                    .light(light)
-                    .renderInto(ms, vb);
-
-            this.transformHandleExternal(button, angle, face)
-                    .translate(0, 14 / 16f, 8 / 16f)
-                    .rotateXDegrees((float) buttonAngle)
-                    .translateBack(0, 14 / 16f, 8 / 16f)
-                    .light(light)
-                    .renderInto(ms, vb);
-
-            diode.light(light)
-                    .color(color)
-                    .renderInto(ms, vb);
+            state.diodeColor = SimColors.redstone(signalStrength);
+            state.buttonAngle = be.clientPressedLerp.getValue(partialTicks) * -7f;
         }
 
         final Minecraft minecraft = Minecraft.getInstance();
-
-        if (!be.isVirtual() && minecraft.hitResult instanceof final BlockHitResult hitResult && hitResult.getBlockPos().equals(be.getBlockPos())) {
-            renderOutline(be, ms, bufferSource, angle);
+        state.outline = !be.isVirtual() && minecraft.hitResult instanceof final BlockHitResult hitResult && hitResult.getBlockPos().equals(be.getBlockPos());
+        if (state.outline) {
+            state.outlineShape = SimBlocks.THROTTLE_LEVER.getHandleShape(SimBlocks.THROTTLE_LEVER.defaultBlockState());
+            state.outlineWidth = minecraft.getWindow().getAppropriateLineWidth();
         }
     }
 
-    private static void renderOutline(final ThrottleLeverBlockEntity be, final PoseStack ms, final MultiBufferSource bufferSource, final float angle) {
-        final VertexConsumer consumer = bufferSource.getBuffer(RenderType.lines());
-        final VoxelShape leverShape = SimBlocks.THROTTLE_LEVER.get().getHandleShape(SimBlocks.THROTTLE_LEVER.getDefaultState());
+    @Override
+    public void submit(final ThrottleLeverRenderState state, final PoseStack ms, final SubmitNodeCollector queue, final CameraRenderState cameraState) {
+        if (state.renderParts) {
+            queue.submitCustomGeometry(ms, RenderTypes.cutoutMovingBlock(), state);
+        }
 
+        if (state.outline) {
+            renderOutline(state, ms, queue);
+        }
+    }
+
+    private static void renderOutline(final ThrottleLeverRenderState state, final PoseStack ms, final SubmitNodeCollector queue) {
         ms.pushPose();
         final PoseTransformStack stack = TransformStack.of(ms);
-        transform(stack, be.getBlockState());
+        transform(stack, state.blockState);
         stack
                 .translate(1 / 2f, 3.0 / 16.0, 1 / 2f)
-                .rotateX(angle)
+                .rotateX(state.angle)
                 .translateBack(1 / 2f, 3.0 / 16.0, 1 / 2f);
-        LevelRendererAccessor.invokeRenderShape(ms, consumer, leverShape, 0.0, 0.0, 0.0, 0.0f, 0.0f, 0.0f, 0.4F);
+        final VoxelShape leverShape = state.outlineShape;
+        final float lineWidth = state.outlineWidth;
+        // ShapeRenderer#renderShape, on the submitted pose (was LevelRenderer#renderShape via accessor)
+        queue.submitCustomGeometry(ms, RenderTypes.lines(), (pose, consumer) -> leverShape.forAllEdges((x0, y0, z0, x1, y1, z1) -> {
+            final Vector3f normal = new Vector3f((float) (x1 - x0), (float) (y1 - y0), (float) (z1 - z0)).normalize();
+            consumer.addVertex(pose, (float) x0, (float) y0, (float) z0).setColor(OUTLINE_COLOR).setNormal(pose, normal).setLineWidth(lineWidth);
+            consumer.addVertex(pose, (float) x1, (float) y1, (float) z1).setColor(OUTLINE_COLOR).setNormal(pose, normal).setLineWidth(lineWidth);
+        }));
         ms.popPose();
     }
 
-    private <T extends TransformStack<T>> TransformStack<T> transformHandleExternal(final TransformStack<T> buffer, final float angle, final AttachFace face) {
+    private static <T extends TransformStack<T>> TransformStack<T> transformHandle(final TransformStack<T> buffer, final float angle, final AttachFace face) {
         return buffer
                 .translate(1 / 2f, 3 / 16f, 1 / 2f)
                 .rotateX(angle)
@@ -143,4 +157,41 @@ public class ThrottleLeverRenderer extends SafeBlockEntityRenderer<ThrottleLever
         return buffer;
     }
 
+    public static class ThrottleLeverRenderState extends BlockEntityRenderState implements SubmitNodeCollector.CustomGeometryRenderer {
+        public float angle;
+        public AttachFace face;
+        public boolean renderParts;
+        public SuperByteBuffer handle;
+        public SuperByteBuffer button;
+        public SuperByteBuffer diode;
+        public int diodeColor;
+        public float buttonAngle;
+        public boolean outline;
+        public VoxelShape outlineShape;
+        public float outlineWidth;
+
+        @Override
+        public void render(final PoseStack.Pose matricesEntry, final VertexConsumer vb) {
+            transform(this.handle, this.blockState);
+            transform(this.button, this.blockState);
+            transform(this.diode, this.blockState);
+
+            transformHandle(this.handle, this.angle, this.face);
+            this.handle
+                    .light(this.lightCoords)
+                    .renderInto(matricesEntry, vb);
+
+            transformHandle(this.button, this.angle, this.face);
+            this.button
+                    .translate(0, 14 / 16f, 8 / 16f)
+                    .rotateXDegrees(this.buttonAngle)
+                    .translateBack(0, 14 / 16f, 8 / 16f)
+                    .light(this.lightCoords)
+                    .renderInto(matricesEntry, vb);
+
+            this.diode.light(this.lightCoords)
+                    .color(this.diodeColor)
+                    .renderInto(matricesEntry, vb);
+        }
+    }
 }

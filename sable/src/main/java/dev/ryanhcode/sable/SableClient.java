@@ -26,6 +26,7 @@ public class SableClient {
         });
 
         SableRenderBootstrap.init();
+        VeilRenderSystem.init();
 
         GIZMO_HANDLER.init();
     }
