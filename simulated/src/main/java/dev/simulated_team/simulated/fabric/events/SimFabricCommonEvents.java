@@ -1,16 +1,20 @@
 package dev.simulated_team.simulated.fabric.events;
 
+import dev.ryanhcode.sable.veillite.api.network.VeilPacketManager;
 import dev.simulated_team.simulated.command.SimCommand;
 import dev.simulated_team.simulated.content.end_sea.EndSeaPhysicsData;
+import dev.simulated_team.simulated.content.entities.honey_glue.HoneyGlueEntity;
 import dev.simulated_team.simulated.events.SimulatedCommonEvents;
 import dev.simulated_team.simulated.fabric.service.FabricSimEntityService;
 import dev.simulated_team.simulated.fabric.service.FabricSimItemService;
+import dev.simulated_team.simulated.network.packets.honey_glue.HoneyGlueSyncBoundsPacket;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerChunkEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.event.player.UseBlockCallback;
 import net.fabricmc.fabric.api.item.v1.DefaultItemComponentEvents;
+import net.fabricmc.fabric.api.networking.v1.EntityTrackingEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.fabricmc.fabric.api.resource.v1.ResourceLoader;
 import net.minecraft.core.component.DataComponentMap;
@@ -44,6 +48,14 @@ public final class SimFabricCommonEvents {
         ServerChunkEvents.CHUNK_GENERATE.register((level, chunk) -> SimulatedCommonEvents.onChunkLoad(level, chunk, true));
 
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> SimulatedCommonEvents.onPlayerLoggedIn(handler.player));
+
+        // NeoForge's IEntityWithComplexSpawn on HoneyGlueEntity: the bounds are sent right after the add-entity bundle.
+        // (getAddEntityPacket can't carry them: ServerEntity#addPairing already wraps its result in a bundle.)
+        EntityTrackingEvents.START_TRACKING.register((entity, player) -> {
+            if (entity instanceof final HoneyGlueEntity honeyGlue) {
+                VeilPacketManager.player(player).sendPacket(new HoneyGlueSyncBoundsPacket(honeyGlue.getBoundingBox(), honeyGlue.getId(), null));
+            }
+        });
 
         CommandRegistrationCallback.EVENT.register((dispatcher, buildContext, environment) -> SimCommand.register(dispatcher, buildContext));
 
