@@ -1,49 +1,53 @@
 package dev.simulated_team.simulated.content.end_sea;
 
-import dev.ryanhcode.sable.veillite.api.client.render.shader.processor.ShaderPreProcessor;
-import io.github.ocelot.glslprocessor.api.GlslInjectionPoint;
-import io.github.ocelot.glslprocessor.api.GlslParser;
-import io.github.ocelot.glslprocessor.api.GlslSyntaxException;
-import io.github.ocelot.glslprocessor.api.node.GlslNode;
-import io.github.ocelot.glslprocessor.api.node.GlslTree;
-import net.minecraft.client.renderer.rendertype.RenderType;
+import com.mojang.blaze3d.shaders.ShaderType;
+import dev.ryanhcode.sable.Sable;
+import dev.simulated_team.simulated.Simulated;
+import net.minecraft.resources.Identifier;
 
-import java.util.List;
+/**
+ * Fades sub-level blocks below the end sea towards the sea color.
+ * <p>
+ * Upstream this was a Veil shader pre-processor that patched the vanilla chunk shaders and read an
+ * {@code EndSeaCameraY} uniform. On 1.21.11 sub-levels are drawn with Sable's {@code sable:core/sub_level_terrain}
+ * vertex shader, so that source is patched while shaders load
+ * ({@link dev.simulated_team.simulated.mixin.end_sea.ShaderManagerMixin}), and the camera offset is passed in the
+ * unused {@code SubLevelParams.w} component of Sable's per sub-level uniform block
+ * ({@link dev.simulated_team.simulated.mixin.end_sea.VanillaSubLevelRenderDispatcherMixin}); 0 disables the fade.
+ */
+public class EndSeaFadeTransformer {
 
-public class EndSeaFadeTransformer implements ShaderPreProcessor {
+    /**
+     * The file of the sub-level terrain vertex shader
+     */
+    public static final Identifier SUB_LEVEL_TERRAIN = Sable.sablePath("shaders/core/sub_level_terrain.vsh");
 
-    @Override
-    public void modify(final Context ctx, final GlslTree tree) throws GlslSyntaxException {
-        if (ctx instanceof final MinecraftContext minecraftContext) {
-            final List<RenderType> renderTypes = RenderType.chunkBufferLayers();
+    private static final String FADE = """
 
-            boolean anyMatches = false;
-
-            for (final RenderType renderType : renderTypes) {
-                if (ctx.isVertex() && minecraftContext.shaderInstance().equals("rendertype_%s".formatted(renderType.name))) {
-                    anyMatches = true;
+                // Simulated: fade towards the end sea below it (SubLevelParams.w = camera y - end sea start y, 0 = off)
+                if (SubLevelParams.w != 0.0) {
+                    vertexColor.rgb = mix(vertexColor.rgb, vec3(0.086, 0.078, 0.109) * 2.0, clamp((-pos.y - SubLevelParams.w) / 30.0, 0.0, 1.0));
                 }
-            }
+            """;
 
-            if (!anyMatches) {
-                return;
-            }
-        } else {
-            return;
+    /**
+     * @param location the file location of the shader source
+     * @param type     the shader type
+     * @param source   the preprocessed shader source
+     * @return the source to compile
+     */
+    public static String transform(final Identifier location, final ShaderType type, final String source) {
+        if (type != ShaderType.VERTEX || !SUB_LEVEL_TERRAIN.equals(location)) {
+            return source;
         }
 
-        tree.getBody().add(GlslInjectionPoint.BEFORE_MAIN, GlslParser.parseExpression("uniform float EndSeaCameraY;"));
-
-        // Add NormalMat if we're lacking it
-        if (tree.field("NormalMat").isEmpty()) {
-            tree.getBody().add(GlslInjectionPoint.BEFORE_MAIN, GlslParser.parseExpression("uniform mat3 NormalMat;"));
+        // The fade needs the camera relative position and the sub-level uniform block of Sable's shader
+        final int end = source.lastIndexOf('}');
+        if (end < 0 || !source.contains("SubLevelParams") || !source.contains("vec3 pos =") || !source.contains("vertexColor")) {
+            Simulated.LOGGER.warn("Unexpected source in {}, sub-levels will not fade into the end sea", location);
+            return source;
         }
 
-        final List<GlslNode> body = tree.mainFunction().orElseThrow().getBody();
-        body.add(GlslParser.parseExpression("""
-                    if (EndSeaCameraY != 0.0) {
-                        vertexColor.rgb = mix(vertexColor.rgb, vec3(0.086, 0.078, 0.109) * 2.0, clamp((-(inverse(NormalMat) * (ModelViewMat * vec4(pos, 0.0)).rgb).y - EndSeaCameraY) / 30.0, 0.0, 1.0));
-                    }
-                """));
+        return source.substring(0, end) + FADE + source.substring(end);
     }
 }

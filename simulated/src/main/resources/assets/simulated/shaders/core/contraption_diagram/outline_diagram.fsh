@@ -1,11 +1,19 @@
+#version 330
+
+// Contraption diagram post pass: outlines from depth, paletted dither of the color, faded borders.
+// Ported from the Veil program simulated:contraption_diagram/outline_diagram.
+layout(std140) uniform DiagramInfo {
+    vec4 LineColor;
+    vec4 LineShadowColor;
+    vec2 InSize;
+    float PaletteOffset;
+    float FadeScale;
+};
+
 uniform sampler2D DiffuseSampler0;
 uniform sampler2D DiffuseDepthSampler;
 uniform sampler2D Palette;
 uniform sampler2D Dither;
-uniform vec4 LineColor;
-uniform vec4 LineShadowColor;
-uniform float PaletteOffset;
-uniform float FadeScale;
 
 in vec2 texCoord;
 in vec2 oneTexel;
