@@ -3,11 +3,14 @@
 #   server: headless dedicated server — mixin audit + spawn sub-levels + stay alive 600 ticks
 #   client: real game window in a flat world — spawns sub-levels in view, screenshots, quits
 #   play:   same scene as client, but the game stays open for manual testing
+#   scenario: optional, e.g. 'flywheel' = Create Fly + Create blocks assembled into a sub-level (default: Create-free scene)
 # Results: e2e/run/<side>/logs/latest.log, screenshots in e2e/run/client/screenshots/
 set -uo pipefail
 ROOT=$(cd "$(dirname "$0")/.." && pwd); cd "$ROOT"
 [ -z "${JAVA_HOME:-}" ] && [ -x /usr/libexec/java_home ] && export JAVA_HOME=$(/usr/libexec/java_home -v 21)
 MODE=${1:-all}
+SCENARIO=${2:-}
+SCEN=(); [ -n "$SCENARIO" ] && SCEN=("-Pe2eScenario=$SCENARIO")
 SRV=e2e/run/server; CLI=e2e/run/client
 
 report() { # <log> <side>
@@ -24,7 +27,7 @@ if [ "$MODE" = server ] || [ "$MODE" = all ]; then
   rm -rf "$SRV/world"; mkdir -p "$SRV"
   echo "eula=true" > "$SRV/eula.txt"
   printf 'level-type=minecraft\\:flat\nonline-mode=false\nlevel-name=world\nspawn-protection=0\nmax-tick-time=-1\n' > "$SRV/server.properties"
-  ./gradlew :e2e:runServer --console=plain > "$SRV/gradle.log" 2>&1 \
+  ./gradlew :e2e:runServer ${SCEN[@]+"${SCEN[@]}"} --console=plain > "$SRV/gradle.log" 2>&1 \
     || { echo "server run failed, see $SRV/gradle.log"; exit 1; }
   report "$SRV/logs/latest.log" server
 fi
@@ -46,11 +49,11 @@ if [ "$MODE" = client ] || [ "$MODE" = all ] || [ "$MODE" = play ]; then
   # keep simulating while the window is unfocused; skip onboarding screens
   printf 'pauseOnLostFocus:false\nonboardAccessibility:false\ntutorialStep:none\nskipMultiplayerWarning:true\njoinedFirstServer:true\n' > "$CLI/options.txt"
   if [ "$MODE" = play ]; then
-    ./gradlew :e2e:runClient -Pe2ePlay --console=plain > "$CLI/gradle.log" 2>&1
+    ./gradlew :e2e:runClient -Pe2ePlay ${SCEN[@]+"${SCEN[@]}"} --console=plain > "$CLI/gradle.log" 2>&1
     exit 0
   fi
   rm -rf "$CLI/screenshots"
-  ./gradlew :e2e:runClient --console=plain > "$CLI/gradle.log" 2>&1 \
+  ./gradlew :e2e:runClient ${SCEN[@]+"${SCEN[@]}"} --console=plain > "$CLI/gradle.log" 2>&1 \
     || { echo "client run failed, see $CLI/gradle.log"; exit 1; }
   report "$CLI/logs/latest.log" client
   ls "$CLI/screenshots" 2>/dev/null | sed 's/^/  screenshot: /'

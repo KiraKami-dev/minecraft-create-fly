@@ -64,6 +64,7 @@ The fastest way to port a call: find it in `mc-1.21.1`, then diff against the sa
 - **client**: opens the game in a flat world, spawns sub-levels in front of the camera, and saves 5 screenshots to
   `e2e/run/client/screenshots/` over ~20 s, then quits. Look at them.
 
+- `tools/e2e.sh client flywheel` (or `server flywheel`): opt-in scene with Create Fly in the runtime (`-Pe2eScenario=flywheel`); the default scene stays Create-free.
 - **play**: the same scene as `client`, but no screenshots and the game stays open, for manual testing.
 
 Compiling proves nothing about mixins; the e2e run is the real check.
@@ -89,7 +90,8 @@ Legend: ✅ done · 🔄 in progress · ⬜ todo · ⏸ deferred/gated
 | S8a | Dedicated-server e2e loaded **0 sub-levels** (no player keeps their chunks loaded) | ✅ | | 2026-10-17: e2e now runs `forceload add -16 0 15 31`; sub-levels unload with their holding chunk. Both runs now log `N sub-levels loaded, M moved since spawn` every 100 ticks: 38 loaded and 38 moved through tick 600 |
 | S10 | Manual playtest: assemble, collide, stand on, ride a sub-level | ⬜ | | after S9 |
 | S11 | Sodium support (sub-levels currently not drawn under Sodium; Sable `breaks` Sodium) | ⬜ | | needs a Sodium 0.8 chunk-render integration |
-| S12 | Flywheel (inside Create Fly) block entities on sub-levels | ⬜ | | upstream support lived only in the NeoForge module; likely invisible today |
+| S12 | Flywheel (inside Create Fly) block entities on sub-levels | ✅ | | 2026-10-17: `fabric/mixin/compatibility/create/flywheel/`: `BlockEntityStorageMixin` puts visuals of plot block entities in a per-sub-level `VisualEmbedding` (as upstream), `RenderDispatcherImplMixin` moves it to the render pose each frame, `AbstractBlockEntityVisualMixin` skips frustum/distance culling for plot positions. Create Fly is `modCompileOnly` in `:sable`, mixins gated on mod id `create`. Verified in `tools/e2e.sh client flywheel` (motor + shafts + cogwheel assembled, yawed 45°: drawn at the pose, cogwheel turns, matches an un-assembled control line). Not ported: upstream's shader-side light storage (see S12a) |
+| S12a | Flywheel light on sub-levels: upstream's `SableFlywheelLightStorage`/scene-matrix shader overrides | ⬜ | | visuals sample Flywheel's light at the plot position they are baked from, not the sub-level's world position; looked right in daytime e2e, untested at night/under sky-light scaling |
 | S13 | Sky-light shadows from sub-levels | ⏸ | | hard-off; needs a shadow-map pass + terrain pipeline variant (see `SableSkyLightShadows`) |
 | S14 | Dynamic directional shading of rotated sub-levels | ✅ | | 2026-10-17: Indigo replaces `SectionCompiler.compile`, so the `ModelBlockRenderer` mixins never ran. Fix: `RenderSectionRegionMixin` makes `getShade` return 1.0 while a sub-level section compiles, and `IndigoRenderContextMixin` gives shade-less quads the up normal so the shader re-shades them; `SUPPORTED=true`, config default on. Verified in client e2e with a platform flipped 180° overhead: ON shows a dark underside, OFF (`sub_level_dynamic_shading=false`) keeps the original bright top |
 | S15 | Water occlusion near-plane clipping (no `GL_DEPTH_CLAMP` in blaze3d) | ⏸ | | minor |
