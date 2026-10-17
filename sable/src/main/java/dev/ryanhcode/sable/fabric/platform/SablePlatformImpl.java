@@ -1,6 +1,8 @@
 package dev.ryanhcode.sable.fabric.platform;
 
+import dev.ryanhcode.sable.fabric.compatibility.create.CreateLevelWrappers;
 import dev.ryanhcode.sable.platform.SablePlatform;
+import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.level.Level;
@@ -10,10 +12,12 @@ import org.jetbrains.annotations.Nullable;
 
 @ApiStatus.Internal
 public class SablePlatformImpl implements SablePlatform {
+    private static final boolean CREATE_LOADED = FabricLoader.getInstance().isModLoaded("create");
 
     @Override
     public boolean isWrappedLevel(@Nullable final Level level) {
-        return false;
+        // CreateLevelWrappers references Create classes, so only touch it when Create is present
+        return CREATE_LOADED && CreateLevelWrappers.isWrapped(level);
     }
 
     @Override

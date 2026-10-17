@@ -8,7 +8,9 @@ loom {
 }
 
 dependencies {
-    include(implementation('org.apache.maven:maven-artifact:3.8.5'))
+    // api, not implementation: SableMixinPlugin's version constraints load it as soon as a compat mod (e.g. Create) is
+    // present, so projects running Sable from source (e2e, simulated) need it on their runtime classpath too
+    include(api('org.apache.maven:maven-artifact:3.8.5'))
     include(modApi("fuzs.forgeconfigapiport:forgeconfigapiport-fabric:${forgeconfigapiport_version}"))
     // Optional ImGui (debug inspectors only); Modrinth version id of imguimc 2.0.5+mc1.21.11 (fabric)
     modCompileOnly("maven.modrinth:imguimc:5h3ujBwr")
@@ -22,6 +24,8 @@ dependencies {
     modCompileOnly("maven.modrinth:jade:21.1.6+fabric")
     // CC: Tweaked 1.117.1 (fabric) by Modrinth version id
     modCompileOnly("maven.modrinth:cc-tweaked:IikPYYtH")
+    // Create Fly (Fabric port of Create, bundles flywheel/catnip/ponder); the sable-create mixins are gated on `create`
+    modCompileOnly "maven.modrinth:create-fly:${create_fly_version}"
 }
 
 processResources {
