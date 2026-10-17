@@ -21,7 +21,7 @@ import org.spongepowered.asm.mixin.injection.ModifyArg;
 @Mixin(VanillaSubLevelRenderDispatcher.class)
 public class VanillaSubLevelRenderDispatcherMixin {
 
-    @ModifyArg(method = "prepareSections", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/DynamicUniformStorage;writeUniform(Lnet/minecraft/client/renderer/DynamicUniformStorage$DynamicUniform;)Lcom/mojang/blaze3d/buffers/GpuBufferSlice;"))
+    @ModifyArg(method = "prepareSections", remap = false, at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/DynamicUniformStorage;writeUniform(Lnet/minecraft/client/renderer/DynamicUniformStorage$DynamicUniform;)Lcom/mojang/blaze3d/buffers/GpuBufferSlice;", remap = true))
     private DynamicUniformStorage.DynamicUniform simulated$setEndSeaCameraY(final DynamicUniformStorage.DynamicUniform uniform, @Local(argsOnly = true, ordinal = 1) final double cameraY) {
         if (!(uniform instanceof final SubLevelRenderPipelines.SubLevelUniform subLevelUniform)) {
             return uniform;

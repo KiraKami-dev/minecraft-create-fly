@@ -21,7 +21,7 @@ public class VisualizationManagerImplMixin implements VisualizationManagerExtens
     @Unique
     private static boolean sable$drawingDiagram = false;
 
-    @Inject(method = "supportsVisualization", at = @At("HEAD"), cancellable = true)
+    @Inject(method = "supportsVisualization", at = @At("HEAD"), cancellable = true, remap = false)
     private static void simulated$supportsVisualization(final LevelAccessor level, final CallbackInfoReturnable<Boolean> cir) {
         if (sable$drawingDiagram) {
             cir.setReturnValue(false);
