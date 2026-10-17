@@ -12,7 +12,7 @@ flowchart LR
 ```
 
 ## Now
-- Phase 1: S11 Sodium (agent in `../mcf-agents/sable-sodium`, shared e2e lock) is the last open task. Open after: S10 manual checks (walk/jump on moving sub-levels, multiplayer).
+- Phase 1 agents (clones in `../mcf-agents/sable-*`, shared e2e lock): S11 Sodium, S6 water check + S3 + S15 near-plane (`sable-water`), S13 sky-light shadows (`sable-shadows`), S16 inspector windows (`sable-imgui`). Open after: hands-on checks (walk/jump on moving sub-levels, camera, multiplayer).
 - Phase 2 is merged into integration (p2-port fast-forwarded with integration). Per-area notes in `docs/p2-notes/`.
 
 ## Next
