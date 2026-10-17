@@ -92,6 +92,18 @@ if (project.findProperty('e2eScenario') == 'inspector') {
         runtimeOnly "io.github.spair:imgui-java-natives-macos:${imgui_java_version}"
     }
 }
+// -Pe2eScenario=shading: a normal and an upside-down platform side by side (checks S14 dynamic shading:
+// the flipped one must show a dark face on top)
+if (project.findProperty('e2eScenario') == 'shading') {
+    e2eCommands = [
+            'time set noon', 'gamerule advance_time false', 'gamerule spawn_mobs false',
+            'tp @a 0 -60 0 0 15',
+            'forceload add -16 0 15 31',
+            'execute positioned 4 -58 10 run sable spawn platform 4 minecraft:oak_planks',
+            'sable teleport @e 4 -58 10 0 180',
+            'execute positioned -4 -58 10 run sable spawn platform 4 minecraft:oak_planks',
+    ].join(';')
+}
 
 def e2eSceneArgs = [
         '-De2e.enabled=true',

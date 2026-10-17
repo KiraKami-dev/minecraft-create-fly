@@ -83,6 +83,7 @@
     "sublevel_render.impl.vanilla.ChunkSectionsToRenderMixin",
     "sublevel_render.impl.shared.LevelRendererMixin",
     "sublevel_render.impl.vanilla.ViewAreaMixin",
+    "sublevel_render.impl.sodium.RenderSectionManagerMixin",
     "sublevel_render.impl.sodium.SectionRenderDispatcherMixin",
     "sublevel_render.impl.sodium.SodiumWorldRendererMixin",
     "sublevel_sounds.AbstractSoundInstanceMixin",
