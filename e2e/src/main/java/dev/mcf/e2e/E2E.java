@@ -30,6 +30,7 @@ public final class E2E implements ModInitializer {
     private int ticks;
     private int commandTick = -1;
     private final Map<UUID, Vector3dc> spawnPositions = new HashMap<>();
+    private final Playtest playtest = "playtest".equals(System.getProperty("e2e.scenario")) ? new Playtest() : null;
 
     @Override
     public void onInitialize() {
@@ -51,6 +52,13 @@ public final class E2E implements ModInitializer {
 
     private void tick(final MinecraftServer server) {
         this.ticks++;
+
+        if (this.playtest != null) {
+            if (!server.getPlayerList().getPlayers().isEmpty() && this.ticks >= 40) {
+                this.playtest.tick(server);
+            }
+            return;
+        }
 
         if (this.commandTick < 0) {
             final boolean ready = server.isDedicatedServer()

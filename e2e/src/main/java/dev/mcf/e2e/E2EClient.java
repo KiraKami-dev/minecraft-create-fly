@@ -14,6 +14,7 @@ public final class E2EClient implements ClientModInitializer {
     private static final int STOP_TICK = 480;
 
     private int inWorldTicks;
+    private int doneTicks;
 
     @Override
     public void onInitializeClient() {
@@ -29,6 +30,26 @@ public final class E2EClient implements ClientModInitializer {
             return;
         }
         this.inWorldTicks++;
+
+        // playtest scenario: the server script requests screenshots and says when it is finished
+        if ("playtest".equals(System.getProperty("e2e.scenario"))) {
+            // a pause screen (opened when the window loses focus) would freeze the integrated server
+            if (minecraft.screen != null) {
+                E2E.LOG.info("E2E: closing screen {}", minecraft.screen.getClass().getSimpleName());
+                minecraft.setScreen(null);
+            }
+            final String shot = Playtest.pendingShot;
+            if (shot != null) {
+                Playtest.pendingShot = null;
+                Screenshot.grab(minecraft.gameDirectory, shot, minecraft.getMainRenderTarget(), 1,
+                        message -> E2E.LOG.info("E2E: screenshot {}", shot));
+            }
+            if (Playtest.done && ++this.doneTicks == 20) {
+                E2E.LOG.info("E2E: done, closing client");
+                minecraft.stop();
+            }
+            return;
+        }
 
         for (final int shot : SHOT_TICKS) {
             if (this.inWorldTicks == shot) {
