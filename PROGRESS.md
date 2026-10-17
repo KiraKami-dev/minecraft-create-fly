@@ -12,7 +12,7 @@ flowchart LR
 ```
 
 ## Now
-- Phase 1 agents (clones in `../mcf-agents/sable-*`, shared e2e lock): S11 Sodium, S6 water check + S3 + S15 near-plane (`sable-water`), S13 sky-light shadows (`sable-shadows`), S16 inspector windows (`sable-imgui`). Open after: hands-on checks (walk/jump on moving sub-levels, camera, multiplayer).
+- Phase 1 agents (clones in `../mcf-agents/sable-*`, shared e2e lock): S6 water check + S3 + S15 near-plane (`sable-water`); S11 follow-ups under Sodium (block entities/Flywheel, S14 shading, S13 shadows, skip plot sections). Open after: hands-on checks (walk/jump on moving sub-levels, camera, multiplayer).
 - Phase 2 is merged into integration (p2-port fast-forwarded with integration). Per-area notes in `docs/p2-notes/`.
 
 ## Next
@@ -29,6 +29,8 @@ flowchart LR
 - 2026-10-17: S13 done: sub-levels darken the world sky light below them (shadow map pass + shadowed terrain pipelines, on by default); `tools/e2e.sh client shadows`.
 - 2026-10-17: Phase 2 ported and merged into integration: Simulated + Aeronautics compile; server/client e2e pass with Create Fly, 22/22 GameTests, playtest 14/14, client `flight` scene flies an assembled airship. Sable fix on the way: players are carried across sub-level teleports (the S10 "carried by translate" check was racing the client's position reminder).
 
+- 2026-10-17: S16 merged: ImGui inspector (bundled imguimc, `/sableinspector`, `tools/e2e.sh client inspector`). S11 merged: sub-levels render under Sodium 0.8 (`E2E_SODIUM=1`). S13 merged: sub-levels cast sky-light shadows (`tools/e2e.sh client shadows`). Full suite on integration: server 38/38, gametest 22 + 1 optional fail (gravity), playtest, flight (y=121), shadows, Sodium client all pass.
+
 ## Blockers
 - None. Note: this shell's `JAVA_HOME` is JDK 17 and the build needs 21; `e2e.sh` picks 21 itself; for Gradle use `JAVA_HOME=$(/usr/libexec/java_home -v 21)`.
 
@@ -38,4 +40,5 @@ flowchart LR
 - Cap concurrent Gradle builds at about 4. Why: 16 GB RAM with heavy swap.
 - Never commit the `reference` symlink. Why: a merge that tracks it deletes the real ignored `reference/` folder (rebuild with `tools/setup-reference.sh`).
 - Agents work in clones, not `isolation: worktree`, which attaches to the parent Projects repo.
+- An old `e2e/run/client/config/sable-client.toml` keeps stale config values; delete it after changing a config default. Why: S13 looked broken until it was deleted.
 - Parallel agents run e2e only through a shared lock (one game at a time). Why: 16 GB RAM.

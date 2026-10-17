@@ -120,12 +120,13 @@ if (project.findProperty('e2eScenario') == 'shading') {
 def e2eSceneArgs = [
         '-De2e.enabled=true',
         // -Pe2ePrepare: boot without spawning anything (tools/e2e.sh uses it to make a clean template world)
-        "-De2e.commands=${project.hasProperty('e2ePrepare') || project.findProperty('e2eScenario') == 'playtest' ? '' : e2eFlight ? e2eFlightCommands : e2eCommands}".toString(),
+        "-De2e.commands=${project.hasProperty('e2ePrepare') || project.findProperty('e2eScenario') in ['playtest', 'water'] ? '' : e2eFlight ? e2eFlightCommands : e2eCommands}".toString(),
         '-Dmixin.debug.verify=true',
 ]
 // -Pe2ePlay: same scene, but no screenshots and the client stays open (tools/e2e.sh play)
 if (project.hasProperty('e2ePlay')) e2eSceneArgs += '-De2e.play=true'
 if (e2eFlight) e2eSceneArgs += '-De2e.scene=flight'
+// -Pe2eScenario=water: pool + hull + water occlusion region, screenshots (client only)
 // -Pe2eScenario=playtest: scripted assemble/collide/stand-on checks instead of the default scene (client only)
 if (project.hasProperty('e2eScenario')) e2eSceneArgs += "-De2e.scenario=${project.property('e2eScenario')}".toString()
 
