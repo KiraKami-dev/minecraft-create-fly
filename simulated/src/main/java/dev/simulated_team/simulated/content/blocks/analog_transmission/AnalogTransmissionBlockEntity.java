@@ -3,32 +3,25 @@ package dev.simulated_team.simulated.content.blocks.analog_transmission;
 import com.zurrtum.create.content.kinetics.base.IRotate;
 import com.zurrtum.create.content.kinetics.base.KineticBlockEntity;
 import com.zurrtum.create.content.kinetics.simpleRelays.ICogWheel;
-import com.zurrtum.create.client.foundation.item.TooltipHelper;
 import com.zurrtum.create.infrastructure.config.AllConfigs;
-import dev.simulated_team.simulated.data.SimLang;
 import dev.simulated_team.simulated.mixin_interface.extra_kinetics.KineticBlockEntityExtension;
 import dev.simulated_team.simulated.util.extra_kinetics.ExtraBlockPos;
 import dev.simulated_team.simulated.util.extra_kinetics.ExtraKinetics;
-import com.zurrtum.create.client.catnip.lang.FontHelper;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.core.HolderLookup;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelReader;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.VisibleForTesting;
 
-import java.util.List;
-
-import static net.minecraft.ChatFormatting.GOLD;
-
 /**
  * The parent BlockEntity class. implements {@link ExtraKinetics ExtraKinetics} to allow multi-kinetic functionality
+ * <p>
+ * The "too fast" goggle hint (upstream addToTooltip) is added client side by {@link AnalogTransmissionTooltipBehaviour}.
  */
 public class AnalogTransmissionBlockEntity extends KineticBlockEntity implements ExtraKinetics {
 
@@ -130,19 +123,19 @@ public class AnalogTransmissionBlockEntity extends KineticBlockEntity implements
     }
 
     @Override
-    protected void write(final CompoundTag compound, final HolderLookup.Provider registries, final boolean clientPacket) {
-        super.write(compound, registries, clientPacket);
+    protected void write(final ValueOutput view, final boolean clientPacket) {
+        super.write(view, clientPacket);
 
-        compound.putInt("Signal", this.signal);
-        compound.putBoolean("Oversaturated", this.oversaturated);
+        view.putInt("Signal", this.signal);
+        view.putBoolean("Oversaturated", this.oversaturated);
     }
 
     @Override
-    protected void read(final CompoundTag compound, final HolderLookup.Provider registries, final boolean clientPacket) {
-        super.read(compound, registries, clientPacket);
+    protected void read(final ValueInput view, final boolean clientPacket) {
+        super.read(view, clientPacket);
 
-        this.signal = compound.getInt("Signal");
-        this.oversaturated = compound.getBoolean("Oversaturated");
+        this.signal = view.getIntOr("Signal", 0);
+        this.oversaturated = view.getBooleanOr("Oversaturated", false);
     }
 
     @Override
@@ -152,6 +145,13 @@ public class AnalogTransmissionBlockEntity extends KineticBlockEntity implements
         }
 
         return super.isOverStressed();
+    }
+
+    /**
+     * @return whether the transmission disconnected because its output would spin too fast
+     */
+    public boolean isOversaturated() {
+        return this.oversaturated;
     }
 
     /**
@@ -171,25 +171,6 @@ public class AnalogTransmissionBlockEntity extends KineticBlockEntity implements
     @Override
     public String getExtraKineticsSaveName() {
         return "ExtraCogwheel";
-    }
-
-    @Override
-    public boolean addToTooltip(final List<Component> tooltip, final boolean isPlayerSneaking) {
-        if (this.oversaturated) {
-            SimLang.translate("analog_transmission.too_fast")
-                    .style(GOLD)
-                    .forGoggles(tooltip);
-
-            final MutableComponent component = SimLang.translate("analog_transmission.too_fast_error")
-                    .component();
-
-            final List<Component> cutString = TooltipHelper.cutTextComponent(component, FontHelper.Palette.GRAY_AND_WHITE);
-            tooltip.addAll(cutString);
-
-            return true;
-        }
-
-        return super.addToTooltip(tooltip, isPlayerSneaking);
     }
 
     /**

@@ -48,7 +48,8 @@ public class AbsorberBlockEntity extends SmartBlockEntity {
      * @return true if the position is safe (enclosed by solid blocks), false otherwise
      */
     private static boolean dfs(final LevelAccelerator accelerator, final BlockPos pos, final Set<BlockPos> visited, final Set<BlockPos> enclosed) {
-        boolean safe = pos.getY() <= accelerator.getMaxBuildHeight();
+        // getMaxBuildHeight() (exclusive) is getMaxY() + 1 (inclusive) on 1.21.11
+        boolean safe = pos.getY() <= accelerator.getMaxY() + 1;
         visited.add(pos);
 
         final BlockState state = accelerator.getBlockState(pos);
@@ -160,7 +161,7 @@ public class AbsorberBlockEntity extends SmartBlockEntity {
     }
 
     @Override
-    public void addBehaviours(final List<BlockEntityBehaviour> behaviours) {
+    public void addBehaviours(final List<BlockEntityBehaviour<?>> behaviours) {
 
     }
 }
