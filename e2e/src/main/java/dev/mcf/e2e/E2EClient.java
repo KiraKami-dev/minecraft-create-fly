@@ -1,5 +1,7 @@
 package dev.mcf.e2e;
 
+import dev.ryanhcode.sable.veillite.api.client.editor.EditorManager;
+import dev.ryanhcode.sable.veillite.api.client.render.VeilRenderSystem;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.minecraft.client.Minecraft;
@@ -49,6 +51,16 @@ public final class E2EClient implements ClientModInitializer {
                 minecraft.stop();
             }
             return;
+        }
+
+        // inspector scenario: open the ImGui inspector (what /sableinspector does) while the default scene plays
+        if (this.inWorldTicks == 40 && "inspector".equals(System.getProperty("e2e.scenario"))) {
+            E2E.LOG.info("E2E: ImGui available: {}", VeilRenderSystem.hasImGui());
+            if (VeilRenderSystem.hasImGui()) {
+                final EditorManager editorManager = VeilRenderSystem.renderer().getEditorManager();
+                editorManager.getInspectors().forEach(editorManager::show);
+                E2E.LOG.info("E2E: inspectors shown: {}", editorManager.getVisible().size());
+            }
         }
 
         for (final int shot : SHOT_TICKS) {

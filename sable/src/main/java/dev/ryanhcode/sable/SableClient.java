@@ -27,6 +27,7 @@ public class SableClient {
         });
 
         SableRenderBootstrap.init();
+        VeilRenderSystem.init();
 
         VeilEventPlatform.INSTANCE.onVeilRenderLevelStage(SableSkyLightShadows::renderShadowMap);
 
