@@ -1,6 +1,6 @@
 package dev.eriksonn.aeronautics.index;
 
-import com.zurrtum.create.api.registry.CreateBuiltInRegistries;
+import com.zurrtum.create.api.registry.CreateRegistries;
 import com.zurrtum.create.content.kinetics.mechanicalArm.AllArmInteractionPointTypes;
 import com.zurrtum.create.content.kinetics.mechanicalArm.ArmBlockEntity;
 import com.zurrtum.create.content.kinetics.mechanicalArm.ArmInteractionPoint;
@@ -17,7 +17,7 @@ import org.jetbrains.annotations.Nullable;
 
 public class AeroArmInteractionPoints {
     private static <T extends ArmInteractionPointType> void register(final String name, final T type) {
-        Registry.register(CreateBuiltInRegistries.ARM_INTERACTION_POINT_TYPE, Aeronautics.path(name), type);
+        Registry.register(CreateRegistries.ARM_INTERACTION_POINT_TYPE, Aeronautics.path(name), type);
     }
 
     static {
@@ -28,7 +28,7 @@ public class AeroArmInteractionPoints {
 
         @Override
         public boolean canCreatePoint(final Level var1, final BlockPos var2, final BlockState var3) {
-            return AeroBlocks.MOUNTED_POTATO_CANNON.has(var1.getBlockState(var2));
+            return var1.getBlockState(var2).is(AeroBlocks.MOUNTED_POTATO_CANNON);
         }
 
         @Override
@@ -55,7 +55,7 @@ public class AeroArmInteractionPoints {
         }
     }
 
-    public static void init() {
-
+    public static void register() {
+        // registers the point types (class init)
     }
 }

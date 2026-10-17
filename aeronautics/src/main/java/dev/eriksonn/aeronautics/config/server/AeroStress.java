@@ -1,22 +1,22 @@
 package dev.eriksonn.aeronautics.config.server;
 
+import com.zurrtum.create.catnip.config.Builder;
 import com.zurrtum.create.infrastructure.config.CStress;
-import com.tterrag.registrate.builders.BlockBuilder;
-import com.tterrag.registrate.util.nullness.NonNullUnaryOperator;
 import dev.eriksonn.aeronautics.Aeronautics;
 import it.unimi.dsi.fastutil.objects.Object2DoubleMap;
 import it.unimi.dsi.fastutil.objects.Object2DoubleOpenHashMap;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.level.block.Block;
-import net.neoforged.neoforge.common.ModConfigSpec;
 
 public class AeroStress extends CStress {
 
+	// IDs need to be used since configs load before registration
 	private static final Object2DoubleMap<Identifier> DEFAULT_IMPACTS = new Object2DoubleOpenHashMap<>();
 	private static final Object2DoubleMap<Identifier> DEFAULT_CAPACITIES = new Object2DoubleOpenHashMap<>();
 
 	@Override
-	public void registerAll(ModConfigSpec.Builder builder) {
+	public void registerAll(final Builder builder) {
 		builder.comment(".", Comments.su, Comments.impact).push("impact");
 		DEFAULT_IMPACTS.forEach((id, value) -> this.impacts.put(id, builder.define(id.getPath(), value)));
 		builder.pop();
@@ -26,30 +26,31 @@ public class AeroStress extends CStress {
 		builder.pop();
 	}
 
-	public static <B extends Block, P> NonNullUnaryOperator<BlockBuilder<B, P>> setNoImpact() {
-		return setImpact(0.0F);
+	public static void setNoImpact(final Block block) {
+		setImpact(block, 0.0);
 	}
 
-	public static <B extends Block, P> NonNullUnaryOperator<BlockBuilder<B, P>> setImpact(final double value) {
-		return (builder) -> {
-			assertFromAeronautics(builder);
-			DEFAULT_IMPACTS.put(Aeronautics.path(builder.getName()), value);
-			return builder;
-		};
+	/**
+	 * Registers the default stress impact of an Aeronautics block (was a Registrate transform). Must be called before
+	 * the server config is created.
+	 */
+	public static void setImpact(final Block block, final double value) {
+		DEFAULT_IMPACTS.put(idOf(block), value);
 	}
 
-	public static <B extends Block, P> NonNullUnaryOperator<BlockBuilder<B, P>> setCapacity(final double value) {
-		return (builder) -> {
-			assertFromAeronautics(builder);
-			DEFAULT_CAPACITIES.put(Aeronautics.path(builder.getName()), value);
-			return builder;
-		};
+	/**
+	 * Registers the default stress capacity of an Aeronautics block. Must be called before the server config is created.
+	 */
+	public static void setCapacity(final Block block, final double value) {
+		DEFAULT_CAPACITIES.put(idOf(block), value);
 	}
 
-	private static void assertFromAeronautics(final BlockBuilder<?, ?> builder) {
-		if (!builder.getOwner().getModid().equals("aeronautics")) {
+	private static Identifier idOf(final Block block) {
+		final Identifier id = BuiltInRegistries.BLOCK.getKey(block);
+		if (!id.getNamespace().equals(Aeronautics.MOD_ID)) {
 			throw new IllegalStateException("Non-Aeronautics blocks cannot be added to Aeronautics's config.");
 		}
+		return id;
 	}
 
 	private static class Comments {

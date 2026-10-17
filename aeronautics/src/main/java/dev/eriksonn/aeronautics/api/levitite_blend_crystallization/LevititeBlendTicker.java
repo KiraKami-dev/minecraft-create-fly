@@ -4,7 +4,6 @@ import dev.eriksonn.aeronautics.index.AeroRegistries;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.NbtUtils;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelAccessor;
@@ -23,8 +22,8 @@ public class LevititeBlendTicker {
 	// Constructor used for loading this levitite blend ticker
 	public LevititeBlendTicker(final CompoundTag toDeserialize, final Level level) {
 		this.level = level;
-		this.pos = NbtUtils.readBlockPos(toDeserialize, "pos").get();
-		this.context = AeroRegistries.LEVITITE_CRYSTAL_PROPAGATION_CONTEXT.asVanillaRegistry().get(Identifier.parse(toDeserialize.getString("context")));
+		this.pos = toDeserialize.read("pos", BlockPos.CODEC).orElseThrow();
+		this.context = AeroRegistries.LEVITITE_CRYSTAL_PROPAGATION_CONTEXT.getValue(Identifier.parse(toDeserialize.getStringOr("context", "")));
 
 		this.deserialize(toDeserialize);
 	}
@@ -115,8 +114,8 @@ public class LevititeBlendTicker {
 
 		tag.putBoolean("requiresCatalyst", this.requiresCatalyst);
 
-		tag.put("pos", NbtUtils.writeBlockPos(this.getPos()));
-		Identifier identifier = AeroRegistries.LEVITITE_CRYSTAL_PROPAGATION_CONTEXT.asVanillaRegistry().getKey(this.context);
+		tag.store("pos", BlockPos.CODEC, this.getPos());
+		Identifier identifier = AeroRegistries.LEVITITE_CRYSTAL_PROPAGATION_CONTEXT.getKey(this.context);
 		tag.putString("context", identifier.toString());
 
 		tag.putBoolean("isDormant", this.isDormant);
@@ -124,11 +123,11 @@ public class LevititeBlendTicker {
 	}
 
 	public void deserialize(final CompoundTag tag) {
-		this.age = tag.getInt("age");
-		this.attempts = tag.getInt("attempts");
+		this.age = tag.getIntOr("age", 0);
+		this.attempts = tag.getIntOr("attempts", 0);
 
-		this.requiresCatalyst = tag.getBoolean("requiresCatalyst");
+		this.requiresCatalyst = tag.getBooleanOr("requiresCatalyst", false);
 
-		this.isDormant = tag.getBoolean("isDormant");
+		this.isDormant = tag.getBooleanOr("isDormant", false);
 	}
 }
