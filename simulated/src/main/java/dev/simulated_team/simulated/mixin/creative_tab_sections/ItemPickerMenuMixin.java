@@ -6,6 +6,7 @@ import dev.simulated_team.simulated.service.SimTabService;
 import net.minecraft.client.gui.screens.inventory.CreativeModeInventoryScreen;
 import net.minecraft.core.NonNullList;
 import net.minecraft.world.item.ItemStack;
+import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
@@ -17,7 +18,7 @@ public abstract class ItemPickerMenuMixin {
 
 	@Shadow protected abstract int getRowIndexForScroll(float f);
 
-	@Shadow public NonNullList<ItemStack> items;
+	@Shadow @Final public NonNullList<ItemStack> items;
 
 	@Inject(method = "scrollTo", at = @At("HEAD"))
 	private void simulated$scrollTo(final float f, final CallbackInfo ci) {

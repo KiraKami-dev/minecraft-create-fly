@@ -1,6 +1,5 @@
 package dev.simulated_team.simulated.content.entities.diagram.screen;
 
-import com.mojang.blaze3d.vertex.PoseStack;
 import dev.ryanhcode.sable.api.physics.force.ForceGroup;
 import dev.ryanhcode.sable.api.physics.force.ForceGroups;
 import dev.ryanhcode.sable.api.physics.force.QueuedForceGroup;
@@ -15,10 +14,13 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.narration.NarratedElementType;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
+import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.client.sounds.SoundManager;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.resources.Identifier;
+
+import org.joml.Matrix3x2fStack;
 
 import javax.annotation.Nullable;
 import java.util.List;
@@ -60,8 +62,8 @@ public class DiagramForceGroupToggle extends AbstractWidget {
     }
 
     @Override
-    public void onClick(final double mouseX, final double mouseY) {
-        super.onClick(mouseX, mouseY);
+    public void onClick(final MouseButtonEvent event, final boolean doubleClick) {
+        super.onClick(event, doubleClick);
         this.toggleActive();
     }
 
@@ -69,11 +71,11 @@ public class DiagramForceGroupToggle extends AbstractWidget {
         final boolean isEnabled = this.isEnabled();
 
         final int groupColor = this.isEnabled() ? (255 << 24) | this.group.color() : 0xffaaaaaa;
-        final PoseStack ps = guiGraphics.pose();
+        final Matrix3x2fStack ps = guiGraphics.pose();
 
-        ps.pushPose();
+        ps.pushMatrix();
         final float paperOffset = this.diagramScreen.getPaperOffset(partialTicks);
-        ps.translate(DiagramScreen.MAX_PAPER_OFFSET - paperOffset, 1, 0);
+        ps.translate(DiagramScreen.MAX_PAPER_OFFSET - paperOffset, 1);
 
         float tabHide = 1.0f - this.diagramScreen.getTabOffset(partialTicks);
         tabHide *= 9;
@@ -81,9 +83,9 @@ public class DiagramForceGroupToggle extends AbstractWidget {
         if (!isEnabled)
             tabHide = Math.max(tabHide, 3);
 
-        ps.translate(tabHide, 0, 0);
+        ps.translate(tabHide, 0);
         SimGUITextures.DIAGRAM_TAB.render(guiGraphics, this.getX() - 1, this.getY() - 1, new Color(groupColor));
-        ps.popPose();
+        ps.popMatrix();
     }
 
     @Override
@@ -92,15 +94,15 @@ public class DiagramForceGroupToggle extends AbstractWidget {
         final boolean isEnabled = this.isEnabled();
         final int groupColor = (255 << 24) | this.group.color();
 
-        final PoseStack ps = guiGraphics.pose();
+        final Matrix3x2fStack ps = guiGraphics.pose();
 
-        ps.pushPose();
+        ps.pushMatrix();
         final float paperOffset = this.diagramScreen.getPaperOffset(partialTicks);
-        ps.translate(DiagramScreen.MAX_PAPER_OFFSET - paperOffset, 1, 0);
+        ps.translate(DiagramScreen.MAX_PAPER_OFFSET - paperOffset, 1);
 
         // NO Z SCALE!!! STRIKETHROUGH MY BEHATED
-        ps.translate(this.getX() + 18, this.getY() + 1, 0.0);
-        ps.scale(0.75F, 0.75F, 0.0f);
+        ps.translate(this.getX() + 18, this.getY() + 1);
+        ps.scale(0.75F, 0.75F);
 
         final MutableComponent name = MutableComponent.create(this.group.name().getContents());
 
@@ -124,7 +126,7 @@ public class DiagramForceGroupToggle extends AbstractWidget {
             }
         }
 
-        ps.popPose();
+        ps.popMatrix();
     }
 
     @Override

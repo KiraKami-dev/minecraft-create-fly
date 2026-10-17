@@ -12,10 +12,10 @@ import org.spongepowered.asm.mixin.gen.Accessor;
 @Mixin(LinkBehaviour.class)
 public interface LinkBehaviourAccessor {
 
-    @Accessor("firstSlot")
+    @Accessor(value = "firstSlot", remap = false)
     void simulated$setFirstSlot(ValueBoxTransform slot);
 
-    @Accessor("secondSlot")
+    @Accessor(value = "secondSlot", remap = false)
     void simulated$setSecondSlot(ValueBoxTransform slot);
 
 }

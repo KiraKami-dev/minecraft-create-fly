@@ -8,21 +8,22 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 
-@Mixin(targets = "net.minecraft.client.renderer.texture.SpriteContents$Ticker")
-public class SpriteContentsTickerMixin implements TickerExtension {
+// 1.21.11: SpriteContents$Ticker.tickAndUpload became SpriteContents$AnimationState.tick (the atlas draws dirty frames)
+@Mixin(SpriteContents.AnimationState.class)
+public class SpriteContentsAnimationStateMixin implements TickerExtension {
 
     @Unique
     private boolean simulated$playing = true;
 
-    @WrapOperation(method = "tickAndUpload", at = @At(value = "FIELD", target = "Lnet/minecraft/client/renderer/texture/SpriteContents$Ticker;frame:I", opcode = 181/* PUTFIELD */))
-    private void simulated$putField(SpriteContents.Ticker instance, int value, Operation<Void> original) {
-        if(this.simulated$isPlaying()) {
+    @WrapOperation(method = "tick", at = @At(value = "FIELD", target = "Lnet/minecraft/client/renderer/texture/SpriteContents$AnimationState;frame:I", opcode = 181/* PUTFIELD */))
+    private void simulated$putField(final SpriteContents.AnimationState instance, final int value, final Operation<Void> original) {
+        if (this.simulated$isPlaying()) {
             original.call(instance, value);
         }
     }
 
     @Override
-    public void simulated$setPlaying(boolean playing) {
+    public void simulated$setPlaying(final boolean playing) {
         this.simulated$playing = playing;
     }
 

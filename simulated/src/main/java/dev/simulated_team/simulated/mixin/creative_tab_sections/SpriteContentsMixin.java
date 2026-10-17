@@ -1,8 +1,8 @@
 package dev.simulated_team.simulated.mixin.creative_tab_sections;
 
 import dev.simulated_team.simulated.mixin_interface.SpriteContentsExtension;
+import dev.simulated_team.simulated.mixin_interface.TickerExtension;
 import net.minecraft.client.renderer.texture.SpriteContents;
-import net.minecraft.client.renderer.texture.SpriteTicker;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
@@ -13,21 +13,23 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 public class SpriteContentsMixin implements SpriteContentsExtension {
 
     @Unique
-    private SpriteContents.Ticker simulated$ticker = null;
+    private SpriteContents.AnimationState simulated$ticker = null;
 
     @Override
-    public SpriteContents.Ticker simulated$getTicker() {
-        return this.simulated$ticker;
+    public TickerExtension simulated$getTicker() {
+        // every AnimationState implements TickerExtension (SpriteContentsAnimationStateMixin)
+        return (TickerExtension) (Object) this.simulated$ticker;
     }
 
     @Override
-    public void simulated$setTicker(SpriteContents.Ticker ticker) {
+    public void simulated$setTicker(final SpriteContents.AnimationState ticker) {
         this.simulated$ticker = ticker;
     }
 
-    @Inject(method = "createTicker", at = @At("RETURN"))
-    private void simulated$createTicker(CallbackInfoReturnable<SpriteTicker> cir) {
-        simulated$setTicker((SpriteContents.Ticker) cir.getReturnValue());
+    // 1.21.11: SpriteContents.Ticker became SpriteContents.AnimationState, created per atlas upload
+    @Inject(method = "createAnimationState", at = @At("RETURN"))
+    private void simulated$createTicker(final CallbackInfoReturnable<SpriteContents.AnimationState> cir) {
+        this.simulated$setTicker(cir.getReturnValue());
     }
 
 }

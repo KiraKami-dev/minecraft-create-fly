@@ -17,13 +17,10 @@ import dev.simulated_team.simulated.index.SimSoundEvents;
 import dev.simulated_team.simulated.mixin_interface.PlayerLaunchedPlungerExtension;
 import dev.simulated_team.simulated.service.SimConfigService;
 import com.zurrtum.create.catnip.math.VecHelper;
-import com.zurrtum.create.catnip.nbt.NBTHelper;
 import net.minecraft.commands.arguments.EntityAnchorArgument;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.ListTag;
-import net.minecraft.nbt.NbtUtils;
+import net.minecraft.core.UUIDUtil;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
@@ -37,6 +34,8 @@ import net.minecraft.world.entity.projectile.ProjectileDeflection;
 import net.minecraft.world.entity.projectile.ThrowableProjectile;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
@@ -51,7 +50,11 @@ import java.util.UUID;
 
 public class LaunchedPlungerEntity extends ThrowableProjectile {
 
-    public static final EntityDataAccessor<Optional<UUID>> OTHER_PLUNGER = SynchedEntityData.defineId(LaunchedPlungerEntity.class, EntityDataSerializers.OPTIONAL_UUID);
+    /**
+     * The UUID of the paired plunger, or an empty string if there is none.
+     * (1.21.11 removed the optional UUID data serializer; see {@link #getOtherPlungerUUID()})
+     */
+    public static final EntityDataAccessor<String> OTHER_PLUNGER = SynchedEntityData.defineId(LaunchedPlungerEntity.class, EntityDataSerializers.STRING);
     public static final EntityDataAccessor<Integer> OTHER_PLUNGER_ID = SynchedEntityData.defineId(LaunchedPlungerEntity.class, EntityDataSerializers.INT);
 
     public static final EntityDataAccessor<Direction> PLUNGED_DIRECTION = SynchedEntityData.defineId(LaunchedPlungerEntity.class, EntityDataSerializers.DIRECTION);
@@ -97,7 +100,7 @@ public class LaunchedPlungerEntity extends ThrowableProjectile {
         builder.define(OTHER_PLUNGER_ID, -1);
 
         builder.define(TARGET_POS, Vec3.ZERO);
-        builder.define(OTHER_PLUNGER, Optional.empty());
+        builder.define(OTHER_PLUNGER, "");
         builder.define(PLUNGED_BLOCK_POS, BlockPos.ZERO);
 
         builder.define(IS_FIRST, Boolean.FALSE);
@@ -135,9 +138,9 @@ public class LaunchedPlungerEntity extends ThrowableProjectile {
         } else {
             this.setData(TARGET_POS, Vec3.ZERO);
             if (!level.isClientSide()) {
-                if (this.getEntityData().get(OTHER_PLUNGER).isPresent() || (this.getEntityData().get(OTHER_PLUNGER).isEmpty() && owner instanceof final Player player && !player.isHolding(SimItems.PLUNGER_LAUNCHER))) {
+                if (this.getOtherPlungerUUID().isPresent() || (this.getOtherPlungerUUID().isEmpty() && owner instanceof final Player player && !player.isHolding(SimItems.PLUNGER_LAUNCHER))) {
                     this.discard();
-                } else if (this.getEntityData().get(OTHER_PLUNGER).isEmpty() && owner instanceof final Player player && player.isHolding(SimItems.PLUNGER_LAUNCHER)) {
+                } else if (this.getOtherPlungerUUID().isEmpty() && owner instanceof final Player player && player.isHolding(SimItems.PLUNGER_LAUNCHER)) {
                     final double distance = Math.sqrt(Sable.HELPER.distanceSquaredWithSubLevels(this.level(), this.position(), player.position()));
                     if (distance > SimConfigService.INSTANCE.server().equipment.maxPlungerLauncherRange.get()) {
                         this.discard();
@@ -151,7 +154,7 @@ public class LaunchedPlungerEntity extends ThrowableProjectile {
 
         if (this.getData(IS_PLUNGED)) {
             this.setDeltaMovement(Vec3.ZERO);
-            this.lookAt(EntityAnchorArgument.Anchor.FEET, this.position().add(Vec3.atLowerCornerOf(this.getData(PLUNGED_DIRECTION).getNormal()).scale(0.05f)));
+            this.lookAt(EntityAnchorArgument.Anchor.FEET, this.position().add(Vec3.atLowerCornerOf(this.getData(PLUNGED_DIRECTION).getUnitVec3i()).scale(0.05f)));
 
             if (this.firstTick) {
                 this.plungedTime = 20;
@@ -191,7 +194,7 @@ public class LaunchedPlungerEntity extends ThrowableProjectile {
         Vec3 pos = this.getPosition(partialTick);
 
         if (this.isPlunged()) {
-            pos = pos.add(Vec3.atLowerCornerOf(this.getData(PLUNGED_DIRECTION).getNormal()).scale(0.6));
+            pos = pos.add(Vec3.atLowerCornerOf(this.getData(PLUNGED_DIRECTION).getUnitVec3i()).scale(0.6));
         }
 
         return pos;
@@ -204,7 +207,7 @@ public class LaunchedPlungerEntity extends ThrowableProjectile {
         Vec3 pos = this.position();
 
         if (this.isPlunged()) {
-            pos = pos.add(Vec3.atLowerCornerOf(this.getData(PLUNGED_DIRECTION).getNormal()).scale(0.6));
+            pos = pos.add(Vec3.atLowerCornerOf(this.getData(PLUNGED_DIRECTION).getUnitVec3i()).scale(0.6));
         }
 
         return pos;
@@ -298,8 +301,8 @@ public class LaunchedPlungerEntity extends ThrowableProjectile {
     }
 
     @Override
-    protected AABB makeBoundingBox() {
-        final AABB bb = this.getDimensions(this.getPose()).makeBoundingBox(this.position());
+    protected AABB makeBoundingBox(final Vec3 position) {
+        final AABB bb = this.getDimensions(this.getPose()).makeBoundingBox(position);
         return bb.move(0.0, -bb.getYsize() / 2.0, 0.0);
     }
 
@@ -366,35 +369,55 @@ public class LaunchedPlungerEntity extends ThrowableProjectile {
     }
 
     @Override
-    protected void addAdditionalSaveData(final CompoundTag compoundTag) {
-        final Optional<UUID> other = this.getData(OTHER_PLUNGER);
-        other.ifPresent(value -> compoundTag.putUUID("OtherPlunger", value));
+    protected void addAdditionalSaveData(final ValueOutput view) {
+        final Optional<UUID> other = this.getOtherPlungerUUID();
+        other.ifPresent(value -> view.store("OtherPlunger", UUIDUtil.CODEC, value));
 
-        compoundTag.put("PlungedBlockPos", NbtUtils.writeBlockPos(this.getData(PLUNGED_BLOCK_POS)));
-        compoundTag.put("TargetPos", VecHelper.writeNBT(this.getData(TARGET_POS)));
-        NBTHelper.writeEnum(compoundTag, "PlungedDir", this.getData(PLUNGED_DIRECTION));
-        compoundTag.putBoolean("IsPlunged", this.getData(IS_PLUNGED));
+        view.store("PlungedBlockPos", BlockPos.CODEC, this.getData(PLUNGED_BLOCK_POS));
+        view.store("TargetPos", Vec3.CODEC, this.getData(TARGET_POS));
+        view.putString("PlungedDir", this.getData(PLUNGED_DIRECTION).name());
+        view.putBoolean("IsPlunged", this.getData(IS_PLUNGED));
 
-        compoundTag.putBoolean("IsFirst", this.getData(IS_FIRST));
+        view.putBoolean("IsFirst", this.getData(IS_FIRST));
 
-        super.addAdditionalSaveData(compoundTag);
+        super.addAdditionalSaveData(view);
     }
 
     @Override
-    protected void readAdditionalSaveData(final CompoundTag compoundTag) {
-        this.setData(IS_PLUNGED, compoundTag.getBoolean("IsPlunged"));
+    protected void readAdditionalSaveData(final ValueInput view) {
+        this.setData(IS_PLUNGED, view.getBooleanOr("IsPlunged", false));
 
-        this.setData(PLUNGED_DIRECTION, NBTHelper.readEnum(compoundTag, "PlungedDir", Direction.class));
-        this.setData(PLUNGED_BLOCK_POS, NbtUtils.readBlockPos(compoundTag, "PlungedBlockPos").get());
-        this.setData(TARGET_POS, VecHelper.readNBT((ListTag) compoundTag.get("TargetPos")));
+        this.setData(PLUNGED_DIRECTION, readDirection(view.getStringOr("PlungedDir", "")));
+        this.setData(PLUNGED_BLOCK_POS, view.read("PlungedBlockPos", BlockPos.CODEC).orElse(BlockPos.ZERO));
+        this.setData(TARGET_POS, view.read("TargetPos", Vec3.CODEC).orElse(Vec3.ZERO));
 
-        this.setData(IS_FIRST, compoundTag.getBoolean("IsFirst"));
+        this.setData(IS_FIRST, view.getBooleanOr("IsFirst", false));
 
-        if (compoundTag.contains("OtherPlunger")) {
-            this.setData(OTHER_PLUNGER, Optional.of(compoundTag.getUUID("OtherPlunger")));
+        view.read("OtherPlunger", UUIDUtil.CODEC).ifPresent(uuid -> this.setOtherPlungerUUID(Optional.of(uuid)));
+
+        super.readAdditionalSaveData(view);
+    }
+
+    /**
+     * Reads an enum constant name the way catnip's NBTHelper#readEnum does (falls back to the first constant)
+     */
+    private static Direction readDirection(final String name) {
+        for (final Direction direction : Direction.values()) {
+            if (direction.name().equals(name)) {
+                return direction;
+            }
         }
 
-        super.readAdditionalSaveData(compoundTag);
+        return Direction.values()[0];
+    }
+
+    public Optional<UUID> getOtherPlungerUUID() {
+        final String uuid = this.getData(OTHER_PLUNGER);
+        return uuid.isEmpty() ? Optional.empty() : Optional.of(UUID.fromString(uuid));
+    }
+
+    private void setOtherPlungerUUID(final Optional<UUID> uuid) {
+        this.setData(OTHER_PLUNGER, uuid.map(UUID::toString).orElse(""));
     }
 
     public void resetPlunged() {
@@ -446,7 +469,7 @@ public class LaunchedPlungerEntity extends ThrowableProjectile {
         }
 
         if (!this.level().isClientSide()) {
-            final Optional<UUID> otherID = this.getData(OTHER_PLUNGER);
+            final Optional<UUID> otherID = this.getOtherPlungerUUID();
             if (otherID.isPresent()) {
                 final Entity entity = ((ServerLevel) this.level()).getEntity(otherID.get());
                 if (entity instanceof LaunchedPlungerEntity) {
@@ -472,7 +495,7 @@ public class LaunchedPlungerEntity extends ThrowableProjectile {
     public void setOther(final LaunchedPlungerEntity other) {
         this.cachedOtherPlunger = other;
 
-        this.setData(OTHER_PLUNGER, Optional.ofNullable(other == null ? null : other.getUUID()));
+        this.setOtherPlungerUUID(Optional.ofNullable(other == null ? null : other.getUUID()));
         this.setData(OTHER_PLUNGER_ID, other == null ? -1 : other.getId());
     }
 
@@ -493,10 +516,9 @@ public class LaunchedPlungerEntity extends ThrowableProjectile {
     }
 
     @Override
-    public void load(final CompoundTag compound) {
-        super.load(compound);
-        this.setOwner(null); // Sets the owner to null so that plungers without a pair will be removed when loaded
-        this.ownerUUID = null;
+    public void load(final ValueInput view) {
+        super.load(view);
+        this.setOwner((Entity) null); // Sets the owner to null so that plungers without a pair will be removed when loaded
     }
 
     public boolean isPlunged() {

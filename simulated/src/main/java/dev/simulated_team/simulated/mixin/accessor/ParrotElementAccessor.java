@@ -8,6 +8,6 @@ import org.spongepowered.asm.mixin.gen.Accessor;
 @Mixin(ParrotElementImpl.class)
 public interface ParrotElementAccessor {
 
-    @Accessor
+    @Accessor(remap = false)
     Parrot getEntity();
 }

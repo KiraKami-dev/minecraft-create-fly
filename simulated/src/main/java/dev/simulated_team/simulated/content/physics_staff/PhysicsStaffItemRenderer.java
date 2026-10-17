@@ -1,39 +1,127 @@
 package dev.simulated_team.simulated.content.physics_staff;
 
-import com.mojang.blaze3d.systems.RenderSystem;
+import com.google.common.base.Suppliers;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.math.Axis;
-import com.zurrtum.create.foundation.item.render.CustomRenderedItemModel;
-import com.zurrtum.create.foundation.item.render.CustomRenderedItemModelRenderer;
-import com.zurrtum.create.foundation.item.render.PartialItemModelRenderer;
+import com.mojang.serialization.MapCodec;
+import com.zurrtum.create.client.catnip.animation.AnimationTickHolder;
+import com.zurrtum.create.client.flywheel.lib.util.ShadersModHelper;
 import dev.ryanhcode.sable.companion.math.JOMLConversion;
 import dev.ryanhcode.sable.sublevel.ClientSubLevel;
+import dev.simulated_team.simulated.Simulated;
 import dev.simulated_team.simulated.SimulatedClient;
-import dev.simulated_team.simulated.index.SimPartialModels;
 import dev.simulated_team.simulated.index.SimRenderTypes;
 import dev.simulated_team.simulated.util.SimDistUtil;
 import dev.simulated_team.simulated.util.SimMathUtils;
-import dev.ryanhcode.sable.veillite.Veil;
-import com.zurrtum.create.client.catnip.animation.AnimationTickHolder;
-import net.irisshaders.iris.Iris;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.client.renderer.LightTexture;
-import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.Sheets;
+import net.minecraft.client.renderer.SubmitNodeCollector;
+import net.minecraft.client.renderer.block.model.BakedQuad;
+import net.minecraft.client.renderer.item.ItemModel;
+import net.minecraft.client.renderer.item.ItemModelResolver;
+import net.minecraft.client.renderer.item.ItemStackRenderState;
+import net.minecraft.client.renderer.item.ModelRenderProperties;
+import net.minecraft.client.renderer.rendertype.RenderType;
+import net.minecraft.client.renderer.rendertype.RenderTypes;
+import net.minecraft.client.renderer.special.SpecialModelRenderer;
+import net.minecraft.client.renderer.texture.TextureAtlas;
+import net.minecraft.client.resources.model.BlockModelRotation;
+import net.minecraft.client.resources.model.ModelBaker;
+import net.minecraft.client.resources.model.ResolvedModel;
+import net.minecraft.resources.Identifier;
 import net.minecraft.util.Mth;
+import net.minecraft.world.entity.ItemOwner;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemDisplayContext;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.phys.Vec3;
-import org.joml.*;
-import java.lang.Math;
-import java.util.UUID;
+import org.jetbrains.annotations.Nullable;
+import org.joml.Matrix4f;
+import org.joml.Quaternionf;
+import org.joml.Vector3d;
+import org.joml.Vector3f;
+import org.joml.Vector3fc;
+import org.joml.Vector4f;
 
-public class PhysicsStaffItemRenderer extends CustomRenderedItemModelRenderer {
+import java.lang.Math;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.UUID;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
+
+/**
+ * Renders the physics staff.
+ * <p>
+ * Upstream this was a Create {@code CustomRenderedItemModelRenderer} hooked in through NeoForge's
+ * {@code IClientItemExtensions}. On 1.21.11 it is an item model type ({@value #ID_STRING}, referenced from
+ * {@code assets/simulated/items/creative_physics_staff.json}) that bakes the staff parts itself, like Create Fly's
+ * {@code SymmetryWandModel}. Register it with {@link PhysicsStaffClient#registerClient()}.
+ */
+public class PhysicsStaffItemRenderer implements ItemModel, SpecialModelRenderer<PhysicsStaffItemRenderer.StaffRenderData> {
+    private static final String ID_STRING = "simulated:model/physics_staff";
+    public static final Identifier ID = Simulated.path("model/physics_staff");
+
+    private static final Identifier ITEM_ID = Simulated.path("item/creative_physics_staff/item");
+    private static final Identifier CORE_ID = Simulated.path("item/creative_physics_staff/core");
+    private static final Identifier CORE_GLOW_ID = Simulated.path("item/creative_physics_staff/core_glow");
+    private static final Identifier RING_ID = Simulated.path("item/creative_physics_staff/ring");
+    private static final Identifier SIGMA_ID = Simulated.path("item/creative_physics_staff/sigma");
+    private static final Identifier INNER_CUBE_ID = Simulated.path("item/creative_physics_staff/inner_cube");
+    private static final Identifier OUTER_CUBE_ID = Simulated.path("item/creative_physics_staff/outer_cube");
+
+    private static final int[] NO_TINTS = new int[0];
+
     private static final Vector3d focusPos = new Vector3d();
     private static final Matrix4f itemProjMat = new Matrix4f();
+
+    private final ModelRenderProperties settings;
+    private final List<BakedQuad> item;
+    private final List<BakedQuad> core;
+    private final List<BakedQuad> coreGlow;
+    private final List<BakedQuad> ring;
+    private final List<BakedQuad> sigma;
+    private final List<BakedQuad> innerCube;
+    private final List<BakedQuad> outerCube;
+    private final Supplier<Vector3fc[]> extents;
+    private final Identifier atlas;
+    private @Nullable RenderType cutout;
+
+    public PhysicsStaffItemRenderer(final ModelRenderProperties settings,
+                                    final List<BakedQuad> item,
+                                    final List<BakedQuad> core,
+                                    final List<BakedQuad> coreGlow,
+                                    final List<BakedQuad> ring,
+                                    final List<BakedQuad> sigma,
+                                    final List<BakedQuad> innerCube,
+                                    final List<BakedQuad> outerCube) {
+        this.settings = settings;
+        this.item = item;
+        this.core = core;
+        this.coreGlow = coreGlow;
+        this.ring = ring;
+        this.sigma = sigma;
+        this.innerCube = innerCube;
+        this.outerCube = outerCube;
+        this.atlas = item.isEmpty() ? TextureAtlas.LOCATION_BLOCKS : item.getFirst().sprite().atlasLocation();
+        this.extents = Suppliers.memoize(() -> {
+            final Set<Vector3fc> set = new HashSet<>();
+            for (final List<BakedQuad> quads : List.of(item, core, coreGlow, ring, sigma, innerCube, outerCube)) {
+                for (final BakedQuad quad : quads) {
+                    set.add(quad.position0());
+                    set.add(quad.position1());
+                    set.add(quad.position2());
+                    set.add(quad.position3());
+                }
+            }
+            return set.toArray(Vector3fc[]::new);
+        });
+    }
 
     public static Vec3 getFirstPersonFocusPos(final float pt) {
         final GameRenderer gameRenderer = Minecraft.getInstance().gameRenderer;
@@ -58,8 +146,27 @@ public class PhysicsStaffItemRenderer extends CustomRenderedItemModelRenderer {
     }
 
     @Override
-    protected void render(final ItemStack stack, final CustomRenderedItemModel model, final PartialItemModelRenderer renderer, final ItemDisplayContext context, final PoseStack ms,
-                          final MultiBufferSource buffer, final int light, final int overlay) {
+    public void update(final ItemStackRenderState state,
+                       final ItemStack stack,
+                       final ItemModelResolver resolver,
+                       final ItemDisplayContext displayContext,
+                       @Nullable final ClientLevel level,
+                       @Nullable final ItemOwner owner,
+                       final int seed) {
+        state.appendModelIdentityElement(this);
+        state.setAnimated();
+
+        final ItemStackRenderState.LayerRenderState layer = state.newLayer();
+        layer.setExtents(this.extents);
+        layer.setupSpecialModel(this, extractOpenState(stack, displayContext));
+        this.settings.applyToLayer(layer, displayContext);
+    }
+
+    /**
+     * Works out how far the staff in this stack is opened. The stack has to be compared by identity, so this runs while
+     * the item render state is extracted.
+     */
+    private static StaffRenderData extractOpenState(final ItemStack stack, final ItemDisplayContext context) {
         float openAmount = 0;
         float cubeScale = 0;
         final PhysicsStaffClientHandler clientHandler = SimulatedClient.PHYSICS_STAFF_CLIENT_HANDLER;
@@ -75,7 +182,7 @@ public class PhysicsStaffItemRenderer extends CustomRenderedItemModelRenderer {
                 // smooth lerping for your own staff you're holding
                 openAmount = Mth.lerp(partialTicks, clientHandler.previousExtension, clientHandler.extension);
                 cubeScale = Mth.lerp(partialTicks, clientHandler.previousCubeScale, clientHandler.cubeScale);
-            } else {
+            } else if (minecraft.level != null) {
                 // look up existing beams for their associated player
                 for (final UUID playerUUID : clientHandler.beams.keySet()) {
                     final Player otherPlayer = minecraft.level.getPlayerByUUID(playerUUID);
@@ -88,16 +195,44 @@ public class PhysicsStaffItemRenderer extends CustomRenderedItemModelRenderer {
             }
         }
 
+        return new StaffRenderData(openAmount, cubeScale);
+    }
+
+    @Override
+    public void submit(@Nullable final StaffRenderData data,
+                       final ItemDisplayContext context,
+                       final PoseStack ms,
+                       final SubmitNodeCollector queue,
+                       final int light,
+                       final int overlay,
+                       final boolean glint,
+                       final int outlineColor) {
+        final float openAmount = data != null ? data.openAmount() : 0;
+        float cubeScale = data != null ? data.cubeScale() : 0;
+
+        final PhysicsStaffClientHandler clientHandler = SimulatedClient.PHYSICS_STAFF_CLIENT_HANDLER;
+        final Minecraft minecraft = Minecraft.getInstance();
+        final Camera camera = minecraft.gameRenderer.getMainCamera();
+        final float partialTicks = AnimationTickHolder.getPartialTicks();
+        final Player player = SimDistUtil.getClientPlayer();
+
         final float tiltAmount = Mth.lerp(partialTicks, clientHandler.previousTilt, clientHandler.tilt);
         final Quaternionf utilQuat = new Quaternionf();
 
-        boolean shadersActive = Veil.IRIS && Iris.isPackInUseQuick();
+        final boolean shadersActive = ShadersModHelper.isShaderPackInUse();
+        final RenderType cutout = this.getCutoutRenderType();
+        final RenderType glowingSolid = SimRenderTypes.itemGlowingSolid(shadersActive);
+        final RenderType glowingTranslucent = SimRenderTypes.itemGlowingTranslucent(shadersActive);
+
+        ms.pushPose();
+        // the upstream renderer worked from the item center, 1.21.11 hands special renderers the model corner
+        ms.translate(0.5F, 0.5F, 0.5F);
 
         if (context.firstPerson()) {
-            if (clientHandler.getDragSession() != null) {
+            if (clientHandler.getDragSession() != null && player != null) {
                 final PhysicsStaffClientHandler.ClientDragSession dragSession = clientHandler.getDragSession();
 
-                final Quaternionf rotation = minecraft.gameRenderer.getMainCamera().rotation();
+                final Quaternionf rotation = camera.rotation();
                 final Vector3d globalAnchor = ((ClientSubLevel) dragSession.dragSubLevel()).renderPose().transformPosition(new Vector3d(dragSession.dragLocalAnchor()));
                 final Vector3d dirToAnchor = globalAnchor.sub(JOMLConversion.toJOML(player.getEyePosition(partialTicks))).normalize();
                 rotation.transformInverse(dirToAnchor);
@@ -112,16 +247,14 @@ public class PhysicsStaffItemRenderer extends CustomRenderedItemModelRenderer {
             ms.mulPose(utilQuat.identity().rotateZ((float) Math.toRadians((tiltAmount * 0.5 + 0.5) * -61.0f) * tiltMultiplier));
         }
 
+        renderPart(ms, queue, context, light, overlay, outlineColor, this.item, cutout);
 
-        renderer.render(model.getOriginalModel(), Sheets.cutoutBlockSheet(), light);
-
-        renderer.render(SimPartialModels.PHYSICS_STAFF_CORE.get(), SimRenderTypes.itemGlowingSolid(shadersActive), LightTexture.FULL_BRIGHT);
-        renderer.render(SimPartialModels.PHYSICS_STAFF_CORE_GLOW.get(), SimRenderTypes.itemGlowingTranslucent(shadersActive), LightTexture.FULL_BRIGHT);
-        final float worldTime = AnimationTickHolder.getRenderTime() / 20;
+        renderPart(ms, queue, context, LightTexture.FULL_BRIGHT, overlay, outlineColor, this.core, glowingSolid);
+        renderPart(ms, queue, context, LightTexture.FULL_BRIGHT, overlay, outlineColor, this.coreGlow, glowingTranslucent);
 
         ms.pushPose();
         ms.translate(0, 6.5 / 16.0, 0);
-        renderer.render(SimPartialModels.PHYSICS_STAFF_RING.get(), Sheets.cutoutBlockSheet(), light);
+        renderPart(ms, queue, context, light, overlay, outlineColor, this.ring, cutout);
         ms.popPose();
 
         ms.translate(0, 9 / 16.0, 0);
@@ -130,7 +263,7 @@ public class PhysicsStaffItemRenderer extends CustomRenderedItemModelRenderer {
             ms.mulPose(Axis.YP.rotationDegrees(i * 180));
             ms.translate(-3 / 16.0, 0, 0);
             ms.mulPose(Axis.ZP.rotationDegrees(openAmount * 20));
-            renderer.render(SimPartialModels.PHYSICS_STAFF_SIGMA.get(), Sheets.cutoutBlockSheet(), light);
+            renderPart(ms, queue, context, light, overlay, outlineColor, this.sigma, cutout);
             ms.popPose();
         }
         ms.translate(0, 6 / 16.0, 0);
@@ -151,22 +284,111 @@ public class PhysicsStaffItemRenderer extends CustomRenderedItemModelRenderer {
         cubeScale = Mth.clamp(cubeScale, 0, 1);
         cubeScale *= 0.8f;
         ms.scale(cubeScale, cubeScale, cubeScale);
-        renderer.render(SimPartialModels.PHYSICS_STAFF_INNER_CUBE.get(), SimRenderTypes.itemGlowingSolid(shadersActive), LightTexture.FULL_BRIGHT);
+        renderPart(ms, queue, context, LightTexture.FULL_BRIGHT, overlay, outlineColor, this.innerCube, glowingSolid);
 
         if (context.firstPerson()) {
             final Vector3f focusPoint = new Vector3f();
             ms.last().pose().transformPosition(focusPoint);
 
-            itemProjMat.set(RenderSystem.getProjectionMatrix());
+            itemProjMat.set(getHandProjectionMatrix(minecraft, camera, partialTicks));
             focusPos.set(focusPoint.x, focusPoint.y, focusPoint.z);
         }
 
         ms.scale(1.2f, 1.2f, 1.2f);
-        renderer.render(SimPartialModels.PHYSICS_STAFF_OUTER_CUBE.get(), SimRenderTypes.itemGlowingTranslucent(shadersActive), LightTexture.FULL_BRIGHT);
+        renderPart(ms, queue, context, LightTexture.FULL_BRIGHT, overlay, outlineColor, this.outerCube, glowingTranslucent);
 
-        // Iris doesn't allow individual render types to be ended, so all batches must be ended for the translucent parts to draw correctly
-        if (Veil.IRIS && !shadersActive) {
-            Minecraft.getInstance().renderBuffers().bufferSource().endBatch();
+        // (upstream ended all batches here for Iris; submitted geometry is batched by the feature renderer on 1.21.11)
+        ms.popPose();
+    }
+
+    /**
+     * @return the projection matrix used to draw the first person hand ({@code GameRenderer#renderLevel}; upstream read
+     * {@code RenderSystem.getProjectionMatrix()} while the hand rendered, 1.21.11 only keeps it in a GPU buffer)
+     */
+    private static Matrix4f getHandProjectionMatrix(final Minecraft minecraft, final Camera camera, final float partialTicks) {
+        final float fov = minecraft.gameRenderer.getFov(camera, partialTicks, false);
+        return new Matrix4f().perspective(fov * Mth.DEG_TO_RAD, (float) minecraft.getWindow().getWidth() / minecraft.getWindow().getHeight(), 0.05F, 100.0F);
+    }
+
+    private static void renderPart(final PoseStack ms,
+                                   final SubmitNodeCollector queue,
+                                   final ItemDisplayContext context,
+                                   final int light,
+                                   final int overlay,
+                                   final int outlineColor,
+                                   final List<BakedQuad> quads,
+                                   final RenderType renderType) {
+        ms.pushPose();
+        ms.translate(-0.5F, -0.5F, -0.5F);
+        queue.submitItem(ms, context, light, overlay, outlineColor, NO_TINTS, quads, renderType, ItemStackRenderState.FoilType.NONE);
+        ms.popPose();
+    }
+
+    @Override
+    public void getExtents(final Consumer<Vector3fc> output) {
+        for (final Vector3fc extent : this.extents.get()) {
+            output.accept(extent);
+        }
+    }
+
+    @Override
+    public @Nullable StaffRenderData extractArgument(final ItemStack stack) {
+        return new StaffRenderData(0, 0);
+    }
+
+    public record StaffRenderData(float openAmount, float cubeScale) {
+    }
+
+    /**
+     * The cutout render type for the staff parts. 1.21.1 had a single block/item atlas; on 1.21.11 the staff textures
+     * live on the item atlas, so {@code Sheets.cutoutBlockSheet()} is only used if the quads are on the block atlas.
+     */
+    private RenderType getCutoutRenderType() {
+        if (this.cutout == null) {
+            this.cutout = this.atlas.equals(TextureAtlas.LOCATION_BLOCKS) ? Sheets.cutoutBlockSheet() : RenderTypes.entityCutout(this.atlas);
+        }
+        return this.cutout;
+    }
+
+    public static class Unbaked implements ItemModel.Unbaked {
+        public static final MapCodec<Unbaked> CODEC = MapCodec.unit(Unbaked::new);
+
+        @Override
+        public MapCodec<? extends ItemModel.Unbaked> type() {
+            return CODEC;
+        }
+
+        @Override
+        public void resolveDependencies(final Resolver resolver) {
+            resolver.markDependency(ITEM_ID);
+            resolver.markDependency(CORE_ID);
+            resolver.markDependency(CORE_GLOW_ID);
+            resolver.markDependency(RING_ID);
+            resolver.markDependency(SIGMA_ID);
+            resolver.markDependency(INNER_CUBE_ID);
+            resolver.markDependency(OUTER_CUBE_ID);
+        }
+
+        @Override
+        public ItemModel bake(final ItemModel.BakingContext context) {
+            final ModelBaker baker = context.blockModelBaker();
+            final ResolvedModel model = baker.getModel(ITEM_ID);
+            final ModelRenderProperties settings = ModelRenderProperties.fromResolvedModel(baker, model, model.getTopTextureSlots());
+            return new PhysicsStaffItemRenderer(
+                    settings,
+                    bake(baker, ITEM_ID),
+                    bake(baker, CORE_ID),
+                    bake(baker, CORE_GLOW_ID),
+                    bake(baker, RING_ID),
+                    bake(baker, SIGMA_ID),
+                    bake(baker, INNER_CUBE_ID),
+                    bake(baker, OUTER_CUBE_ID)
+            );
+        }
+
+        private static List<BakedQuad> bake(final ModelBaker baker, final Identifier id) {
+            final ResolvedModel model = baker.getModel(id);
+            return model.bakeTopGeometry(model.getTopTextureSlots(), baker, BlockModelRotation.IDENTITY).getAll();
         }
     }
 }

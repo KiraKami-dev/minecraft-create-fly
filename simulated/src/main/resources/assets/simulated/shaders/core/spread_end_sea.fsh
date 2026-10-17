@@ -1,6 +1,13 @@
+#version 330
+
+// Spreads the end sea shadow map outwards (ported from the Veil program simulated:spread_end_sea).
+// Used with minecraft:core/screenquad as vertex shader.
+layout(std140) uniform SpreadInfo {
+    vec2 OutSize;
+};
+
 uniform sampler2D DiffuseSampler0;
 uniform sampler2D DiffuseDepthSampler;
-uniform vec2 OutSize;
 
 in vec2 texCoord;
 

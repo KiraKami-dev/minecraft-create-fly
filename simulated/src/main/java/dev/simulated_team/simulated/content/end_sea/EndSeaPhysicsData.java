@@ -1,6 +1,5 @@
 package dev.simulated_team.simulated.content.end_sea;
 
-import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.mojang.serialization.DataResult;
 import com.mojang.serialization.JsonOps;
@@ -8,8 +7,10 @@ import dev.simulated_team.simulated.Simulated;
 import dev.simulated_team.simulated.network.packets.end_sea.ClientboundEndSeaPacket;
 import dev.ryanhcode.sable.veillite.api.network.VeilPacketManager;
 import net.minecraft.core.registries.Registries;
+import net.minecraft.resources.FileToIdConverter;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.Identifier;
+import net.minecraft.util.ExtraCodecs;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.server.packs.resources.SimpleJsonResourceReloadListener;
@@ -60,16 +61,16 @@ public class EndSeaPhysicsData {
         }
     }
 
-    public static class ReloadListener extends SimpleJsonResourceReloadListener {
+    public static class ReloadListener extends SimpleJsonResourceReloadListener<JsonElement> {
 
-        private static final Gson GSON = new Gson();
         public static final ReloadListener INSTANCE = new ReloadListener();
 
         public static final String NAME = "end_sea";
         public static final Identifier ID = Simulated.path(NAME);
 
         public ReloadListener() {
-            super(GSON, NAME);
+            // the raw json is parsed in #apply, so parse errors are reported the same way as before
+            super(ExtraCodecs.JSON, FileToIdConverter.json(NAME));
         }
 
         @Override
