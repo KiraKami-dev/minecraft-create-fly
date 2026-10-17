@@ -6,7 +6,7 @@
   },
   "display": {
     "announce_to_chat": false,
-    "background": "simulated:textures/gui/advancement.png",
+    "background": "simulated:gui/advancement",
     "description": {
       "color": "#DBA213",
       "translate": "advancement.simulated.root.desc"
