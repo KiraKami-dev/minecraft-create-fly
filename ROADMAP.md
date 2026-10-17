@@ -70,6 +70,8 @@ and Simulated; Aeronautics joins once it compiles):
   (Sable assembly + physics tests ported from upstream), one PASS/FAIL line per test, non-zero exit if a required test
   fails, JUnit report in `e2e/run/gametest/gametest-report.xml`. `tools/e2e.sh gametest '<selector>' verify` reruns the
   selected tests 100× per rotation to catch flakiness.
+- **flight**: real game window: builds an airship in view (deck, physics assembler, propeller bearing, burner,
+  levitite), assembles it, lets it fly and takes screenshots `e2e/run/client/screenshots/flight-*.png`, then quits.
 - **client**: opens the game in a flat world, spawns sub-levels in front of the camera, and saves 5 screenshots to
   `e2e/run/client/screenshots/` over ~20 s, then quits. Look at them.
 
@@ -111,7 +113,8 @@ Legend: ✅ done · 🔄 in progress · ⬜ todo · ⏸ deferred/gated
 Both mods are in the Gradle build (`:simulated`, `:aeronautics`; 765 Java files, 86 + 29 mixin classes), depending on
 `:sable` and Create Fly from Modrinth maven. Work happens on `p2-port` (see Workflow). **2026-10-17: both mods compile
 (0 errors), boot on a dedicated server and on the client together with Sable and Create Fly (all mixins apply, no
-data errors), and the GameTest playtest suite passes (21/21 required).** What's left is a hands-on playtest (T2).
+data errors), the GameTest playtest suite passes (22/22 required), and an airship flies in the real client
+(`tools/e2e.sh flight`).** Next: merge into `integration` (after Akshat's `merge-integration-p2`), then a human playtest.
 
 | ID | Task | Status | Owner | Notes |
 |---|---|---|---|---|
@@ -132,7 +135,7 @@ data errors), and the GameTest playtest suite passes (21/21 required).** What's 
 | C9 | Aeronautics: same as C2–C8 (181 files, 29 mixins) | ✅ | | 2026-10-17: compiles, all 29 mixins checked against the bytecode (7 removed: their targets, mostly Sodium/Iris chunk-layer hooks, don't exist on 1.21.11); Levitite Blend is a Create Fly fluid; levitite shimmer/ghost layers on sub-levels and the balloon hot-air effect re-implemented with their own pipelines; burner flame shader |
 | C10 | Sable ↔ Create integration (contraptions on sub-levels, kinetics across sub-levels) | ✅ | | 2026-10-17: 139 of upstream's Create-compat mixins ported against Create Fly (`sable-create.mixins.json`, applied only when `create` is loaded); 8 skipped as unnecessary on Create Fly (`docs/p2-notes/sable-create.md`). Server and client e2e pass with Create. Fixed: Create block entities (deployer, item drain, ejector, arm, …) duplicated their contents when assembled into a sub-level |
 | T1 | Server e2e with Sable + Simulated + Aeronautics + Create Fly | ✅ | | 2026-10-17: `tools/e2e.sh server` and `client`: mixin audit passes, 0 mixin errors, 0 data errors, 600 ticks with 38 sub-levels plus 14 mod blocks placed. Found and fixed a client crash when placing a torsion spring (inner "extra kinetics" block entities picked up the parent's Create Fly behaviours) |
-| T2 | Playtest checklist: build a ship, assemble, propeller flight, balloon lift, levitite, steering | 🔄 | | **automated part ✅** (`tools/e2e.sh gametest`, 21/21 required pass): physics assembler builds a ship that falls and rests, disassembles it again; torsion spring driven by a motor on a moving ship; propeller bearing lifts a ship (vs unpowered control); powered hot-air burner lifts a balloon (unpowered stays down); levitite raft hovers, an overloaded one sinks; upstream's extra-kinetics structure tests (analog transmission, swivel bearing, torsion spring). **Left: a hands-on playtest** (steering feel, visuals in motion, multiplayer) |
+| T2 | Playtest checklist: build a ship, assemble, propeller flight, balloon lift, levitite, steering | ✅ | | 2026-10-17, every checklist item exercised in the game: `tools/e2e.sh gametest` (22/22 required): physics assembler builds a ship that falls and rests, disassembles it again; steering wheel turned by a player drives its shaft to 90° and back (400/400 runs); torsion spring driven by a motor on a moving ship; propeller bearing lifts a ship (vs unpowered control); powered hot-air burner lifts a balloon (unpowered stays down); levitite raft hovers, an overloaded one sinks; upstream's extra-kinetics structure tests. `tools/e2e.sh flight` (real client): an airship (deck, physics assembler, propeller bearing + sail rotor, burner, levitite) is built, assembled and flies from y −59 to y 137 in ~9 s, rendering in the air with propeller airflow particles ("In Thrust We Trust" is awarded). Worth a human look: thrust direction (+256 RPM pushes down on that build, −256 lifts; check against upstream) and how flying feels |
 
 **Known Phase 2 gaps (PORT-TODOs):** energy storage not exposed (docking connector battery); server config not synced
 to clients (Simulated/Aeronautics use Create Fly's config system); JEI doesn't show the portable engine dyeing recipe;
