@@ -34,6 +34,7 @@ flowchart LR
 - 2026-10-17: Sodium water occlusion + sky-light shadows (patched Sodium chunk shaders). Full suite with and without Sodium passes (server, gametest 22+1 optional, playtest, flight, water, shadows, client).
 - 2026-10-17: release jars verified in a real Fabric 1.21.11 install (server: 53 mods, 38 sub-levels simulate; offline client joins and renders). Fixed Sable UDP on macOS clients (EISCONN). Zip: `~/Documents/Projects/minecraft-create-fly-release/create-aeronautics-1.21.11-fabric.zip` (3 jars + INSTALL.txt; Fabric API 0.141.6+1.21.11 and Create Fly 1.21.11-6.0.9-5 installed separately).
 - 2026-10-18: release `create-aeronautics-1.21.11-fabric-2026-10-18.zip` (integration 10860dd): adds the teammate's Lithium dedicated-server crash fix (propeller bearing `LangBuilder` → `Component`).
+- 2026-10-18: Lithium crash reproduced and confirmed fixed on a real server; new required GameTest `server_class_safety` reflects over 114 mod classes like Lithium (no other offenders). Modrinth files ready in `~/Documents/Projects/minecraft-create-fly-release/` (`modrinth-jars/` + `.mrpack`).
 
 ## Blockers
 - None. Note: this shell's `JAVA_HOME` is JDK 17 and the build needs 21; `e2e.sh` picks 21 itself; for Gradle use `JAVA_HOME=$(/usr/libexec/java_home -v 21)`.
