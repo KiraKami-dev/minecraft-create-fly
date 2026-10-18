@@ -48,6 +48,12 @@ public final class E2E implements ModInitializer {
             try {
                 MixinEnvironment.getCurrentEnvironment().audit();
                 LOG.info("E2E: mixin audit passed");
+                final ServerClassSafety.Result safety = ServerClassSafety.run();
+                if (safety.failures().isEmpty()) {
+                    LOG.info("E2E: server-class-safety PASS ({} classes)", safety.checked());
+                } else {
+                    LOG.error("E2E: server-class-safety FAIL {}", safety.failures());
+                }
             } catch (final Throwable t) {
                 LOG.error("E2E: mixin audit FAILED", t);
             }

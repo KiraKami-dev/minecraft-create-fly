@@ -10,6 +10,7 @@
     "fabric-gametest": [
       "dev.mcf.e2e.gametest.SablePhysicsTest",
       "dev.mcf.e2e.gametest.SableAssemblyTest",
+      "dev.mcf.e2e.gametest.ServerClassSafetyTest",
       "dev.mcf.e2e.gametest.SimulatedExtraKineticsTest",
       "dev.mcf.e2e.gametest.SimulatedShipTest",
       "dev.mcf.e2e.gametest.SimulatedSteeringWheelTest"${aeroGameTests}
