@@ -1,6 +1,6 @@
 # minecraft-create-fly progress
 
-_Last updated: 2026-10-17_
+_Last updated: 2026-10-18_
 
 Port of Create Aeronautics to Minecraft 1.21.11 Fabric, on top of Create Fly 1.21.11-6.0.9-5. Task table in `ROADMAP.md`, porting rules in `PORTING.md`.
 
@@ -33,6 +33,7 @@ flowchart LR
 - 2026-10-17: S6 water occlusion verified (fixed a render-pass crash), S15 near-plane fixed with GL_DEPTH_CLAMP, S3 verified (`tools/e2e.sh client water`). S11 follow-ups: Flywheel visuals and S14 shading work under Sodium, Sodium skips plot sections, shadow pass is off under Sodium.
 - 2026-10-17: Sodium water occlusion + sky-light shadows (patched Sodium chunk shaders). Full suite with and without Sodium passes (server, gametest 22+1 optional, playtest, flight, water, shadows, client).
 - 2026-10-17: release jars verified in a real Fabric 1.21.11 install (server: 53 mods, 38 sub-levels simulate; offline client joins and renders). Fixed Sable UDP on macOS clients (EISCONN). Zip: `~/Documents/Projects/minecraft-create-fly-release/create-aeronautics-1.21.11-fabric.zip` (3 jars + INSTALL.txt; Fabric API 0.141.6+1.21.11 and Create Fly 1.21.11-6.0.9-5 installed separately).
+- 2026-10-18: release `create-aeronautics-1.21.11-fabric-2026-10-18.zip` (integration 10860dd): adds the teammate's Lithium dedicated-server crash fix (propeller bearing `LangBuilder` → `Component`).
 
 ## Blockers
 - None. Note: this shell's `JAVA_HOME` is JDK 17 and the build needs 21; `e2e.sh` picks 21 itself; for Gradle use `JAVA_HOME=$(/usr/libexec/java_home -v 21)`.
