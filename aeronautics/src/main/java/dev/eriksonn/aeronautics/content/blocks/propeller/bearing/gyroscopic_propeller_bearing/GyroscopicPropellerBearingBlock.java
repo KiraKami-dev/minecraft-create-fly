@@ -3,11 +3,10 @@ package dev.eriksonn.aeronautics.content.blocks.propeller.bearing.gyroscopic_pro
 import com.zurrtum.create.content.contraptions.bearing.BearingBlock;
 import com.zurrtum.create.foundation.block.IBE;
 import dev.simulated_team.simulated.api.CustomStressImpactTooltipProvider;
-import dev.eriksonn.aeronautics.data.AeroLang;
 import dev.eriksonn.aeronautics.index.AeroBlockEntityTypes;
 import dev.eriksonn.aeronautics.index.AeroBlockShapes;
-import com.zurrtum.create.client.catnip.lang.LangBuilder;
 import net.minecraft.core.BlockPos;
+import net.minecraft.network.chat.Component;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.InteractionResult;
@@ -27,8 +26,8 @@ public class GyroscopicPropellerBearingBlock extends BearingBlock implements IBE
         super(properties);
     }
 
-    public LangBuilder getCustomImpactLang() {
-        return AeroLang.translate("propeller.sails");
+    public Component getCustomImpactLang() {
+        return Component.translatable("aeronautics.propeller.sails");
     }
 
     @Override
