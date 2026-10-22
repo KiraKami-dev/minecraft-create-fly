@@ -98,7 +98,7 @@ public interface BlockEntityLiftingGasProvider {
         final BlockPos castPos = this.getCastPosition();
 
         if (castPos != null) {
-            final Balloon existingBalloon = BalloonMap.MAP.get(this.getLevel()).getBalloon(castPos);
+            final Balloon existingBalloon = BalloonMap.MAP.get(this.aeronautics$getLevel()).getBalloon(castPos);
 
             if (existingBalloon != null) {
                 // Yip yip!
@@ -115,7 +115,7 @@ public interface BlockEntityLiftingGasProvider {
         if (this.getBalloon() != null)
             return;
 
-        final Level level = this.getLevel();
+        final Level level = this.aeronautics$getLevel();
         final BlockPos castPos = this.getCastPosition();
 
         final BalloonMap balloonMap = BalloonMap.MAP.get(level);
@@ -165,7 +165,7 @@ public interface BlockEntityLiftingGasProvider {
             // it's just like the scorpion and the frog
 
             if (this.isChunkUnloaded() && balloon.getHeaters().isEmpty()) {
-                final Level level = this.getLevel();
+                final Level level = this.aeronautics$getLevel();
                 assert level != null;
 
                 BalloonMap.MAP.get(level).unloadBalloon(serverBalloon);
@@ -212,9 +212,21 @@ public interface BlockEntityLiftingGasProvider {
 
     double getClientPredictedVolume();
 
-    BlockPos getBlockPos();
+    /**
+     * The position of this provider, normally {@code BlockEntity#getBlockPos()}.
+     *
+     * <p>Deliberately not named {@code getBlockPos}: an abstract interface method that only a Minecraft method
+     * implements is not remapped by Loom (the Minecraft method becomes {@code method_11016} in the release jar, the
+     * interface method keeps its name), so implementers would throw {@link AbstractMethodError} at runtime.
+     * Implementers delegate explicitly.
+     */
+    BlockPos aeronautics$getBlockPos();
 
-    Level getLevel();
+    /**
+     * The level of this provider, normally {@code BlockEntity#getLevel()}. Not named {@code getLevel} for the same
+     * remapping reason as {@link #aeronautics$getBlockPos()}.
+     */
+    Level aeronautics$getLevel();
 
     boolean isChunkUnloaded();
 
@@ -228,7 +240,7 @@ public interface BlockEntityLiftingGasProvider {
             this.tryCreateBalloon();
 
         if (this.getBalloon() instanceof final ServerBalloon balloon && balloon.getTotalFilledVolume() > 1) {
-            AeroAdvancements.HEAD_IN_THE_CLOUDS.awardToNearby(this.getBlockPos(), this.getLevel());
+            AeroAdvancements.HEAD_IN_THE_CLOUDS.awardToNearby(this.aeronautics$getBlockPos(), this.aeronautics$getLevel());
         }
     }
 

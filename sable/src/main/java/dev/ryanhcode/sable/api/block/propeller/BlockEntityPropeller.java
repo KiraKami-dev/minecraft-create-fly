@@ -7,6 +7,7 @@ import dev.ryanhcode.sable.sublevel.SubLevel;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.entity.BlockEntity;
 import org.joml.Vector3d;
 
 /**
@@ -42,8 +43,8 @@ public interface BlockEntityPropeller {
     }
 
     default double getCurrentAirPressure() {
-        final Level level = this.getLevel();
-        return DimensionPhysicsData.getAirPressure(level, Sable.HELPER.projectOutOfSubLevel(level, JOMLConversion.toJOML(this.getBlockPos().getCenter())));
+        final Level level = this.sable$getLevel();
+        return DimensionPhysicsData.getAirPressure(level, Sable.HELPER.projectOutOfSubLevel(level, JOMLConversion.toJOML(this.sable$getBlockPos().getCenter())));
     }
 
     default double getAirflowScaling() {
@@ -53,9 +54,9 @@ public interface BlockEntityPropeller {
             return 1.0;
         }
 
-        final Level level = this.getLevel();
-        final Vector3d pos = JOMLConversion.toJOML(this.getBlockPos().getCenter());
-        final SubLevel subLevel = Sable.HELPER.getContaining(level, this.getBlockPos());
+        final Level level = this.sable$getLevel();
+        final Vector3d pos = JOMLConversion.toJOML(this.sable$getBlockPos().getCenter());
+        final SubLevel subLevel = Sable.HELPER.getContaining(level, this.sable$getBlockPos());
 
         if (subLevel == null) {
             return 1.0;
@@ -67,8 +68,24 @@ public interface BlockEntityPropeller {
         return Math.clamp((airflow + velocity.dot(thrustDirection.x, thrustDirection.y, thrustDirection.z)) / airflow, 0, 1);
     }
 
-    Level getLevel();
+    /**
+     * The level of this propeller. Implemented by casting to {@link BlockEntity}, which every propeller is.
+     *
+     * <p>Deliberately not an abstract {@code getLevel()}: an interface method implemented only by a Minecraft method
+     * is not remapped by Loom (the Minecraft method becomes {@code method_10997} in the release jar, the interface
+     * method keeps its name), so every implementer would throw {@link AbstractMethodError} at runtime. Calling the
+     * Minecraft method through {@link BlockEntity} is remapped normally.
+     */
+    default Level sable$getLevel() {
+        return ((BlockEntity) this).getLevel();
+    }
 
-    BlockPos getBlockPos();
+    /**
+     * The position of this propeller. See {@link #sable$getLevel()} for why this is not an abstract
+     * {@code getBlockPos()}.
+     */
+    default BlockPos sable$getBlockPos() {
+        return ((BlockEntity) this).getBlockPos();
+    }
 }
 

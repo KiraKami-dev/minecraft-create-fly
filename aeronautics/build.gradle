@@ -1,4 +1,4 @@
-version = '1.3.2+mc1.21.11-port'
+version = '1.3.2+mc1.21.11-port.1'
 group = 'dev.eriksonn.aeronautics'
 
 base { archivesName = 'aeronautics-fabric-1.21.11' }

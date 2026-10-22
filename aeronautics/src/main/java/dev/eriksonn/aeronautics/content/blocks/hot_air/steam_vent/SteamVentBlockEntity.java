@@ -21,6 +21,7 @@ import net.minecraft.core.Direction;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.Mth;
 import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.storage.ValueInput;
@@ -316,6 +317,16 @@ public class SteamVentBlockEntity extends SmartBlockEntity implements BlockEntit
     @Override
     public boolean canOutputGas() {
         return this.efficiency > 0 && this.signalStrength > 0 && !this.isRemoved();
+    }
+
+    @Override
+    public BlockPos aeronautics$getBlockPos() {
+        return this.getBlockPos();
+    }
+
+    @Override
+    public Level aeronautics$getLevel() {
+        return this.getLevel();
     }
 
     @Override

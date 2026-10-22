@@ -1,5 +1,8 @@
 package dev.mcf.e2e.gametest;
 
+import dev.eriksonn.aeronautics.content.blocks.hot_air.hot_air_burner.HotAirBurnerBlock;
+import dev.eriksonn.aeronautics.content.blocks.hot_air.hot_air_burner.HotAirBurnerBlockEntity;
+import dev.eriksonn.aeronautics.content.blocks.hot_air.steam_vent.SteamVentBlockEntity;
 import dev.eriksonn.aeronautics.index.AeroBlocks;
 import dev.ryanhcode.sable.sublevel.ServerSubLevel;
 import net.fabricmc.fabric.api.gametest.v1.GameTest;
@@ -92,6 +95,34 @@ public final class AeronauticsHotAirTest {
                     if (Math.abs(probe(helper, probe).bottom() - 1.0) > 0.1) {
                         helper.fail("The unpowered balloon left the floor: " + probe[0]);
                     }
+                })
+                .thenSucceed();
+    }
+
+    /**
+     * Required: a powered fire burner and a powered steam vent with no envelope above them run their balloon logic
+     * ({@code tickBalloonLogic} -> {@code tryCreateBalloon}) on their first tick and every lazy tick without throwing.
+     * This is the path of the release-jar {@code AbstractMethodError} on {@code getLevel()}; in dev it guards the
+     * balloon logic itself, {@link RemapSafetyTest} guards the remapping.
+     */
+    @GameTest(structure = "sable:physicstest.gravity", maxTicks = 200)
+    public void poweredBurnerAndVentTickWithoutBalloon(final GameTestHelper helper) {
+        final BlockPos vent = new BlockPos(2, 2, 4);
+        helper.setBlock(BURNER, AeroBlocks.HOT_AIR_BURNER.defaultBlockState()
+                .setValue(HotAirBurnerBlock.POWERED, true)
+                .setValue(HotAirBurnerBlock.VARIANT, HotAirBurnerBlock.Variant.FIRE));
+        helper.setBlock(REDSTONE, Blocks.REDSTONE_BLOCK);
+        helper.setBlock(vent, AeroBlocks.STEAM_VENT);
+        helper.setBlock(vent.west(), Blocks.REDSTONE_BLOCK);
+
+        helper.startSequence()
+                .thenIdle(100)
+                .thenExecute(() -> {
+                    final HotAirBurnerBlockEntity burner = helper.getBlockEntity(BURNER, HotAirBurnerBlockEntity.class);
+                    if (!burner.canOutputGas()) {
+                        helper.fail("The powered burner does not output gas, so its balloon logic never ran");
+                    }
+                    helper.getBlockEntity(vent, SteamVentBlockEntity.class);
                 })
                 .thenSucceed();
     }

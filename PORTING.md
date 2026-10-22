@@ -63,6 +63,15 @@ class in `mc-1.21.11` (or `diff` the two files) to see what replaced it.
   add/remove/rename mixin classes.
 - Access widener entries (`sable.accesswidener`) must point at members that exist in 1.21.11
   (Mojang names, `accessWidener v2 named`).
+- **Mod interfaces must not rely on Minecraft methods for their implementation.** Release jars are
+  intermediary-named: Loom renames `BlockEntity.getLevel()` to `method_10997`, but an abstract method of a mod
+  interface (e.g. `Level getLevel();` on an interface implemented by block entities) keeps its name, because it
+  overrides nothing in Minecraft. In dev (Mojang names) the inherited Minecraft method satisfies it; in the release
+  jar it throws `AbstractMethodError` (the hot air burner crash). Give such methods a mod-prefixed name
+  (`sable$getLevel`, `aeronautics$getBlockPos`) and implement them explicitly, or as a default that casts `this` to
+  the Minecraft type and calls the Minecraft method (that call is remapped). Likewise, a default method in a mod
+  interface never overrides a Minecraft method after remapping. The required GameTest `RemapSafetyTest`
+  (`dev.mcf.e2e.RemapSafety`) checks every class of the three mods (and the Create classes they mix into).
 - Keep behaviour. This is a port, not a rewrite: preserve the original logic wherever 1.21.11 allows.
 - Don't stub things out just to compile. If something truly can't be ported yet, leave it compiling
   with a `// PORT-TODO(1.21.11): <what and why>` comment and list it in your final report.

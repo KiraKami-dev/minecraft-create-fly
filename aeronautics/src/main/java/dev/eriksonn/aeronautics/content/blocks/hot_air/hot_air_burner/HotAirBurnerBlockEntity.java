@@ -18,6 +18,7 @@ import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.RandomSource;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.storage.ValueInput;
@@ -266,6 +267,16 @@ public class HotAirBurnerBlockEntity extends SmartBlockEntity
     @Override
     public boolean canOutputGas() {
         return this.signalStrength > 0 & !this.isRemoved();
+    }
+
+    @Override
+    public BlockPos aeronautics$getBlockPos() {
+        return this.getBlockPos();
+    }
+
+    @Override
+    public Level aeronautics$getLevel() {
+        return this.getLevel();
     }
 
     @Override

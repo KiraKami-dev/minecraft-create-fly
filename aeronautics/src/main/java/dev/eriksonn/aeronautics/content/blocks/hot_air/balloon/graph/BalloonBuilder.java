@@ -267,7 +267,7 @@ public class BalloonBuilder {
      * Attempts to build a balloon starting from a heater (hot air source)
      */
     public static Balloon attemptBuildBalloon(final BlockEntityLiftingGasProvider heater, final BlockPos startPos) {
-        final Level level = heater.getLevel();
+        final Level level = heater.aeronautics$getLevel();
         final LevelAccelerator accelerator = new LevelAccelerator(level);
 
         final ObjectArrayList<BlockEntityLiftingGasProvider> heaters = new ObjectArrayList<>();

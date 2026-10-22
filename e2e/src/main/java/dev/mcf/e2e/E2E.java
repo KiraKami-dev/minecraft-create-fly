@@ -54,6 +54,12 @@ public final class E2E implements ModInitializer {
                 } else {
                     LOG.error("E2E: server-class-safety FAIL {}", safety.failures());
                 }
+                final RemapSafety.Result remap = RemapSafety.run();
+                if (remap.failures().isEmpty()) {
+                    LOG.info("E2E: remap-safety PASS ({} classes)", remap.checked());
+                } else {
+                    LOG.error("E2E: remap-safety FAIL {}", remap.failures());
+                }
             } catch (final Throwable t) {
                 LOG.error("E2E: mixin audit FAILED", t);
             }
