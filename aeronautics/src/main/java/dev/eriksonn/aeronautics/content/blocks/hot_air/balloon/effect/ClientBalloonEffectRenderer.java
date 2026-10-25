@@ -1,5 +1,6 @@
 package dev.eriksonn.aeronautics.content.blocks.hot_air.balloon.effect;
 
+import com.mojang.blaze3d.buffers.GpuBuffer;
 import com.mojang.blaze3d.buffers.GpuBufferSlice;
 import com.mojang.blaze3d.buffers.Std140Builder;
 import com.mojang.blaze3d.buffers.Std140SizeCalculator;
@@ -22,6 +23,7 @@ import dev.eriksonn.aeronautics.content.blocks.hot_air.balloon.Balloon;
 import dev.eriksonn.aeronautics.content.blocks.hot_air.balloon.ClientBalloon;
 import dev.eriksonn.aeronautics.content.blocks.hot_air.balloon.map.BalloonMap;
 import dev.ryanhcode.sable.veillite.api.event.VeilRenderLevelStageEvent;
+import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.renderer.DynamicUniformStorage;
@@ -34,6 +36,7 @@ import org.joml.Matrix4f;
 import org.joml.Matrix4fc;
 
 import java.nio.ByteBuffer;
+import java.util.List;
 import java.util.OptionalDouble;
 import java.util.OptionalInt;
 
@@ -170,7 +173,48 @@ public class ClientBalloonEffectRenderer {
         final AbstractTexture side = minecraft.getTextureManager().getTexture(SIDE_TEXTURE);
         final AbstractTexture top = minecraft.getTextureManager().getTexture(TOP_TEXTURE);
         final RenderSystem.AutoStorageIndexBuffer indices = RenderSystem.getSequentialBuffer(VertexFormat.Mode.QUADS);
-        boolean drawn = false;
+
+        // Meshes, uniforms and the index buffer are all prepared before the pass opens: building buffers and writing
+        // uniforms are commands blaze3d refuses while a render pass is open ("Close the existing render pass before
+        // performing additional commands"), which crashed every client with a heated balloon in view.
+        final List<HeatedCulledRenderRegion> regions = new ObjectArrayList<>();
+        final List<GpuBufferSlice> regionTransforms = new ObjectArrayList<>();
+        final List<GpuBufferSlice> regionUniforms = new ObjectArrayList<>();
+        int maxIndexCount = 0;
+        for (final Balloon balloon : balloonMap.getBalloons()) {
+            final ClientBalloon clientBalloon = (ClientBalloon) balloon;
+
+            final HeatedCulledRenderRegion renderRegion = clientBalloon.getRenderRegion();
+
+            if (renderRegion == null) {
+                continue;
+            }
+
+            final GpuBufferSlice transform = renderRegion.prepare(modelView);
+            if (transform == null) {
+                continue;
+            }
+
+            float filledPercent = 0.0f;
+
+            // These should all have the same client predicted volume, but we pick the max
+            // to be safe
+            for (final BlockEntityLiftingGasProvider heater : balloon.getHeaters()) {
+                filledPercent = Math.max(filledPercent, (float) heater.getClientPredictedVolume() / balloon.getCapacity());
+            }
+
+            filledPercent = Mth.clamp(filledPercent, 0.0f, 1.0f);
+            regions.add(renderRegion);
+            regionTransforms.add(transform);
+            regionUniforms.add(uniforms.writeUniform(new HotAirUniform(scroll, (1.0f - filledPercent) * (balloon.getHeight() + 1.0f))));
+            maxIndexCount = Math.max(maxIndexCount, renderRegion.getIndexCount());
+        }
+
+        if (regions.isEmpty()) {
+            return;
+        }
+
+        final GpuBuffer indexBuffer = indices.getBuffer(maxIndexCount);
 
         try (final RenderPass renderPass = encoder.createRenderPass(() -> "Aeronautics hot air overlay",
                 overlayTarget.getColorTextureView(), OptionalInt.empty(), overlayTarget.getDepthTextureView(), OptionalDouble.empty())) {
@@ -179,34 +223,13 @@ public class ClientBalloonEffectRenderer {
             renderPass.bindTexture("Sampler0", side.getTextureView(), side.getSampler());
             renderPass.bindTexture("Sampler1", top.getTextureView(), top.getSampler());
 
-            for (final Balloon balloon : balloonMap.getBalloons()) {
-                final ClientBalloon clientBalloon = (ClientBalloon) balloon;
-
-                final HeatedCulledRenderRegion renderRegion = clientBalloon.getRenderRegion();
-
-                if (renderRegion == null) {
-                    continue;
-                }
-
-                float filledPercent = 0.0f;
-
-                // These should all have the same client predicted volume, but we pick the max
-                // to be safe
-                for (final BlockEntityLiftingGasProvider heater : balloon.getHeaters()) {
-                    filledPercent = Math.max(filledPercent, (float) heater.getClientPredictedVolume() / balloon.getCapacity());
-                }
-
-                filledPercent = Mth.clamp(filledPercent, 0.0f, 1.0f);
-                final GpuBufferSlice uniform = uniforms.writeUniform(new HotAirUniform(scroll, (1.0f - filledPercent) * (balloon.getHeight() + 1.0f)));
-                renderPass.setUniform(HOT_AIR_UNIFORM, uniform);
-
-                drawn |= renderRegion.render(renderPass, modelView, indices) > 0;
+            for (int i = 0; i < regions.size(); i++) {
+                renderPass.setUniform(HOT_AIR_UNIFORM, regionUniforms.get(i));
+                regions.get(i).draw(renderPass, regionTransforms.get(i), indexBuffer, indices.type());
             }
         }
 
-        if (drawn) {
-            applyHeatingToScreen(encoder, mainTarget);
-        }
+        applyHeatingToScreen(encoder, mainTarget);
     }
 
     private static void applyHeatingToScreen(final CommandEncoder encoder, final RenderTarget mainTarget) {

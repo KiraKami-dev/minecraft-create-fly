@@ -46,19 +46,20 @@ public class HeatedCulledRenderRegion implements NativeResource {
     }
 
     /**
-     * Draws the region into the given pass (pipeline, textures and the {@code HotAirInfo} block are bound by the
-     * caller). Upstream drew a {@code VertexBuffer} with the current Veil shader instance.
+     * Builds the mesh if needed and writes this frame's transform. Must be called before the render pass opens:
+     * building and writing uniforms are commands blaze3d refuses while a pass is open.
      *
      * @param modelView The world model view matrix (camera rotation)
-     * @return the index count needed from the shared quad index buffer, or 0 if nothing was drawn
+     * @return the transform for {@link #draw}, or null if there is nothing to draw
      */
-    public int render(final RenderPass renderPass, final Matrix4fc modelView, final RenderSystem.AutoStorageIndexBuffer indices) {
+    @Nullable
+    public GpuBufferSlice prepare(final Matrix4fc modelView) {
         if (!this.built) {
             this.build();
         }
 
         if (this.buffer == null || this.indexCount == 0) {
-            return 0;
+            return null;
         }
 
         final Minecraft client = Minecraft.getInstance();
@@ -80,11 +81,24 @@ public class HeatedCulledRenderRegion implements NativeResource {
                 .translate((float) relativePos.x, (float) relativePos.y, (float) relativePos.z)
                 .rotate(globalOrientation);
 
-        final GpuBufferSlice transform = RenderSystem.getDynamicUniforms().writeTransform(modelViewMatrix, COLOR, new Vector3f(), new Matrix4f());
+        return RenderSystem.getDynamicUniforms().writeTransform(modelViewMatrix, COLOR, new Vector3f(), new Matrix4f());
+    }
+
+    /**
+     * Draws the region into the given pass (pipeline, textures and the {@code HotAirInfo} block are bound by the
+     * caller). Upstream drew a {@code VertexBuffer} with the current Veil shader instance.
+     *
+     * @param transform   the transform from {@link #prepare}
+     * @param indexBuffer the shared quad index buffer, already sized for {@link #getIndexCount()}
+     */
+    public void draw(final RenderPass renderPass, final GpuBufferSlice transform, final GpuBuffer indexBuffer, final VertexFormat.IndexType indexType) {
         renderPass.setUniform("DynamicTransforms", transform);
         renderPass.setVertexBuffer(0, this.buffer);
-        renderPass.setIndexBuffer(indices.getBuffer(this.indexCount), indices.type());
+        renderPass.setIndexBuffer(indexBuffer, indexType);
         renderPass.drawIndexed(0, 0, this.indexCount, 1);
+    }
+
+    public int getIndexCount() {
         return this.indexCount;
     }
 

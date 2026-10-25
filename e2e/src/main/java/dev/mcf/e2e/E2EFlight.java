@@ -36,6 +36,7 @@ final class E2EFlight {
     private static final BlockPos DECK_MIN = new BlockPos(-1, -60, 8);
     private static final BlockPos MOTOR = new BlockPos(0, -60, 9);
     private static final BlockPos ASSEMBLER = new BlockPos(-1, -59, 8);
+    private static final BlockPos BALLOON_MIN = new BlockPos(3, -58, 8);
 
     private SubLevel ship;
     private BlockPos plotMotor;
@@ -95,6 +96,16 @@ final class E2EFlight {
                 DECK_MIN.getX() + 3, DECK_MIN.getY() + 2, DECK_MIN.getZ() + 3)));
         level.addFreshEntity(new SuperGlueEntity(level, new AABB(DECK_MIN.getX(), DECK_MIN.getY() + 2, DECK_MIN.getZ(),
                 DECK_MIN.getX() + 3, DECK_MIN.getY() + 3, DECK_MIN.getZ() + 3)));
+        // a powered burner under an envelope dome on the ground beside the ship, so a heated balloon (and its hot air
+        // effect) is drawn; a balloon in view used to crash the client ("Close the existing render pass")
+        for (final BlockPos pos : BlockPos.betweenClosed(BALLOON_MIN, BALLOON_MIN.offset(4, 4, 4))) {
+            final int dx = pos.getX() - BALLOON_MIN.getX(), dy = pos.getY() - BALLOON_MIN.getY(), dz = pos.getZ() - BALLOON_MIN.getZ();
+            if (dx == 0 || dx == 4 || dz == 0 || dz == 4 || dy == 4) {
+                level.setBlockAndUpdate(pos, aero("white_envelope").defaultBlockState());
+            }
+        }
+        level.setBlockAndUpdate(BALLOON_MIN.offset(2, -2, 2), aero("adjustable_burner").defaultBlockState());
+        level.setBlockAndUpdate(BALLOON_MIN.offset(3, -2, 2), Blocks.REDSTONE_BLOCK.defaultBlockState());
         E2E.LOG.info("E2E: flight ship built");
     }
 
