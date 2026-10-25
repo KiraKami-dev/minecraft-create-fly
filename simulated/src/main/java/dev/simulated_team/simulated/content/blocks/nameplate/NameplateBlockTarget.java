@@ -4,7 +4,6 @@ import com.zurrtum.create.content.redstone.displayLink.DisplayLinkContext;
 import com.zurrtum.create.content.redstone.displayLink.target.DisplayTargetStats;
 import dev.simulated_team.simulated.Simulated;
 import dev.simulated_team.simulated.api.ConditionalDisplayTarget;
-import dev.simulated_team.simulated.data.SimLang;
 import com.zurrtum.create.catnip.theme.Color;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
@@ -21,7 +20,7 @@ public class NameplateBlockTarget extends ConditionalDisplayTarget {
 
     @Override
     public Component getErrorMessage(final DisplayLinkContext context) {
-        return SimLang.translate("nameplate.target.unwaxed").color(Color.RED).component();
+        return Component.translatable(Simulated.MOD_ID + ".nameplate.target.unwaxed").withColor(Color.RED.getRGB());
     }
 
     @Override

@@ -2,7 +2,7 @@ package dev.simulated_team.simulated.util.extra_kinetics;
 
 import com.zurrtum.create.content.kinetics.base.IRotate;
 import com.zurrtum.create.content.kinetics.base.KineticBlockEntity;
-import dev.simulated_team.simulated.data.SimLang;
+import dev.simulated_team.simulated.Simulated;
 import net.minecraft.network.chat.Component;
 import org.jetbrains.annotations.Nullable;
 
@@ -43,7 +43,7 @@ public interface ExtraKinetics {
         KineticBlockEntity getParentBlockEntity();
 
         default Component getKey() {
-            return SimLang.translate("extra_kinetics.default").component();
+            return Component.translatable(Simulated.MOD_ID + ".extra_kinetics.default");
         }
     }
 }

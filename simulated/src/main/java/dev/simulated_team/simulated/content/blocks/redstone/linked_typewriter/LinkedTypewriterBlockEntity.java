@@ -9,7 +9,7 @@ import com.zurrtum.create.foundation.gui.menu.MenuProvider;
 import dev.ryanhcode.sable.Sable;
 import dev.simulated_team.simulated.compat.computercraft.AttachedComputerHandler;
 import dev.simulated_team.simulated.content.blocks.redstone.linked_typewriter.screen.LinkedTypewriterMenuCommon;
-import dev.simulated_team.simulated.data.SimLang;
+import dev.simulated_team.simulated.Simulated;
 import dev.simulated_team.simulated.index.SimBlocks;
 import dev.simulated_team.simulated.index.SimSoundEvents;
 import dev.simulated_team.simulated.mixin_interface.PlayerTypewriterExtension;
@@ -130,13 +130,13 @@ public class LinkedTypewriterBlockEntity extends SmartBlockEntity implements Men
     }
 
     public void sendConnectMessage(final Player player) {
-        final Component customName = this.components().getOrDefault(DataComponents.CUSTOM_NAME, SimLang.translate("linked_typewriter.title").component());
-        player.displayClientMessage(SimLang.translate("linked_typewriter.start_controlling", customName.getString()).component(), true);
+        final Component customName = this.components().getOrDefault(DataComponents.CUSTOM_NAME, Component.translatable(Simulated.MOD_ID + ".linked_typewriter.title"));
+        player.displayClientMessage(Component.translatable(Simulated.MOD_ID + ".linked_typewriter.start_controlling", customName.getString()), true);
     }
 
     public void sendDisconnectMessage(final Player player) {
-        final Component customName = this.components().getOrDefault(DataComponents.CUSTOM_NAME, SimLang.translate("linked_typewriter.title").component());
-        player.displayClientMessage(SimLang.translate("linked_typewriter.stop_controlling", customName.getString()).component(), true);
+        final Component customName = this.components().getOrDefault(DataComponents.CUSTOM_NAME, Component.translatable(Simulated.MOD_ID + ".linked_typewriter.title"));
+        player.displayClientMessage(Component.translatable(Simulated.MOD_ID + ".linked_typewriter.stop_controlling", customName.getString()), true);
     }
 
     public boolean checkUser(final UUID user) {

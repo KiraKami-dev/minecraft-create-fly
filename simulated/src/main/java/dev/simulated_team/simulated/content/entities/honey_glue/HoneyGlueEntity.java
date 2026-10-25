@@ -3,7 +3,6 @@ package dev.simulated_team.simulated.content.entities.honey_glue;
 import com.zurrtum.create.api.schematic.requirement.SpecialEntityItemRequirement;
 import com.zurrtum.create.content.schematics.requirement.ItemRequirement;
 import dev.simulated_team.simulated.Simulated;
-import dev.simulated_team.simulated.data.SimLang;
 import dev.simulated_team.simulated.index.SimEntityTypes;
 import dev.simulated_team.simulated.index.SimItems;
 import dev.simulated_team.simulated.network.packets.honey_glue.HoneyGlueSyncBoundsPacket;
@@ -69,7 +68,7 @@ public class HoneyGlueEntity extends Entity implements SpecialEntityItemRequirem
             this.updateClientBounds();
         } else {
             if (this.getBoundingBox().getXsize() <0.9f || this.getBoundingBox().getYsize() <0.9f || this.getBoundingBox().getZsize() < 0.9f) {
-                Simulated.LOGGER.warn("Removing {} ({}) due to invalid bounds!", this.getUUID(), SimLang.builder().add(this.getName()).string());
+                Simulated.LOGGER.warn("Removing {} ({}) due to invalid bounds!", this.getUUID(), this.getName().getString());
                 this.discard();
             }
         }
