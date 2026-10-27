@@ -1,0 +1,31 @@
+{
+  "cli_version": "0.10.6",
+  "checkpoint_id": "01M5YVX8BHW78F8TCJ7BFTMBYK",
+  "strategy": "manual-commit",
+  "branch": "fix/iris-sublevels",
+  "checkpoints_count": 7,
+  "files_touched": [
+    "PROGRESS.md",
+    "sable/src/main/java/dev/ryanhcode/sable/SableClient.java",
+    "sable/src/main/java/dev/ryanhcode/sable/mixin/sublevel_render/impl/sodium/SectionCompilerMixin.java",
+    "sable/src/main/java/dev/ryanhcode/sable/sublevel/render/dispatcher/VanillaSubLevelRenderDispatcher.java",
+    "sable/src/main/java/dev/ryanhcode/sable/sublevel/render/iris/SubLevelIrisCompat.java",
+    "sable/src/main/resources/sable.mixins.json"
+  ],
+  "sessions": [
+    {
+      "metadata": "/0/metadata.json",
+      "transcript": "/0/full.jsonl",
+      "compact_transcript": "/0/transcript.jsonl",
+      "content_hash": "/0/content_hash.txt",
+      "prompt": "/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 424,
+    "cache_creation_tokens": 330580,
+    "cache_read_tokens": 43192361,
+    "output_tokens": 119386,
+    "api_call_count": 201
+  }
+}
