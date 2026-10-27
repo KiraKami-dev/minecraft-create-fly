@@ -1,6 +1,6 @@
 # minecraft-create-fly progress
 
-_Last updated: 2026-10-18_
+_Last updated: 2026-10-27_
 
 Port of Create Aeronautics to Minecraft 1.21.11 Fabric, on top of Create Fly 1.21.11-6.0.9-5. Task table in `ROADMAP.md`, porting rules in `PORTING.md`.
 
@@ -36,7 +36,19 @@ flowchart LR
 - 2026-10-18: release `create-aeronautics-1.21.11-fabric-2026-10-18.zip` (integration 10860dd): adds the teammate's Lithium dedicated-server crash fix (propeller bearing `LangBuilder` → `Component`).
 - 2026-10-18: Lithium crash reproduced and confirmed fixed on a real server; new required GameTest `server_class_safety` reflects over 114 mod classes like Lithium (no other offenders). Modrinth files ready in `~/Documents/Projects/minecraft-create-fly-release/` (`modrinth-jars/` + `.mrpack`).
 
+- 2026-10-25: Friends' server crash on lighting a balloon reproduced with the real modpack (43 Modrinth jars): v2026.10.18 dies with `AbstractMethodError` (`BlockEntityLiftingGasProvider.getLevel()`, dev-vs-intermediary remap); v2026.10.22 (origin/main 1c5c20c) survives and a balloon ship lifts (y -54 to -13 in 30 s). Local `integration` lacks 1c5c20c.
+- 2026-10-25: v2026.10.22 release-jar sweep: ASM link check over all 2648 classes (client+server, intermediary) finds 0 unimplemented/missing methods or fields (10.18: 7 broken BEs); full-modpack server ran all 48 Aero/Simulated blocks powered + rotating, a 1530-block balloon airship (climbs to y~160), save/restart reload: no errors. Not covered: production client, right-click-only blocks (physics assembler), multiplayer.
+- 2026-10-25: Second crash found: v2026.10.22 client crashes with a heated balloon in view (`Close the existing render pass`, ClientBalloonEffectRenderer; user's crash report 2026-10-22 22:01; not shader-specific). Fixed on branch `fix/balloon-render-pass` (20d66c8, aeronautics port.2): e2e flight now draws a balloon, red before / green after (vanilla + Sodium). Verified on the user's TLauncher client (shaders off) on a copy of the real server world: balloon lit, ship flown to y~186, server restart + rejoin, no crash.
+- 2026-10-25: Third crash found by playing on the user's client: dedicated server dies when a Physics Assembler can't disassemble a tilted ship (SimAssemblyException -> client-only catnip Lang). Fixed with 4 other server-side SimLang calls, branch `fix/balloon-render-pass` 1976a65 (simulated port.1). Static scan of non-client classes referencing client code: nothing else on server paths found.
+- 2026-10-25: Client playtest (user's TLauncher, test world copy in scratch run-world): mini propeller boats float/assemble but flip once lift is strong; single 3x3 rotor is underpowered (thrust 1382 vs weight ~11*mass). Lift-only air tests via `/sable assemble area` invalid (rotors never start: transmitters not re-read). Next: find a way to drive levers on an assembled ship (plots are in sublevels/*.slvls, not region files), then test twin counter-rotating gyro rotors.
+- 2026-10-25: Released v2026.10.25 (main 1976a65: aeronautics port.2, simulated port.1, sable port.1). Friends' repo A1K2S3/minecraft 64c3894 re-adds Aeronautics from it (url entries restored on top of retired_prefixes) plus Weapons Expanded, Enchantments Expansion, Extended Vanilla Endgame; full pack (166 mods) boots on a dedicated server. Boat stability (e2e `boat` scenario, uncommitted in scratch): gyro bearing + rotor exactly over the hull centre stays <5 deg; off-centre or non-gyro flips.
+
+- 2026-10-27: Fixed: with an Iris shader pack every sub-level was invisible (Sable's own `sable:pipeline/sub_level_*` pipelines were unknown to Iris, so the draw landed in a buffer the pack's final pass overwrote). Sable now assigns them to Iris terrain programs (`IrisApi.assignPipeline`), uploads a per-section `DynamicTransforms` (view x pose, offset = section origin - anchor), keeps sub-level meshes and pipelines in `BLOCK` format (Iris widens both racily). Branch `fix/iris-sublevels`. Verified on the user's client (Complementary): visible paused/moving/landed/ridden; e2e client + flight pass with and without Sodium. Not done: sub-levels in the shader pack's shadow pass; normals of rotated sub-levels use the camera's model-view inverse; no e2e Iris scene.
 ## Blockers
+- 2026-10-27: Shaders off on macOS: things drawn after sub-levels (entities, translucent terrain, clouds) ignore the ship's depth (mobs seen through the ship you ride). Not water occlusion, not sky-light shadows (toggled each off, still broken). User says Mac only. Parked by the user in favour of the Iris issue.
+- 2026-10-27: Chunk-fade theory for the see-through world disproved (e2e Sodium probe on branch fix/sodium-fade-ride, uncommitted). User's client now Sodium 0.8.14 + Iris 1.10.8 + chunk fade 0 (old jars/options in .minecraft/backup/2026-10-27-sodium-fade).
+- Iris shaders on + balloon untested (effect also runs in Iris shadow pass). Local `integration` is behind origin/main (1c5c20c..1976a65).
+- e2e remap-safety check false-positives on mixin-added SoundInstanceDelegated methods (Sable AbstractSoundInstanceMixin); release jars are fine.
 - None. Note: this shell's `JAVA_HOME` is JDK 17 and the build needs 21; `e2e.sh` picks 21 itself; for Gradle use `JAVA_HOME=$(/usr/libexec/java_home -v 21)`.
 
 ## Decisions

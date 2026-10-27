@@ -1,5 +1,7 @@
 package dev.ryanhcode.sable;
 
+import dev.ryanhcode.sable.sublevel.render.iris.SubLevelIrisCompat;
+import dev.ryanhcode.sable.veillite.api.compat.IrisCompat;
 import dev.ryanhcode.sable.debug.SableClientGizmoHandler;
 import dev.ryanhcode.sable.network.client.SableClientNetworkEventLoop;
 import dev.ryanhcode.sable.render.SableRenderBootstrap;
@@ -27,6 +29,10 @@ public class SableClient {
 
         SableRenderBootstrap.init();
         VeilRenderSystem.init();
+
+        if (IrisCompat.isLoaded()) {
+            SubLevelIrisCompat.registerPipelines();
+        }
 
         GIZMO_HANDLER.init();
     }

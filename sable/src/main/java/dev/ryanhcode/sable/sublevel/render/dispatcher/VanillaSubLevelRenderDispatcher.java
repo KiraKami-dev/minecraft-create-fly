@@ -20,9 +20,11 @@ import dev.ryanhcode.sable.render.dynamic_shade.SableDynamicDirectionalShading;
 import dev.ryanhcode.sable.sublevel.ClientSubLevel;
 import dev.ryanhcode.sable.sublevel.render.SubLevelRenderData;
 import dev.ryanhcode.sable.sublevel.render.SubLevelRenderPipelines;
+import dev.ryanhcode.sable.sublevel.render.iris.SubLevelIrisCompat;
 import dev.ryanhcode.sable.sublevel.render.vanilla.VanillaChunkedSubLevelRenderData;
 import dev.ryanhcode.sable.sublevel.render.vanilla.VanillaSingleSubLevelRenderData;
 import dev.ryanhcode.sable.sublevel.water_occlusion.WaterOcclusionContainer;
+import dev.ryanhcode.sable.veillite.api.compat.IrisCompat;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import it.unimi.dsi.fastutil.objects.ReferenceOpenHashSet;
@@ -63,7 +65,9 @@ import org.joml.Matrix4fc;
 import org.joml.Quaternionf;
 import org.joml.Vector3d;
 import org.joml.Vector3dc;
+import org.joml.Vector3f;
 import org.joml.Vector4f;
+import org.joml.Vector4fc;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -85,7 +89,9 @@ import java.util.function.Consumer;
  */
 public class VanillaSubLevelRenderDispatcher implements SubLevelRenderDispatcher {
 
-    private static final List<String> DYNAMIC_UNIFORMS = List.of("ChunkSection", SubLevelRenderPipelines.SUB_LEVEL_UNIFORM);
+    private static final List<String> DYNAMIC_UNIFORMS = List.of("ChunkSection", SubLevelRenderPipelines.SUB_LEVEL_UNIFORM, "DynamicTransforms");
+    private static final Vector4fc WHITE = new Vector4f(1.0f, 1.0f, 1.0f, 1.0f);
+    private static final Matrix4fc IDENTITY = new Matrix4f();
     private static final Direction[] FACE_SHADE_ORDER = {Direction.DOWN, Direction.UP, Direction.NORTH, Direction.SOUTH, Direction.WEST, Direction.EAST};
 
     /**
@@ -391,6 +397,10 @@ public class VanillaSubLevelRenderDispatcher implements SubLevelRenderDispatcher
 
         final List<PendingDraw> pendingDraws = new ObjectArrayList<>();
         final List<DynamicUniforms.ChunkSectionInfo> sectionInfos = new ObjectArrayList<>();
+        // Iris shader pack programs ignore the sub-level pose block and take the pose from DynamicTransforms instead
+        final boolean shaderPack = IrisCompat.isLoaded() && SubLevelIrisCompat.isShaderPackInUse();
+        final List<DynamicUniforms.Transform> sectionTransforms = new ObjectArrayList<>();
+        final Matrix4f shaderPackModelView = new Matrix4f();
         final Matrix4f transformation = new Matrix4f();
         final Vector4f params = new Vector4f();
         final Vector3d sectionCenter = new Vector3d();
@@ -422,6 +432,7 @@ public class VanillaSubLevelRenderDispatcher implements SubLevelRenderDispatcher
                         getAnchoredTransformation(renderPose, anchor, cameraX, cameraY, cameraZ, transformation);
                         params.set(dynamicShading, sublevel.getLatestSkyLightScale() / 15.0f, sublevel == fogFreeSubLevel ? 0.0f : 1.0f, 0.0f);
                         subLevelUniform = this.uniformStorage.writeUniform(new SubLevelRenderPipelines.SubLevelUniform(transformation, faceShadeA, faceShadeB, params));
+                        shaderPackModelView.set(modelView).mul(transformation);
                     }
 
                     if (sectionIndex == -1) {
@@ -429,6 +440,10 @@ public class VanillaSubLevelRenderDispatcher implements SubLevelRenderDispatcher
                         sectionInfos.add(new DynamicUniforms.ChunkSectionInfo(new Matrix4f(modelView),
                                 origin.getX() - anchor.getX(), origin.getY() - anchor.getY(), origin.getZ() - anchor.getZ(),
                                 renderSection.getVisibility(now), atlasWidth, atlasHeight));
+                        if (shaderPack) {
+                            sectionTransforms.add(new DynamicUniforms.Transform(new Matrix4f(shaderPackModelView), WHITE,
+                                    new Vector3f(origin.getX() - anchor.getX(), origin.getY() - anchor.getY(), origin.getZ() - anchor.getZ()), IDENTITY));
+                        }
                     }
 
                     if (buffers.getIndexBuffer() == null && buffers.getIndexCount() > this.maxIndicesRequired) {
@@ -448,6 +463,7 @@ public class VanillaSubLevelRenderDispatcher implements SubLevelRenderDispatcher
 
         if (!pendingDraws.isEmpty()) {
             final GpuBufferSlice[] sectionUniforms = RenderSystem.getDynamicUniforms().writeChunkSections(sectionInfos.toArray(new DynamicUniforms.ChunkSectionInfo[0]));
+            final GpuBufferSlice[] sectionTransformUniforms = shaderPack ? RenderSystem.getDynamicUniforms().writeTransforms(sectionTransforms.toArray(new DynamicUniforms.Transform[0])) : null;
 
             // Translucent geometry is drawn back to front
             pendingDraws.sort(Comparator.comparingDouble(PendingDraw::distance).reversed());
@@ -456,9 +472,13 @@ public class VanillaSubLevelRenderDispatcher implements SubLevelRenderDispatcher
                 final SectionBuffers buffers = pending.buffers();
                 final GpuBufferSlice sectionUniform = sectionUniforms[pending.sectionIndex()];
                 final GpuBufferSlice subLevelUniform = pending.subLevelUniform();
+                final GpuBufferSlice transformUniform = sectionTransformUniforms == null ? null : sectionTransformUniforms[pending.sectionIndex()];
                 final BiConsumer<Void, RenderPass.UniformUploader> uploader = (unused, uniformUploader) -> {
                     uniformUploader.upload("ChunkSection", sectionUniform);
                     uniformUploader.upload(SubLevelRenderPipelines.SUB_LEVEL_UNIFORM, subLevelUniform);
+                    if (transformUniform != null) {
+                        uniformUploader.upload("DynamicTransforms", transformUniform);
+                    }
                 };
 
                 // Sections without their own index buffer use the shared sequential quad index buffer and its index type
@@ -607,6 +627,8 @@ public class VanillaSubLevelRenderDispatcher implements SubLevelRenderDispatcher
             final GpuBuffer indexBuffer = this.maxIndicesRequired == 0 ? null : sequentialBuffer.getBuffer(this.maxIndicesRequired);
             final VertexFormat.IndexType indexType = this.maxIndicesRequired == 0 ? null : sequentialBuffer.type();
             final RenderTarget renderTarget = group.outputTarget();
+            final boolean shaderPack = IrisCompat.isLoaded() && SubLevelIrisCompat.isShaderPackInUse();
+            final boolean extendedFormat = shaderPack && SubLevelIrisCompat.setExtendedVertexFormat(false);
 
             try (final RenderPass renderPass = RenderSystem.getDevice()
                     .createCommandEncoder()
@@ -629,6 +651,10 @@ public class VanillaSubLevelRenderDispatcher implements SubLevelRenderDispatcher
                     renderPass.setPipeline(SubLevelRenderPipelines.get(layer));
                     renderPass.bindTexture("Sampler0", this.atlasTexture, sampler);
                     renderPass.drawMultipleIndexed(list, indexBuffer, indexType, DYNAMIC_UNIFORMS, null);
+                }
+            } finally {
+                if (shaderPack) {
+                    SubLevelIrisCompat.setExtendedVertexFormat(extendedFormat);
                 }
             }
         }

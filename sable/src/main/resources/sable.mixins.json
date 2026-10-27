@@ -85,6 +85,7 @@
     "sublevel_render.impl.sodium.RenderSectionManagerMixin",
     "sublevel_render.impl.sodium.DefaultShaderInterfaceMixin",
     "sublevel_render.impl.sodium.GlBufferMixin",
+    "sublevel_render.impl.sodium.SectionCompilerMixin",
     "sublevel_render.impl.sodium.SectionRenderDispatcherMixin",
     "sublevel_render.impl.sodium.ShaderLoaderMixin",
     "sublevel_render.impl.sodium.SodiumWorldRendererMixin",
