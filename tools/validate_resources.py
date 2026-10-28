@@ -15,8 +15,8 @@ Exit code 1 if there are errors."""
 import json, glob, os, sys, re, zipfile
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 VAN = sys.argv[1] if len(sys.argv) > 1 else '/tmp/vanilla-1.21.11'
-MODS = ['simulated', 'aeronautics', 'sable']
-OWN = {'simulated', 'aeronautics', 'sable'}
+MODS = ['simulated', 'aeronautics', 'sable', 'offroad']
+OWN = {'simulated', 'aeronautics', 'sable', 'offroad'}
 REF = f'{ROOT}/reference'
 CF_DATA = f'{REF}/create-fly-1.21.11/src/main/resources/data'
 CF_ASSETS = f'{REF}/create-fly-1.21.11/src/client/resources/assets'

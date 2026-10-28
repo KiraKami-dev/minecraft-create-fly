@@ -31,7 +31,7 @@ import java.util.stream.Stream;
  * </ul>
  */
 public final class RemapSafety {
-    private static final List<String> MODS = List.of("sable", "simulated", "aeronautics");
+    private static final List<String> MODS = List.of("sable", "simulated", "aeronautics", "offroad");
     private static final List<String> MIXIN_TARGET_MODS = List.of("create");
     private static final String MINECRAFT_PACKAGE = "net.minecraft.";
 

@@ -25,8 +25,8 @@ import java.util.stream.Stream;
  * such class of the ported mods, and over everything registered under their namespaces, and reports the failures.
  */
 public final class ServerClassSafety {
-    private static final List<String> MODS = List.of("sable", "simulated", "aeronautics");
-    private static final Set<String> NAMESPACES = Set.of("sable", "simulated", "aeronautics");
+    private static final List<String> MODS = List.of("sable", "simulated", "aeronautics", "offroad");
+    private static final Set<String> NAMESPACES = Set.of("sable", "simulated", "aeronautics", "offroad");
     private static final List<Class<?>> ROOTS = List.of(
             Block.class, Item.class, BlockEntity.class, Entity.class, AbstractContainerMenu.class);
 

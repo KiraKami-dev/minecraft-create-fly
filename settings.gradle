@@ -13,4 +13,5 @@ rootProject.name = 'aeronautics-fabric'
 include('sable')
 include('simulated')
 include('aeronautics')
+include('offroad')
 include('e2e')

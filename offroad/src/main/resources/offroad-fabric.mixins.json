@@ -1,0 +1,12 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "dev.ryanhcode.offroad.fabric.mixin",
+  "compatibilityLevel": "JAVA_18",
+  "mixins": [
+    "MountedItemStorageMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

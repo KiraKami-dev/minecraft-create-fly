@@ -1,0 +1,38 @@
+{
+  "schemaVersion": 1,
+  "id": "${mod_id}",
+  "version": "${version}",
+  "name": "${mod_name}",
+  "description": "${description}",
+  "authors": [
+    "${mod_author}"
+  ],
+  "contact": {
+    "sources": "https://github.com/Creators-of-Aeronautics/Simulated-Project"
+  },
+  "license": "MIT (code), All Rights Reserved (assets)",
+  "icon": "offroad.png",
+  "environment": "*",
+  "accessWidener": "offroad.accesswidener",
+  "entrypoints": {
+    "main": [
+      "dev.ryanhcode.offroad.fabric.OffroadFabric"
+    ],
+    "client": [
+      "dev.ryanhcode.offroad.fabric.OffroadFabricClient"
+    ]
+  },
+  "mixins": [
+    "${mod_id}.mixins.json",
+    "${mod_id}-fabric.mixins.json"
+  ],
+  "depends": {
+    "fabricloader": ">=${fabric_loader_version}",
+    "minecraft": "${minecraft_version}",
+    "java": ">=${java_version}",
+    "fabric-api": "*",
+    "create": ">=6.0.9-",
+    "sable": "*",
+    "simulated": "*"
+  }
+}

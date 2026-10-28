@@ -1,0 +1,27 @@
+version = '1.3.2+mc1.21.11-port.1'
+group = 'dev.ryanhcode.offroad'
+
+base { archivesName = 'offroad-fabric-1.21.11' }
+
+loom {
+    accessWidenerPath = file('src/main/resources/offroad.accesswidener')
+}
+
+dependencies {
+    implementation project(path: ':sable', configuration: 'namedElements')
+    implementation project(path: ':simulated', configuration: 'namedElements')
+    modImplementation "maven.modrinth:create-fly:${create_fly_version}"
+    modImplementation "fuzs.forgeconfigapiport:forgeconfigapiport-fabric:${forgeconfigapiport_version}"
+    compileOnly 'com.google.code.findbugs:jsr305:3.0.2'
+}
+
+processResources {
+    def props = [
+            mod_id: 'offroad', version: project.version, mod_name: 'Create Offroad', mod_author: 'Simulated Team',
+            description: 'Allows you to put almost anything that looks like a wheel to use in making land vehicles.',
+            fabric_loader_version: loader_version, minecraft_version: minecraft_version, java_version: java_version
+    ]
+    inputs.properties props
+    filesMatching(['fabric.mod.json', '*.mixins.json']) { expand props }
+    exclude 'datagen/**'
+}

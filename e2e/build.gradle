@@ -22,11 +22,13 @@ dependencies {
 // Aeronautics (Sable + Create Fly + Simulated only), e.g. to bisect a problem:
 //   ORG_GRADLE_PROJECT_e2eAero=false tools/e2e.sh gametest
 def e2eAero = !project.hasProperty('e2eAero') || project.property('e2eAero') != 'false'
-def aeroGameTestClasses = ['AeronauticsLevititeTest', 'AeronauticsPropellerTest', 'AeronauticsHotAirTest']
+def aeroGameTestClasses = ['AeronauticsLevititeTest', 'AeronauticsPropellerTest', 'AeronauticsHotAirTest', 'OffroadWheelTest']
 if (e2eAero) {
     sourceSets.main.java.srcDir 'src/aero/java'
     dependencies {
         implementation project(path: ':aeronautics', configuration: 'namedElements')
+        // Phase 3: Create Offroad (wheels, borehead bearing)
+        implementation project(path: ':offroad', configuration: 'namedElements')
     }
 }
 processResources {
@@ -114,6 +116,21 @@ if (project.findProperty('e2eScenario') == 'shading') {
             'execute positioned 4 -58 10 run sable spawn platform 4 minecraft:oak_planks',
             'sable teleport @e 4 -58 10 0 180',
             'execute positioned -4 -58 10 run sable spawn platform 4 minecraft:oak_planks',
+    ].join(';')
+}
+
+// -Pe2eScenario=offroad: Create Offroad blocks in front of the camera (renderers): wheel mounts holding a tire (one
+// turned by a creative motor) and a large tire, a borehead bearing and a rock cutting wheel
+if (project.findProperty('e2eScenario') == 'offroad') {
+    e2eCommands = [
+            'time set noon', 'gamerule advance_time false', 'gamerule spawn_mobs false',
+            'tp @a 0 -60 0 0 15',
+            'forceload add -16 0 15 31',
+            'setblock 0 -60 5 offroad:wheel_mount[facing=west]{CurrentStack:{id:"offroad:tire",count:1}}',
+            'setblock 1 -60 5 create:creative_motor[facing=west]',
+            'setblock -4 -60 6 offroad:wheel_mount[facing=east]{CurrentStack:{id:"offroad:large_tire",count:1}}',
+            'setblock 3 -60 5 offroad:borehead_bearing',
+            'setblock 5 -60 5 offroad:rockcutting_wheel',
     ].join(';')
 }
 

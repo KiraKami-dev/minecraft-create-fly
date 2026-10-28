@@ -9,13 +9,13 @@ flowchart LR
   B["✅ Base: Create Fly<br/>1.21.11 Fabric"] --> P1["✅ Phase 1<br/>port Sable physics<br/>(veillite shim for Veil)"]
   P1 --> P2["✅ Phase 2<br/>Simulated + Aeronautics"]
   P2 --> R["⏳ Playtest +<br/>private release"]
-  P2 --> P3["🔄 Phase 3<br/>Create Offroad<br/>(wheels)"]
+  P2 --> P3["🔄 Phase 3<br/>Create Offroad<br/>(wheels, ported)"]
 ```
 
 ## Now
 - Phase 1 code complete (all ROADMAP S rows done, incl. Sodium water occlusion + shadows). Open: hands-on checks by a person (walk/jump on moving sub-levels, camera feel, multiplayer) via `tools/e2e.sh play`.
 - Phase 2 is merged into integration (p2-port fast-forwarded with integration). Per-area notes in `docs/p2-notes/`.
-- 2026-10-28: Phase 3 started: port Create Offroad (wheel mount + tires, rock-cutting wheel, borehead bearing; upstream `reference/simulated-1.21.1/offroad`, 69 files) as `offroad/`, branch `offroad-port`.
+- 2026-10-28: Phase 3: Create Offroad ported as `offroad/` (branch `offroad-port`, not merged or released). Compiles; loads with all mixins applied; server-class/remap safety pass; resources valid. GameTests `OffroadWheelTest`: tires hold a car ~1 block up (bounce <0.01), no-tire control rests on the floor, 4WD car drives straight. Client scene `tools/e2e.sh client offroad` renders mounts, tires (OBJ via Create Fly's loader), borehead, rock cutter. Open: borehead bearing mining not tested in game; hands-on driving.
 
 ## Next
 - Hands-on playtest of Simulated + Aeronautics (`tools/e2e.sh play`, `tools/e2e.sh flight`), then a private release build.
@@ -59,6 +59,7 @@ flowchart LR
 - None. Note: this shell's `JAVA_HOME` is JDK 17 and the build needs 21; `e2e.sh` picks 21 itself; for Gradle use `JAVA_HOME=$(/usr/libexec/java_home -v 21)`.
 
 ## Decisions
+- 2026-10-28: Offroad's borehead storage gate sits on the one InventoryLoaderWrapper (Create Fly containers have too many insert/extract paths); legacy create:bearing re-typing on load dropped (no 1.21.11 world predates it).
 - Keep the GitHub repo private. Why: ARR assets and the PolyForm Shield license on Sable.
 - Push only when the merged state compiles.
 - Cap concurrent Gradle builds at about 4. Why: 16 GB RAM with heavy swap.

@@ -1,0 +1,19 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "dev.ryanhcode.offroad.mixin",
+  "compatibilityLevel": "JAVA_18",
+  "mixins": [
+    "MountedStorageAccessor",
+    "RotationPropagatorMixin",
+    "borehead_collision.BoreheadContraptionEntityMixin"
+  ],
+  "client": [
+    "client.multimining_destruction_progress.LevelRenderMixin",
+    "client.multimining_destruction_progress.ClientLevelAccessor"
+  ],
+  "server": [],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}
