@@ -16,6 +16,7 @@ flowchart LR
 - Phase 1 code complete (all ROADMAP S rows done, incl. Sodium water occlusion + shadows). Open: hands-on checks by a person (walk/jump on moving sub-levels, camera feel, multiplayer) via `tools/e2e.sh play`.
 - Phase 2 is merged into integration (p2-port fast-forwarded with integration). Per-area notes in `docs/p2-notes/`.
 - 2026-10-28: Phase 3: Create Offroad ported as `offroad/` (branch `offroad-port`, not merged or released). Compiles; loads with all mixins applied; server-class/remap safety pass; resources valid. GameTests `OffroadWheelTest`: tires hold a car ~1 block up (bounce <0.01), no-tire control rests on the floor, 4WD car drives straight. Client scene `tools/e2e.sh client offroad` renders mounts, tires (OBJ via Create Fly's loader), borehead, rock cutter. Open: borehead bearing mining not tested in game; hands-on driving.
+- 2026-10-28: Offroad on a copy of the server world (2026-10-25 tar, real 47-jar server modpack, release jars sable port.3 + offroad port.1): loads with no errors; a tired car stands ~1 block up on its tires; a mass-balanced 4WD car drives straight at ~10 blocks/s (a car with both motors on one side curves toward the heavy side: load-dependent wheel drag, upstream physics). Note: wheel mounts placed by /setblock with NBT but no ScrollValue get suspension strength 0 (sits on its hull); player-placed mounts default to 10. Merged to main.
 
 ## Next
 - Hands-on playtest of Simulated + Aeronautics (`tools/e2e.sh play`, `tools/e2e.sh flight`), then a private release build.
