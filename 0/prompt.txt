@@ -154,3 +154,17 @@ is it possible to add wheels in our mod ?
 <status>completed</status>
 <summary>Background command "Rename classes and resolve imports against Create Fly" completed (exit code 0)</summary>
 </task-notification>
+
+---
+
+test it in our server world then push
+
+---
+
+<task-notification>
+<task-id>bua0sn28g</task-id>
+<tool-use-id>toolu_01LtmMXym2SGo1iVibHbAVno</tool-use-id>
+<output-file>/private/tmp/claude-501/-Users-akshatkhair-Documents-Projects-minecraft-create-fly/f1cc7b61-0b42-4621-8875-0fdf1f272ed3/tasks/bua0sn28g.output</output-file>
+<status>completed</status>
+<summary>Background command "Wait for the server to finish starting" completed (exit code 0)</summary>
+</task-notification>
