@@ -3,6 +3,7 @@ package dev.ryanhcode.sable.physics.impl.rapier;
 import dev.ryanhcode.sable.Sable;
 import dev.ryanhcode.sable.api.physics.PhysicsPipeline;
 import dev.ryanhcode.sable.api.physics.PhysicsPipelineBody;
+import dev.ryanhcode.sable.api.physics.force.ImpulseGuard;
 import dev.ryanhcode.sable.api.physics.constraint.*;
 import dev.ryanhcode.sable.api.physics.mass.MassTracker;
 import dev.ryanhcode.sable.api.physics.object.box.BoxHandle;
@@ -451,8 +452,11 @@ public class RapierPhysicsPipeline implements PhysicsPipeline {
     public void applyImpulse(final PhysicsPipelineBody body, final Vector3dc position, final Vector3dc force) {
         this.assertBodyValid(body);
 
-        final Vector3dc centerOfMass = body.getMassTracker().getCenterOfMass();
-        Rapier3D.applyForce(this.scene.handle(), Rapier3D.getID(body), position.x() - centerOfMass.x(), position.y() - centerOfMass.y(), position.z() - centerOfMass.z(), force.x(), force.y(), force.z(), true);
+        final Vector3d leverArm = position.sub(body.getMassTracker().getCenterOfMass(), new Vector3d());
+        if (!ImpulseGuard.check(leverArm, force)) {
+            return;
+        }
+        Rapier3D.applyForce(this.scene.handle(), Rapier3D.getID(body), leverArm.x, leverArm.y, leverArm.z, force.x(), force.y(), force.z(), true);
     }
 
     /**

@@ -117,6 +117,19 @@ if (project.findProperty('e2eScenario') == 'shading') {
     ].join(';')
 }
 
+// -Pe2eScenario=arrow: a platform hovering in front of the camera, physics running, hit from below by arrows
+// (E2EClient logs every sub-level's pose each second; a ship vanishing after a hit shows up as NaN, a jump or removal)
+if (project.findProperty('e2eScenario') == 'arrow') {
+    e2eCommands = [
+            'time set noon', 'gamerule advance_time false', 'gamerule spawn_mobs false',
+            'tp @a 0 -60 0 0 -10',
+            'forceload add -16 0 15 31',
+            'execute positioned 0 -52 12 run sable spawn platform 3 minecraft:oak_planks',
+            'summon minecraft:arrow 0 -59 12 {Motion:[0.0,2.5,0.0]}',
+            'summon minecraft:arrow 1 -59 13 {Motion:[0.0,2.5,0.0]}',
+    ].join(';')
+}
+
 def e2eSceneArgs = [
         '-De2e.enabled=true',
         // -Pe2ePrepare: boot without spawning anything (tools/e2e.sh uses it to make a clean template world)

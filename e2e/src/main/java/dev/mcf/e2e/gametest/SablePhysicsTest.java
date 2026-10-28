@@ -1,19 +1,35 @@
 package dev.mcf.e2e.gametest;
 
+import dev.ryanhcode.sable.api.physics.force.ForceGroups;
 import dev.ryanhcode.sable.api.physics.handle.RigidBodyHandle;
 import dev.ryanhcode.sable.api.sublevel.ServerSubLevelContainer;
+import dev.ryanhcode.sable.companion.math.JOMLConversion;
 import dev.ryanhcode.sable.physics.config.dimension_physics.DimensionPhysicsData;
 import dev.ryanhcode.sable.sublevel.ServerSubLevel;
 import dev.ryanhcode.sable.sublevel.system.SubLevelPhysicsSystem;
 import net.fabricmc.fabric.api.gametest.v1.GameTest;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.HolderSet;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.core.Vec3i;
 import net.minecraft.gametest.framework.GameTestAssertPosException;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.network.chat.Component;
+import net.minecraft.tags.BlockTags;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EntitySpawnReason;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.projectile.EyeOfEnder;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.SimpleExplosionDamageCalculator;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import org.joml.Vector3d;
 import org.joml.Vector3dc;
+
+import java.util.List;
+import java.util.Optional;
+import java.util.function.Function;
 
 import static dev.mcf.e2e.gametest.SableTestHelper.*;
 
@@ -218,6 +234,72 @@ public final class SablePhysicsTest {
                         helper.fail("Drifted sideways while falling: " + probe);
                     }
                     helper.assertValueEqual(blocks, countBlocks(subLevel), "blocks in the sub-level after landing");
+                })
+                .thenSucceed();
+    }
+
+    /**
+     * Projectiles hitting a sub-level push it a little and nothing more. Arrows used to fling it ~20k blocks away
+     * (AbstractArrowMixin transformed a plot-space hit point a second time); every vanilla projectile is checked, plus an
+     * eye of ender flying through and a mace Wind Burst on top.
+     */
+    @GameTest(structure = "sable:physicstest.gravity", maxTicks = 200)
+    public void projectilesDoNotFlingSubLevels(final GameTestHelper helper) {
+        final ServerSubLevel subLevel = spawnBox(helper, new Vector3d(2.5, 2, 2.5), new Vec3i(3, 2, 3), Blocks.OAK_PLANKS.defaultBlockState());
+        final SubLevelProbe probe = new SubLevelProbe(helper, subLevel).sampleEveryTick();
+        final List<EntityType<?>> projectiles = List.of(EntityType.ARROW, EntityType.SPECTRAL_ARROW, EntityType.TRIDENT, EntityType.SNOWBALL,
+                EntityType.EGG, EntityType.WIND_CHARGE, EntityType.SMALL_FIREBALL, EntityType.ENDER_PEARL);
+
+        helper.startSequence()
+                .thenExecuteAfter(10, () -> {
+                    for (int i = 0; i < projectiles.size(); i++) {
+                        final Entity projectile = projectiles.get(i).create(helper.getLevel(), EntitySpawnReason.TRIGGERED);
+                        final Vector3d pos = absolutePosition(helper, new Vector3d(1.6 + (i % 3) * 0.9, 8, 1.6 + (i / 3) * 0.9));
+                        projectile.setPos(pos.x, pos.y, pos.z);
+                        projectile.setDeltaMovement(JOMLConversion.toMojang(absoluteDirection(helper, new Vector3d(0, -2.5, 0))));
+                        helper.getLevel().addFreshEntity(projectile);
+                    }
+                    // an eye of ender flying straight through the box (it never collides, so it must not push)
+                    final Vector3d eyeStart = absolutePosition(helper, new Vector3d(2.5, 2, 0.5));
+                    final EyeOfEnder eye = new EyeOfEnder(helper.getLevel(), eyeStart.x, eyeStart.y, eyeStart.z);
+                    eye.signalTo(JOMLConversion.toMojang(absolutePosition(helper, new Vector3d(2.5, 2, 40))));
+                    helper.getLevel().addFreshEntity(eye);
+                    // a mace's Wind Burst III landing on top of the box: vanilla's ExplodeEffect parameters
+                    final Optional<HolderSet<Block>> immune = helper.getLevel().registryAccess().lookupOrThrow(Registries.BLOCK)
+                            .get(BlockTags.BLOCKS_WIND_CHARGE_EXPLOSIONS).map(Function.identity());
+                    helper.getLevel().explode(null, null, new SimpleExplosionDamageCalculator(false, false, Optional.of(2.2F), immune),
+                            JOMLConversion.toMojang(absolutePosition(helper, new Vector3d(2.5, 3.5, 2.5))), 3.5F, false, Level.ExplosionInteraction.TRIGGER);
+                })
+                .thenExecuteAfter(60, () -> {
+                    probe.assertLoaded();
+                    if (probe.displacement().length() > 2.0 || probe.maxSpeed() > 10.0) {
+                        helper.fail("Projectiles flung the sub-level: " + probe);
+                    }
+                })
+                .thenSucceed();
+    }
+
+    /**
+     * Any point impulse more than a plot away from the centre of mass is a coordinate-space mix-up and is dropped
+     * ({@code ImpulseGuard}), so a future bug like the arrow one cannot fling a sub-level either.
+     */
+    @GameTest(structure = "sable:physicstest.gravity", maxTicks = 100)
+    public void impulseOutsidePlotIsDropped(final GameTestHelper helper) {
+        final ServerSubLevel subLevel = spawnBox(helper, new Vector3d(2.5, 2, 2.5), new Vec3i(3, 2, 3), Blocks.OAK_PLANKS.defaultBlockState());
+        final SubLevelProbe probe = new SubLevelProbe(helper, subLevel).sampleEveryTick();
+
+        helper.startSequence()
+                .thenExecuteAfter(10, () -> {
+                    // a world-space point where a plot-space one belongs
+                    final Vector3d worldPoint = new Vector3d(subLevel.logicalPose().position());
+                    handle(helper, subLevel).applyImpulseAtPoint(worldPoint, absoluteDirection(helper, new Vector3d(0, 2.5, 0)));
+                    subLevel.getOrCreateQueuedForceGroup(ForceGroups.LIFT.get()).applyAndRecordPointForce(worldPoint, absoluteDirection(helper, new Vector3d(0, 2.5, 0)));
+                })
+                .thenExecuteAfter(40, () -> {
+                    probe.assertLoaded();
+                    if (probe.displacement().length() > 0.5 || probe.maxSpeed() > 1.0) {
+                        helper.fail("An impulse outside the plot moved the sub-level: " + probe);
+                    }
                 })
                 .thenSucceed();
     }

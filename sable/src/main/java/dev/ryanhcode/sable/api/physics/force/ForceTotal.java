@@ -99,8 +99,11 @@ public class ForceTotal {
      * @param force    the local impulse to apply [N]
      */
     public void applyImpulseAtPoint(final MassData massTracker, final Vector3dc position, final Vector3dc force) {
-        this.localForce.add(force);
         position.sub(massTracker.getCenterOfMass(), this.temp);
+        if (!ImpulseGuard.check(this.temp, force)) {
+            return;
+        }
+        this.localForce.add(force);
         this.localTorque.add(this.temp.cross(force));
     }
 

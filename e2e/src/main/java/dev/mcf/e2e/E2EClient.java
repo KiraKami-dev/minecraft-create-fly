@@ -1,6 +1,7 @@
 package dev.mcf.e2e;
 
 import dev.ryanhcode.sable.SableClient;
+import dev.ryanhcode.sable.api.sublevel.SubLevelContainer;
 import dev.ryanhcode.sable.render.water_occlusion.WaterOcclusionRenderer;
 import dev.ryanhcode.sable.sublevel.water_occlusion.WaterOcclusionContainer;
 import dev.ryanhcode.sable.util.BoundedBitVolume3i;
@@ -95,6 +96,16 @@ public final class E2EClient implements ClientModInitializer {
             }
         }
 
+        // arrow scenario: where every sub-level is, on both sides, once a second
+        if ("arrow".equals(System.getProperty("e2e.scenario")) && this.inWorldTicks % 20 == 0) {
+            logSubLevels("client", SubLevelContainer.getContainer(minecraft.level));
+            if (minecraft.getSingleplayerServer() != null) {
+                logSubLevels("server", SubLevelContainer.getContainer(minecraft.getSingleplayerServer().overworld()));
+            }
+            E2E.LOG.info("E2E: arrows client={}", minecraft.level.getEntitiesOfClass(net.minecraft.world.entity.projectile.arrow.AbstractArrow.class,
+                    minecraft.player.getBoundingBox().inflate(64)).size());
+        }
+
         for (final int shot : this.flight ? FLIGHT_SHOT_TICKS : SHOT_TICKS) {
             if (this.inWorldTicks == shot) {
                 final String name = (this.flight ? "flight-" : "e2e-") + shot + ".png";
@@ -106,5 +117,14 @@ public final class E2EClient implements ClientModInitializer {
             E2E.LOG.info("E2E: done, closing client");
             minecraft.stop();
         }
+    }
+
+    private void logSubLevels(final String side, final SubLevelContainer container) {
+        if (container == null) {
+            return;
+        }
+        container.getAllSubLevels().forEach(subLevel -> E2E.LOG.info("E2E: t={} {} sub-level {} pos={} rot={} removed={}",
+                this.inWorldTicks, side, subLevel.getUniqueId().toString().substring(0, 8), subLevel.logicalPose().position(),
+                subLevel.logicalPose().orientation(), subLevel.isRemoved()));
     }
 }

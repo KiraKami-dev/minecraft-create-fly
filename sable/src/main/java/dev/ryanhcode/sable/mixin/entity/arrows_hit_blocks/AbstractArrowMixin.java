@@ -41,6 +41,8 @@ public abstract class AbstractArrowMixin extends Entity {
      * PORT(1.21.11): AbstractArrow#onHitBlock no longer points the delta movement at the hit location and sets the
      * position with setPosRaw; it nudges the arrow back by the sign of its velocity with setPos and zeroes the velocity.
      * Both the impulse and the sub-level local re-positioning therefore happen here, while the velocity is still intact.
+     * stepMoveAndHit has already moved the arrow to the hit location, which for a sub-level hit is in plot space,
+     * so the position must not be transformed again (that put the impulse ~2e7 blocks out and flung the sub-level away).
      */
     @WrapOperation(method = "onHitBlock", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/entity/projectile/arrow/AbstractArrow;setPos(Lnet/minecraft/world/phys/Vec3;)V"))
     private void sable$setPos(final AbstractArrow instance,
@@ -54,12 +56,11 @@ public abstract class AbstractArrowMixin extends Entity {
             return;
         }
 
-        final Vec3 localPosition = subLevel.logicalPose().transformPositionInverse(this.position());
-        final Vec3 diff = blockHitResult.getLocation().subtract(localPosition);
+        final Vec3 localPosition = blockHitResult.getLocation();
+        final Vec3 diff = subLevel.logicalPose().transformNormalInverse(this.getDeltaMovement());
 
         if (!this.level().isClientSide() && !this.isInGround()) {
-            final Vec3 localImpulse = subLevel.logicalPose().transformNormalInverse(this.getDeltaMovement());
-            RigidBodyHandle.of((ServerSubLevel) subLevel).applyImpulseAtPoint(localPosition, localImpulse);
+            RigidBodyHandle.of((ServerSubLevel) subLevel).applyImpulseAtPoint(localPosition, diff);
         }
 
         final Vec3 nudge = diff.normalize().scale(0.05F);
