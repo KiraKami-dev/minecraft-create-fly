@@ -1,6 +1,6 @@
 # minecraft-create-fly progress
 
-_Last updated: 2026-10-27_
+_Last updated: 2026-10-28_
 
 Port of Create Aeronautics to Minecraft 1.21.11 Fabric, on top of Create Fly 1.21.11-6.0.9-5. Task table in `ROADMAP.md`, porting rules in `PORTING.md`.
 
@@ -9,11 +9,13 @@ flowchart LR
   B["✅ Base: Create Fly<br/>1.21.11 Fabric"] --> P1["✅ Phase 1<br/>port Sable physics<br/>(veillite shim for Veil)"]
   P1 --> P2["✅ Phase 2<br/>Simulated + Aeronautics"]
   P2 --> R["⏳ Playtest +<br/>private release"]
+  P2 --> P3["🔄 Phase 3<br/>Create Offroad<br/>(wheels)"]
 ```
 
 ## Now
 - Phase 1 code complete (all ROADMAP S rows done, incl. Sodium water occlusion + shadows). Open: hands-on checks by a person (walk/jump on moving sub-levels, camera feel, multiplayer) via `tools/e2e.sh play`.
 - Phase 2 is merged into integration (p2-port fast-forwarded with integration). Per-area notes in `docs/p2-notes/`.
+- 2026-10-28: Phase 3 started: port Create Offroad (wheel mount + tires, rock-cutting wheel, borehead bearing; upstream `reference/simulated-1.21.1/offroad`, 69 files) as `offroad/`, branch `offroad-port`.
 
 ## Next
 - Hands-on playtest of Simulated + Aeronautics (`tools/e2e.sh play`, `tools/e2e.sh flight`), then a private release build.
@@ -45,6 +47,10 @@ flowchart LR
 
 - 2026-10-27: Fixed: with an Iris shader pack every sub-level was invisible (Sable's own `sable:pipeline/sub_level_*` pipelines were unknown to Iris, so the draw landed in a buffer the pack's final pass overwrote). Sable now assigns them to Iris terrain programs (`IrisApi.assignPipeline`), uploads a per-section `DynamicTransforms` (view x pose, offset = section origin - anchor), keeps sub-level meshes and pipelines in `BLOCK` format (Iris widens both racily). Branch `fix/iris-sublevels`. Verified on the user's client (Complementary): visible paused/moving/landed/ridden; e2e client + flight pass with and without Sodium. Not done: sub-levels in the shader pack's shadow pass; normals of rotated sub-levels use the camera's model-view inverse; no e2e Iris scene.
 - 2026-10-27: Released v2026.10.27 (main 83a4e26: sable port.2 with the Iris fix; simulated/aeronautics unchanged). Verified on the pack's Iris 1.10.7 + Sodium 0.8.7 with Complementary; dedicated server e2e clean. Friends' repo A1K2S3/minecraft a6427ef points Sable at it (installer test: port.1 replaced, 53/53 jars). Server VM still needs `git pull` + `./server/restart`.
+- 2026-10-28: Arrows hitting a ship flung it ~20k blocks away and it vanished (parked in sub-level storage, not deleted). Cause: 1.21.11 moves the arrow to the plot-space hit point before onHitBlock, and the arrow mixin transformed it to local again (impulse ~2e7 blocks off-centre). Fixed in AbstractArrowMixin; regression scene `tools/e2e.sh client arrow`. Recovery verified: velocity_retained_on_load=0, `/sable storage find_all_sub_levels`, tp to x/z, `/sable teleport`.
+- 2026-10-28: Audited every other ship-pushing source (explosions/wind charges, punches, dispenser recoil, ejectors, nozzles, gusts, plungers, springs, magnets, potato cannon, balloons): all match upstream. Added `ImpulseGuard` safety net in both point-impulse paths (Rapier `applyImpulse`, `ForceTotal.applyImpulseAtPoint`): drops and logs any impulse more than 2 plots from the centre of mass or non-finite. GameTests `projectilesDoNotFlingSubLevels` (8 vanilla projectiles + eye of ender + mace Wind Burst III) and `impulseOutsidePlotIsDropped` (red without the guard: box flung to x=-104198 and deleted). Suite 27 + 1 optional (gravity), playtest, flight pass; no real impulse dropped.
+- 2026-10-28: Released v2026.10.28 (main 5791499: sable port.3 = arrow fix + ImpulseGuard; simulated/aeronautics unchanged). Friends' repo A1K2S3/minecraft b299218 points Sable at it (download sha256 checked). Server VM needs `git pull` + `./server/restart`.
+
 ## Blockers
 - 2026-10-27: Shaders off on macOS: things drawn after sub-levels (entities, translucent terrain, clouds) ignore the ship's depth (mobs seen through the ship you ride). Not water occlusion, not sky-light shadows (toggled each off, still broken). User says Mac only. Parked by the user in favour of the Iris issue.
 - 2026-10-27: Chunk-fade theory for the see-through world disproved (e2e Sodium probe on branch fix/sodium-fade-ride, uncommitted). User's client now Sodium 0.8.14 + Iris 1.10.8 + chunk fade 0 (old jars/options in .minecraft/backup/2026-10-27-sodium-fade).
